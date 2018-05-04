@@ -1,0 +1,74 @@
+Nifty 50
+Nifty Next 50
+Nifty 100
+Nifty 200
+Nifty 500
+Nifty Midcap 50
+Nifty Free Float Midcap 100
+Nifty Free Float Smallcap 100
+Nifty50 Dividend Points
+Nifty Auto
+Nifty Bank
+Nifty Energy
+Nifty Financial Services
+Nifty FMCG
+Nifty IT
+Nifty Media
+Nifty Metal
+Nifty MNC
+Nifty Pharma
+Nifty PSU Bank
+Nifty Realty
+Nifty India Consumption
+Nifty Commodities
+Nifty Dividend Opportunities 50
+Nifty Infrastructure
+Nifty PSE
+Nifty Services Sector
+Nifty50 Shariah
+Nifty500 Shariah
+Nifty Low Volatility 50
+Nifty Alpha 50
+Nifty High Beta 50
+Nifty50 USD
+Nifty100 Equal Weight
+Nifty100 Liquid 15
+Nifty CPSE
+Nifty50 Value 20
+Nifty Midcap Liquid 15
+Nifty Shariah 25
+India VIX
+Nifty Growth Sectors 15
+Nifty50 TR 1x Inverse
+Nifty50 TR 2x Leverage
+Nifty50 PR 1x Inverse
+Nifty50 PR 2x Leverage
+Nifty Quality 30
+Nifty 50 Arbitrage
+NIFTY50 Equal Weight
+NIFTY Alpha Quality Low-Volatility 30
+Nifty Private Bank
+NIFTY Alpha Quality Value Low-Volatility 30
+Nifty Mahindra Group
+Nifty Full Smallcap 100
+Nifty Smallcap 250
+Nifty MidSmallcap 400
+Nifty Tata Group 25% Cap
+Nifty Tata Group
+Nifty100 Low Volatility 30
+Nifty Midcap 150
+NIFTY Quality Low-Volatility 30
+NIFTY Alpha Low-Volatility 30
+Nifty 50 Futures TR Index
+Nifty 50 Futures Index
+Nifty Full Midcap 100
+Nifty Aditya Birla Group
+Nifty Smallcap 50
+Nifty 8-13 yr G-Sec
+Nifty 10 yr Benchmark G-Sec
+Nifty 10 yr Benchmark G-Sec (Clean Price)
+Nifty 4-8 yr G-Sec Index
+Nifty 11-15 yr G-Sec Index
+Nifty 15 yr and above G-Sec Index
+Nifty Composite G-sec Index
+Nifty 1D Rate Index
