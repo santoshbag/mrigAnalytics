@@ -4,19 +4,28 @@ Created on Fri Sep 15 09:01:52 2017
 
 @author: Santosh Bag
 """
-
+import sys
 import nsepy
-from datetime import date
+import datetime #import date, timedelta
 from pandas import DataFrame
 #from sqlalchemy import create_engine
 
 
 nseStockList = open("nseStockList1.txt","r")
 errorLog = open("errorLog.txt","w")
-
+today = datetime.datetime.now()
 #nseStockPrices = open("nseStockHistory.csv","a+")
 
-stocks = [line.split("\n")[0] for line in nseStockList]
+
+arguments = sys.argv[1:]
+
+startdate= datetime.date(2018,1,2)
+enddate= datetime.date(2018,5,4)
+
+startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
+enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
+
+stocks = [key for key in nsepy.constants.symbol_list]
 #stocks = nsepy.constants.symbol_list
 
 nseStockListLength = len(stocks)
@@ -24,12 +33,12 @@ nseStocksDownloaded = 0
 counter = 0
 write_counter = 0
 stocksdata = DataFrame()
-startdate= date(2017,9,10)
-enddate= date(2017,9,28)
+
 nseStockPrices = open("nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
 #engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
+#stocks = stocks[4:6]
 
 for stock in stocks:
     #print(stock)
