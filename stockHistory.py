@@ -16,6 +16,7 @@ errorLog = open("errorLog.txt","w")
 today = datetime.datetime.now()
 #nseStockPrices = open("nseStockHistory.csv","a+")
 
+data_folder = "F:\Mrig Analytics\Development\data"
 
 arguments = sys.argv[1:]
 
@@ -34,7 +35,7 @@ counter = 0
 write_counter = 0
 stocksdata = DataFrame()
 
-nseStockPrices = open("nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+nseStockPrices = open(data_folder+"\nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
 #engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 

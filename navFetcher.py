@@ -10,9 +10,9 @@ from pandas import DataFrame
 from collections import deque
 
 NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt?t=09082017092931"
-mfNavHistory_path = "F:\Development\ideasTrade\mfNAVHistory.csv"
+mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVHistory.csv"
 mfNavHistory = open(mfNavHistory_path,"a+")
-mfISINList_path = "F:\Development\ideasTrade\mfISINList.txt"
+mfISINList_path = "F:\Mrig Analytics\Development\mrigAnalytics\mfISINList.txt"
 mfISINList = open(mfISINList_path,"r")
 
 def get_last_row(csv_filename,lines=1):
