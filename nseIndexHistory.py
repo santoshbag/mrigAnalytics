@@ -8,7 +8,7 @@ import sys
 import nsepy
 import datetime #import date, timedelta
 from pandas import DataFrame
-#from sqlalchemy import create_engine
+from sqlalchemy import create_engine
 
 
 nseIndexList = open("nseStockList1.txt","r")

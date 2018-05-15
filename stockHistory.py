@@ -8,7 +8,7 @@ import sys
 import nsepy
 import datetime #import date, timedelta
 from pandas import DataFrame
-#from sqlalchemy import create_engine
+from sqlalchemy import create_engine
 
 
 nseStockList = open("nseStockList1.txt","r")
@@ -37,7 +37,9 @@ stocksdata = DataFrame()
 
 nseStockPrices = open(data_folder+"nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
-#engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+
+database_cols = {'%Deliverble':'per_deliverable_volume'}
 
 #stocks = stocks[4:6]
 
@@ -57,22 +59,39 @@ for stock in stocks:
     except:
         pass
     if counter >=50:
+        stocksdata.index.rename('date',inplace=True)
+        stocksdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('%deliverble','per_deliverable_volume'),inplace=True)
         if write_counter >=1:
             stocksdata.to_csv(nseStockPrices, header=False)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
+            try:
+                stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+            except:
+                pass
         else:
             stocksdata.to_csv(nseStockPrices)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False)
+            try:
+                stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+            except:
+                pass
         stocksdata = DataFrame()
         counter = 0
         write_counter = write_counter + 1
-        
+
+stocksdata.index.rename('date',inplace=True)
+stocksdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('%deliverble','per_deliverable_volume'),inplace=True)
 if write_counter >=1:
     stocksdata.to_csv(nseStockPrices, header=False)
-    #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
+    try:
+        stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+    except:
+        pass
 else:
      stocksdata.to_csv(nseStockPrices)
-     #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False))
+     try:
+         stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+     except:
+         pass
 print(str(nseStocksDownloaded) +" Stocks downloaded of a total of "+ str(nseStockListLength)+" Stocks ")
 nseStockPrices.close()
+engine.dispose()
 errorLog.close()
