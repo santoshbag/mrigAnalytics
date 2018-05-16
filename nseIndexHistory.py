@@ -37,7 +37,7 @@ indicesdata = DataFrame()
 
 nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
-#engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
 #Indices = Indices[4:6]
 
@@ -49,6 +49,7 @@ for index in indices:
         index_pe_data = nsepy.get_index_pe_history(symbol=index,start=startdate,end=enddate)
         indexdata = indexdata.merge(right=index_pe_data,how='outer',right_index=True,left_index=True)
         indexdata.insert(loc=0,column='Symbol',value=index)
+        indexdata.insert(loc=1,column='Series',value='IN')
 #        if counter==1:
 #            stocksdata = stockdata
 #        else:
@@ -60,22 +61,38 @@ for index in indices:
     except:
         pass
     if counter >=50:
+        indicesdata.index.rename('date',inplace=True)
+        indicesdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('/','').replace('%deliverble','per_deliverable_volume'),inplace=True)
         if write_counter >=1:
             indicesdata.to_csv(nseIndexPrices, header=False)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
+            try:
+                indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
+            except:
+                pass
         else:
             indicesdata.to_csv(nseIndexPrices)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False)
+            try:
+                indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
+            except:
+                pass        
         indicesdata = DataFrame()
         counter = 0
         write_counter = write_counter + 1
-        
+
+indicesdata.index.rename('date',inplace=True)
+indicesdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('/','').replace('%deliverble','per_deliverable_volume'),inplace=True)        
 if write_counter >=1:
     indicesdata.to_csv(nseIndexPrices, header=False)
-    #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
+    try:
+        indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
+    except:
+        pass
 else:
      indicesdata.to_csv(nseIndexPrices)
-     #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False))
+     try:
+        indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
+     except:
+        pass
 print(str(nseIndicesDownloaded) +" Indices downloaded of a total of "+ str(nseIndexListLength)+" Indices ")
 nseIndexPrices.close()
 errorLog.close()
