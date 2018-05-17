@@ -4,11 +4,11 @@ Created on Tue Aug 15 05:35:56 2017
 
 @author: Santosh Bag
 """
-import datetime,csv
+import datetime
 import urllib.request
 from pandas import DataFrame
-from collections import deque
 from sqlalchemy import create_engine
+import mrigutilities
 
 
 NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt?t=09082017092931"
@@ -17,17 +17,9 @@ mfNavHistory = open(mfNavHistory_path,"a+")
 
 engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
-def get_last_row(csv_filename,lines=1):
-    with open(csv_filename,'r') as f:
-        try:
-            lastrow = deque(csv.reader(f), lines)
-        except IndexError:  # empty file
-            lastrow = None
-        return lastrow
-
 data = urllib.request.urlopen(NAV_URL) # read only 20 000 chars
 timestamp = datetime.datetime.now()
-last_fetched_data = get_last_row(mfNavHistory_path)
+last_fetched_data = mrigutilities.get_last_row(mfNavHistory_path)
 last_download_date = None
 headerAbsent = True
 try:
@@ -67,8 +59,11 @@ if last_download_date != timestamp.strftime("%x"):
                     #print("mutual_fund_house -> " + mutual_fund_house)
     if written:
         navs = DataFrame(navs[1:],columns=navs_cols)
+        #navs = DataFrame(navs[22:23],columns=navs_cols)
+
         navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
         navs = navs.drop('Time Stamp',axis=1)
+        navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"])
         try:
             navs.to_sql('mf_nav_history',engine, if_exists='append', index=False)
         except:
