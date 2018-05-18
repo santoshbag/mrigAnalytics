@@ -8,6 +8,8 @@ import csv
 import pandas as pd
 from collections import deque
 from sqlalchemy import create_engine
+from dateutil import relativedelta
+import datetime
 
 
 def get_last_row(csv_filename,lines=1):
@@ -88,3 +90,19 @@ def sql_engine():
         SQLALCHEMY_DATABASE_URI, pool_size=POOL_SIZE, max_overflow=0)
 
     return ENGINE
+
+def last_thursday_of_month(date):
+    date = date + relativedelta.relativedelta(day=31,weekday=relativedelta.TH(-1))
+    return date
+
+def get_futures_expiry(startdate,enddate):
+    expiryDateList = []
+    if startdate > enddate:
+        expiryDateList = None
+    for yr in range(startdate.year,enddate.year+1):
+        for mon in range(1,13):
+            dt = datetime.date(yr,mon,20)
+            if(dt < enddate + relativedelta.relativedelta(months=3)):
+                expiryDateList.append(last_thursday_of_month(dt))
+    return expiryDateList
+    

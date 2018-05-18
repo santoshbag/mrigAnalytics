@@ -8,7 +8,8 @@ import sys
 import nsepy
 import datetime #import date, timedelta
 from pandas import DataFrame
-from sqlalchemy import create_engine
+#from sqlalchemy import create_engine
+import mrigutilities
 
 
 nseIndexList = open("nseStockList1.txt","r")
@@ -37,7 +38,7 @@ indicesdata = DataFrame()
 
 nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
-engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+engine = mrigutilities.sql_engine()
 
 #Indices = Indices[4:6]
 

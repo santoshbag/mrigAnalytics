@@ -9,7 +9,7 @@ import nsepy
 import datetime #import date, timedelta
 from pandas import DataFrame
 from sqlalchemy import create_engine
-
+import mrigutilities
 
 nseStockList = open("nseStockList1.txt","r")
 errorLog = open("errorLog.txt","w")
@@ -37,7 +37,9 @@ stocksdata = DataFrame()
 
 nseStockPrices = open(data_folder+"nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
-engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+engine = mrigutilities.sql_engine()
+
+#engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
 database_cols = {'%Deliverble':'per_deliverable_volume'}
 

@@ -7,7 +7,7 @@ Created on Tue Aug 15 05:35:56 2017
 import datetime
 import urllib.request
 from pandas import DataFrame
-from sqlalchemy import create_engine
+#from sqlalchemy import create_engine
 import mrigutilities
 
 
@@ -15,22 +15,23 @@ NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt?t=09082017092931"
 mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVAllHistory.csv"
 mfNavHistory = open(mfNavHistory_path,"a+")
 
-engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+engine = mrigutilities.sql_engine()
 
 data = urllib.request.urlopen(NAV_URL) # read only 20 000 chars
 timestamp = datetime.datetime.now()
+navs_cols = ['Date','Fund House','Scheme Type','ISIN Div Payout/ ISIN Growth','ISIN Div Reinvestment','Scheme Name','Net Asset Value','Repurchase Price','Sale Price','Time Stamp']
 last_fetched_data = mrigutilities.get_last_row(mfNavHistory_path)
 last_download_date = None
 headerAbsent = True
 try:
-    last_download_date = last_fetched_data[0][7].split("-")[0]
+    last_download_date = last_fetched_data[0][navs_cols.index('Time Stamp')].split("-")[0]
+    #print(last_download_date)
     headerAbsent = False
 except:
     pass
 if last_download_date != timestamp.strftime("%x"):
     written = False
     navs = []
-    navs_cols = ['Date','Fund House','Scheme Type','ISIN Div Payout/ ISIN Growth','ISIN Div Reinvestment','Scheme Name','Net Asset Value','Repurchase Price','Sale Price','Time Stamp']
     mutual_fund_scheme_type = ""
     mutual_fund_house = ""
     sub_header_count = 0
