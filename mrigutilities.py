@@ -22,7 +22,7 @@ def get_last_row(csv_filename,lines=1):
     
 
 def clean_df_db_dups(df, tablename, engine, dup_cols=[],
-                         filter_continuous_col=None, filter_categorical_col=None):
+                         filter_continuous_col=None, filter_categorical_col=None,date_handling=None):
     """
     Remove rows from a dataframe that already exist in a database
     Required:
@@ -40,8 +40,8 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
         Unique list of values from dataframe compared to database table
     """
     args = 'SELECT %s FROM %s' %(', '.join(['"{0}"'.format(col) for col in dup_cols]), tablename)
-    date_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
-    args = args.replace("\"Date\"",date_handling)
+    if args != None:
+        args = args.replace("\"Date\"",date_handling)
     #print(args)
     args_contin_filter, args_cat_filter = None, None
     #print("santosh -->"+ args)     
