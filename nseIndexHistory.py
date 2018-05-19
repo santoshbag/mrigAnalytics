@@ -66,13 +66,19 @@ for index in indices:
         indicesdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('/','').replace('%deliverble','per_deliverable_volume'),inplace=True)
         if write_counter >=1:
             indicesdata.to_csv(nseIndexPrices, header=False)
+            indicesdata.reset_index(level=0, inplace=True)
+            indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
             try:
+                indicesdata.set_index('date',inplace=True)
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
         else:
             indicesdata.to_csv(nseIndexPrices)
+            indicesdata.reset_index(level=0, inplace=True)
+            indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
             try:
+                indicesdata.set_index('date',inplace=True)                
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass        
@@ -84,13 +90,19 @@ indicesdata.index.rename('date',inplace=True)
 indicesdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('/','').replace('%deliverble','per_deliverable_volume'),inplace=True)        
 if write_counter >=1:
     indicesdata.to_csv(nseIndexPrices, header=False)
+    indicesdata.reset_index(level=0, inplace=True)
+    indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
     try:
+        indicesdata.set_index('date',inplace=True)                
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
     except:
         pass
 else:
      indicesdata.to_csv(nseIndexPrices)
+     indicesdata.reset_index(level=0, inplace=True)
+     indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
      try:
+        indicesdata.set_index('date',inplace=True)                
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
      except:
         pass

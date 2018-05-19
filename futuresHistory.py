@@ -81,7 +81,10 @@ for stock in stocks:
             futuresdata.rename(columns=lambda x: x.lower().replace(" ",'_'),inplace=True)
             if write_counter >=1:
                 futuresdata.to_csv(nseFutPrices, header=False)
+                futuresdata.reset_index(level=0,inplace=True)
+                futuresdata = mrigutilities.clean_df_db_dups(futuresdata,'futures_history',engine,dup_cols=["date","symbol","expiry"])
                 try:
+                    futuresdata.set_index('date',inplace=True)
                     futuresdata.to_sql('futures_history',
                                        engine,
                                        if_exists='append',
