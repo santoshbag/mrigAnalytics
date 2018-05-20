@@ -13,7 +13,7 @@ import mrigutilities
 
 
 nseIndexList = open("nseStockList1.txt","r")
-errorLog = open("errorLog.txt","w")
+errorLog = open("errorLog.txt","a+")
 today = datetime.datetime.now()
 #nseStockPrices = open("nseStockHistory.csv","a+")
 data_folder = "F:/Mrig Analytics/Development/data/"
@@ -38,6 +38,7 @@ indicesdata = DataFrame()
 
 nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
+errorLog.write("\n########### START OF nseIndexHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 engine = mrigutilities.sql_engine()
 
 #Indices = Indices[4:6]
@@ -68,6 +69,8 @@ for index in indices:
             indicesdata.to_csv(nseIndexPrices, header=False)
             indicesdata.reset_index(level=0, inplace=True)
             indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+            errorLog.write(indicesdata[1]+" already downloaded \n")
+            indicesdata = indicesdata[0]
             try:
                 indicesdata.set_index('date',inplace=True)
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
@@ -77,6 +80,8 @@ for index in indices:
             indicesdata.to_csv(nseIndexPrices)
             indicesdata.reset_index(level=0, inplace=True)
             indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+            errorLog.write(indicesdata[1]+" already downloaded \n")
+            indicesdata = indicesdata[0]
             try:
                 indicesdata.set_index('date',inplace=True)                
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
@@ -92,6 +97,8 @@ if write_counter >=1:
     indicesdata.to_csv(nseIndexPrices, header=False)
     indicesdata.reset_index(level=0, inplace=True)
     indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+    errorLog.write(indicesdata[1]+" already downloaded \n")
+    indicesdata = indicesdata[0]
     try:
         indicesdata.set_index('date',inplace=True)                
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
@@ -101,6 +108,8 @@ else:
      indicesdata.to_csv(nseIndexPrices)
      indicesdata.reset_index(level=0, inplace=True)
      indicesdata = mrigutilities.clean_df_db_dups(indicesdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+     errorLog.write(indicesdata[1]+" already downloaded \n")
+     indicesdata = indicesdata[0]
      try:
         indicesdata.set_index('date',inplace=True)                
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
@@ -108,4 +117,5 @@ else:
         pass
 print(str(nseIndicesDownloaded) +" Indices downloaded of a total of "+ str(nseIndexListLength)+" Indices ")
 nseIndexPrices.close()
+errorLog.write("\n########### END OF nseIndexHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 errorLog.close()

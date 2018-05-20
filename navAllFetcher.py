@@ -65,7 +65,7 @@ if last_download_date != timestamp.strftime("%x"):
         navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
         navs = navs.drop('Time Stamp',axis=1)
         dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
-        navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)
+        navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)[0]
         try:
             navs.to_sql('mf_nav_history',engine, if_exists='append', index=False)
         except:

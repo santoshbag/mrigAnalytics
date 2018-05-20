@@ -65,13 +65,23 @@ for stock in stocks:
         stocksdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('%deliverble','per_deliverable_volume'),inplace=True)
         if write_counter >=1:
             stocksdata.to_csv(nseStockPrices, header=False)
+            stocksdata.reset_index(level=0, inplace=True)
+            stocksdata = mrigutilities.clean_df_db_dups(stocksdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+            errorLog.write(stocksdata[1]+" already downloaded \n")
+            stocksdata = stocksdata[0]
             try:
+                stocksdata.set_index('date',inplace=True)
                 stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
         else:
             stocksdata.to_csv(nseStockPrices)
+            stocksdata.reset_index(level=0, inplace=True)
+            stocksdata = mrigutilities.clean_df_db_dups(stocksdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+            errorLog.write(stocksdata[1]+" already downloaded \n")
+            stocksdata = stocksdata[0]
             try:
+                stocksdata.set_index('date',inplace=True)
                 stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
@@ -83,13 +93,23 @@ stocksdata.index.rename('date',inplace=True)
 stocksdata.rename(columns=lambda x: x.lower().replace(" ",'_').replace('%deliverble','per_deliverable_volume'),inplace=True)
 if write_counter >=1:
     stocksdata.to_csv(nseStockPrices, header=False)
+    stocksdata.reset_index(level=0, inplace=True)
+    stocksdata = mrigutilities.clean_df_db_dups(stocksdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+    errorLog.write(stocksdata[1]+" already downloaded \n")
+    stocksdata = stocksdata[0]
     try:
+        stocksdata.set_index('date',inplace=True)
         stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
     except:
         pass
 else:
      stocksdata.to_csv(nseStockPrices)
+     stocksdata.reset_index(level=0, inplace=True)
+     stocksdata = mrigutilities.clean_df_db_dups(stocksdata,'stock_history',engine,dup_cols=["date","symbol","series"],leftIdx=True)
+     errorLog.write(stocksdata[1]+" already downloaded \n")
+     stocksdata = stocksdata[0]
      try:
+         stocksdata.set_index('date',inplace=True)
          stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
      except:
          pass

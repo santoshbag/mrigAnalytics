@@ -9,7 +9,7 @@ import pandas as pd
 from collections import deque
 from sqlalchemy import create_engine
 from dateutil import relativedelta
-import datetime
+import datetime,nsepy
 
 
 def get_last_row(csv_filename,lines=1):
@@ -48,7 +48,7 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     #print(args)
     args_contin_filter, args_cat_filter = None, None
     #print("santosh -->"+ args)     
-
+    existing_security = ""
     if filter_continuous_col is not None:
         if df[filter_continuous_col].dtype == 'datetime64[ns]':
             args_contin_filter = """ "%s" BETWEEN Convert(datetime, '%s')
@@ -74,11 +74,12 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     #print(pd.read_sql(args, engine))
     df = pd.merge(df, pd.read_sql(args, engine), how='left', on=dup_cols, left_index=leftIdx, indicator=True,suffixes=['', '_in_db'])
     #print(df)
+    existing_security = str(df[df['_merge'] == 'both'])
     df = df[df['_merge'] == 'left_only']
     #print(df)
     df.drop(['_merge'], axis=1, inplace=True)
     #print(df)
-    return df
+    return [df,existing_security]
 
 def sql_engine():
     DB_TYPE = 'postgresql'
@@ -111,4 +112,12 @@ def get_futures_expiry(startdate,enddate):
             if(dt < enddate + relativedelta.relativedelta(months=3)):
                 expiryDateList.append(last_thursday_of_month(dt))
     return expiryDateList
-    
+
+def test_df():
+    nifty_fut = nsepy.get_history(symbol="NIFTY", 
+			start=datetime.date(2015,1,1), 
+			end=datetime.date(2015,1,10),
+			index=True,
+			futures=True, 
+          expiry_date=datetime.date(2015,1,29))
+    return nifty_fut

@@ -15,9 +15,10 @@ import mrigutilities
 
 
 nseFutList = open("nseStockList1.txt","r")
-errorLog = open("errorLog.txt","w")
+errorLog = open("errorLog.txt","a+")
 today = datetime.datetime.now()
 #nseStockPrices = open("nseStockHistory.csv","a+")
+
 
 data_folder = "F:/Mrig Analytics/Development/data/"
 
@@ -45,15 +46,16 @@ nseFuturesDownloaded = 0
 counter = 0
 write_counter = 0
 futuresdata = DataFrame()
-
 nseFutPrices = open(data_folder+"nseFuturesHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+
+errorLog.write("\n########### START OF nseFuturesHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 
 engine = mrigutilities.sql_engine()
 
 #engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
 expiryList = mrigutilities.get_futures_expiry(startdate,enddate)
-#Futures = Futures[4:6]
+#stocks = stocks[4:6]
 
 for stock in stocks:
     #print(stock)
@@ -83,6 +85,8 @@ for stock in stocks:
                 futuresdata.to_csv(nseFutPrices, header=False)
                 futuresdata.reset_index(level=0,inplace=True)
                 futuresdata = mrigutilities.clean_df_db_dups(futuresdata,'futures_history',engine,dup_cols=["date","symbol","expiry"])
+                errorLog.write(futuresdata[1]+" already downloaded \n")
+                futuresdata = futuresdata[0]
                 try:
                     futuresdata.set_index('date',inplace=True)
                     futuresdata.to_sql('futures_history',
@@ -95,6 +99,8 @@ for stock in stocks:
                 futuresdata.to_csv(nseFutPrices)
                 futuresdata.reset_index(level=0,inplace=True)
                 futuresdata = mrigutilities.clean_df_db_dups(futuresdata,'futures_history',engine,dup_cols=["date","symbol","expiry"])
+                errorLog.write(futuresdata[1]+" already downloaded \n")
+                futuresdata = futuresdata[0]
                 try:
                     futuresdata.set_index('date',inplace=True)
                     futuresdata.to_sql('futures_history',
@@ -113,6 +119,8 @@ if write_counter >=1:
     futuresdata.to_csv(nseFutPrices, header=False)
     futuresdata.reset_index(level=0,inplace=True)
     futuresdata = mrigutilities.clean_df_db_dups(futuresdata,'futures_history',engine,dup_cols=["date","symbol","expiry"])
+    errorLog.write(futuresdata[1]+" already downloaded \n")
+    futuresdata = futuresdata[0]
     try:
         futuresdata.set_index('date',inplace=True)
         futuresdata.to_sql('futures_history',
@@ -125,6 +133,8 @@ else:
      futuresdata.to_csv(nseFutPrices)
      futuresdata.reset_index(level=0,inplace=True)
      futuresdata = mrigutilities.clean_df_db_dups(futuresdata,'futures_history',engine,dup_cols=["date","symbol","expiry"])
+     errorLog.write(futuresdata[1]+" already downloaded \n")
+     futuresdata = futuresdata[0]
      try:
          futuresdata.set_index('date',inplace=True)
          futuresdata.to_sql('futures_history',
@@ -136,4 +146,5 @@ else:
 print(str(nseFuturesDownloaded) +" Futures downloaded of a total of "+ str(nseStockListLength)+" Futures ")
 nseFutPrices.close()
 engine.dispose()
+errorLog.write("\n########### END OF nseFuturesHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 errorLog.close()
