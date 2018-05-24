@@ -72,6 +72,7 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     except:
         pass
     #print(pd.read_sql(args, engine))
+    #print(df)
     df = pd.merge(df, pd.read_sql(args, engine), how='left', on=dup_cols, left_index=leftIdx, indicator=True,suffixes=['', '_in_db'])
     #print(df)
     existing_security = str(df[df['_merge'] == 'both'])
@@ -121,3 +122,8 @@ def test_df():
 			futures=True, 
           expiry_date=datetime.date(2015,1,29))
     return nifty_fut
+
+def get_Quandl():
+    QUANDL_API_KEY = 'C33qTjnTYtCkx7UZ6H3R'
+    
+    return QUANDL_API_KEY

@@ -1,0 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May 23 19:31:48 2018
+
+@author: Santosh Bag
+"""
+import sys
+
+test = open("CHECK","a+")
+
+test.write("Worked\n")
+
+test.close()
+print("Batch Works")
