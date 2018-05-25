@@ -204,6 +204,7 @@ class Product:
     def __init__(self,type):
         self.productType = type
         self.productMetadataSet = {}
+        self.value = {}
         self.yields = {}
         self.sensitivities = {}
         self.spreads = {}
@@ -213,6 +214,9 @@ class Product:
     def getProductMetadata(self):
         return self.productMetadataSet
 
+    def getValue(self):
+        return self.value
+    
     def getYields(self):
         return self.yields
 
