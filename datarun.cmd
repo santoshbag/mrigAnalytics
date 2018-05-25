@@ -19,10 +19,11 @@ python.exe stockHistory.py %startdate% %enddate%
 echo Stock History downloaded 
 python.exe nseIndexHistory.py %startdate% %enddate%
 echo NSE Index History downloaded
-python.exe futuresHistory.py %startdate% %enddate%
-echo Futures History downloaded
 python.exe totalreturnindicesHistory.py %startdate% %enddate%
 echo Total Return History downloaded
+python.exe futuresHistory.py %startdate% %enddate%
+echo Futures History downloaded
+exit /B 1
 
 :usage
 @echo Batch file did not run

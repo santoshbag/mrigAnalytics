@@ -1,0 +1,3 @@
+portfolio_name,position_date,portfolio_currency,product_type,product_quantity,product_price,marketValue,product_cost,product_currency,product_mult
+Credit Suisse,2016-04-12 07:35:14.338514,USD,Bond,1000000,98.2,982000.0,97,USD,0.01
+Credit Suisse,2016-04-12 07:35:14.338514,USD,Bond,10000000,96.7,9670000.0,95,USD,0.01

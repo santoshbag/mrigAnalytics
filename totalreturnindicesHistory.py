@@ -24,12 +24,15 @@ TRI = []
 for key in mrigstatics.TR_INDICES.keys():
     TRI = TRI + mrigstatics.TR_INDICES[key]
     
-startdate= datetime.date(2018,1,2)
-enddate= datetime.date(2018,5,4)
+startdate_def= datetime.datetime.today() - datetime.timedelta(1)
+enddate_def = datetime.datetime.today()
 
 startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
 enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
 
+if startdate >= startdate_def:
+    startdate = startdate_def - datetime.timedelta(1)
+    
 stocks = [key for key in nsepy.constants.symbol_list]
 #stocks = nsepy.constants.symbol_list
 
@@ -39,7 +42,7 @@ counter = 0
 write_counter = 0
 stocksdata = DataFrame()
 
-nseStockPrices = open(data_folder+"nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+nseStockPrices = open(data_folder+"totalreturnHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
 engine = mrigutilities.sql_engine()
 
