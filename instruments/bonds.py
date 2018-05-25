@@ -75,6 +75,13 @@ class FixedRateBond(Bond):
         else:
             value = "Bond not evaluated"
         return value
+    
+    def getCashflows(self):
+        if self.is_valued:
+            value = {'Cash Flows' : self.fixedratebond.cashflows()}
+        else:
+            value = "Bond not evaluated"
+        return value
         
         
         

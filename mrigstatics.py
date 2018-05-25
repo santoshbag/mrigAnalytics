@@ -70,6 +70,14 @@ TR_INDICES = {'Broad_Market' : ['NIFTY 50',
                           'NIFTY50 VALUE 20',
                           'NIFTY GROWTH SECTORS 15']}
 
+"""
+YIELD CURVE DATA FROM www.worldgovernmentbonds.com
+"""
+
+WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/'}
+
+
+
 
 """
  Value Research Online Mutual Fund codes
