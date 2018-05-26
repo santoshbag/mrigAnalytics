@@ -7,10 +7,10 @@ Created on Thu May 24 14:41:11 2018
 This module downloads yield curves for different currencies.
 """
 
-import urllib,csv,requests
+import requests
 import datetime,pandas
 from bs4 import BeautifulSoup
-import mrigstatics
+import mrigstatics,mrigutilities
 
 def get_yieldCurve(currency="INR"):
     
@@ -32,7 +32,7 @@ def get_yieldCurve(currency="INR"):
     
     for row in tables[2].find_all('tr'):
         cells = row.find_all('td')
-        yield_table.append([str(cell.text).strip() for cell in cells][1:-1])
+        yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:-1])
     
     price_heads = tables[3].find_all('th')
     price_table_cols = [col.text for col in price_heads]
@@ -41,8 +41,8 @@ def get_yieldCurve(currency="INR"):
     
     for row in tables[3].find_all('tr'):
         cells = row.find_all('td')
-        price_table.append([str(cell.text).strip() for cell in cells][1:])    
-
+        price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
+        
     for items in yield_table:
         if items == []:
             yield_table.remove(items)
@@ -50,11 +50,41 @@ def get_yieldCurve(currency="INR"):
     for items in price_table:
         if items == []:
             price_table.remove(items)
-            
-    yield_tables = pandas.DataFrame(yield_table,columns=yield_table_cols[1:-1])
-    price_tables = pandas.DataFrame(price_table[1:-1],columns=price_table_cols[1:])
     
-    YC = {'Yield' : yield_tables,
-          'Price' : price_tables}
+    yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols[1:-1]))
+    yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
+    yield_table.insert(0,column='curvedate',value=curve_date)
+    yield_table.insert(1,column='curve',value=currency)
+    price_table = pandas.DataFrame(price_table[1:-1],columns=mrigutilities.get_finalColumns(price_table_cols[1:]))
+    price_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
+    price_table.insert(0,column='curvedate',value=curve_date)
+    price_table.insert(1,column='curve',value=currency)
+    
+    yield_table = yield_table.merge(price_table,how='left',on=['curvedate','curve','tenor','yield'])
+    
     s.close()
-    return YC
+    return yield_table
+
+yieldCurveHistory_path = "F:\Mrig Analytics\Development\data\yieldCurveHistory.csv"
+yieldCurveHistory = open(yieldCurveHistory_path,"a+")
+
+last_fetched_data = mrigutilities.get_last_row(yieldCurveHistory_path)
+if last_fetched_data is None:
+    headerAbsent = True
+else:
+    headerAbsent = False
+
+engine = mrigutilities.sql_engine()
+timestamp = datetime.datetime.now()
+
+for currency in mrigstatics.CURVE_LIST:
+    yield_table = get_yieldCurve(currency)
+    yield_table.insert(len(yield_table.columns),column='timestamp',value=timestamp)
+    yield_table.to_csv(yieldCurveHistory,index=False,header=headerAbsent)
+    yield_table = yield_table.drop("timestamp",axis=1)
+    yield_table = mrigutilities.clean_df_db_dups(yield_table,'yieldcurve',engine,dup_cols=["curvedate","curve","tenor"])[0]
+    try:
+        yield_table.to_sql('yieldcurve',engine, if_exists='append', index=False)
+    except:
+        pass
+yieldCurveHistory.close()

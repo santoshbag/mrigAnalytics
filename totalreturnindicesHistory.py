@@ -30,8 +30,8 @@ enddate_def = datetime.datetime.today()
 startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
 enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
 
-if startdate >= startdate_def:
-    startdate = startdate_def - datetime.timedelta(1)
+if startdate >= startdate_def.date():
+    startdate = startdate_def.date() - datetime.timedelta(1)
     
 stocks = [key for key in nsepy.constants.symbol_list]
 #stocks = nsepy.constants.symbol_list

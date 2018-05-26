@@ -10,6 +10,7 @@ from collections import deque
 from sqlalchemy import create_engine
 from dateutil import relativedelta
 import datetime,nsepy
+import mrigstatics
 
 
 def get_last_row(csv_filename,lines=1):
@@ -127,3 +128,10 @@ def get_Quandl():
     QUANDL_API_KEY = 'C33qTjnTYtCkx7UZ6H3R'
     
     return QUANDL_API_KEY
+
+def get_finalColumns(cols=None):
+    if cols is not None:
+        for i in range(0,len(cols)):
+            if cols[i] in mrigstatics.COLUMN_MAPPINGS.keys():
+                cols[i] = mrigstatics.COLUMN_MAPPINGS[cols[i]]
+    return cols

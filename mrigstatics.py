@@ -75,7 +75,13 @@ YIELD CURVE DATA FROM www.worldgovernmentbonds.com
 """
 
 WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/'}
+CURVE_LIST = ['INR']
 
+COLUMN_MAPPINGS = {'ResidualMaturity':'tenor',
+                   'Yield':'yield',
+                   'Change1M (Value 1M ago)':'Change1M_Value_1M_ago',
+                   'Change6M (Value 6M ago)':'Change6M_Value_6M_ago',
+                   }
 
 
 
