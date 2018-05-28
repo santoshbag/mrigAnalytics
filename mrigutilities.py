@@ -135,3 +135,14 @@ def get_finalColumns(cols=None):
             if cols[i] in mrigstatics.COLUMN_MAPPINGS.keys():
                 cols[i] = mrigstatics.COLUMN_MAPPINGS[cols[i]]
     return cols
+
+def get_date_vector(date_from_db):
+    dateList = []
+    
+    for i in range(0,len(date_from_db[0])):
+        if date_from_db[1][i].split(" ")[1] == 'months':
+            dateList.append(date_from_db[0][i] + relativedelta.relativedelta(months=int(date_from_db[1][i].split(" ")[0])))
+        if date_from_db[1][i].split(" ")[1] == 'years':
+            dateList.append(date_from_db[0][i] + relativedelta.relativedelta(years=int(date_from_db[1][i].split(" ")[0])))
+    return dateList
+    
