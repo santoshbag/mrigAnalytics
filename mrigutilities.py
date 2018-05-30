@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from dateutil import relativedelta
 import datetime,nsepy
 import mrigstatics
+import QuantLib as ql
 
 
 def get_last_row(csv_filename,lines=1):
@@ -138,11 +139,16 @@ def get_finalColumns(cols=None):
 
 def get_date_vector(date_from_db):
     dateList = []
+    """
+    Takes a list [[curvedate(s)][tenor(s)]] and returns a 
+    date vector [curvedate + tenor]
     
+    """
     for i in range(0,len(date_from_db[0])):
         if date_from_db[1][i].split(" ")[1] == 'months':
             dateList.append(date_from_db[0][i] + relativedelta.relativedelta(months=int(date_from_db[1][i].split(" ")[0])))
-        if date_from_db[1][i].split(" ")[1] == 'years':
+        if date_from_db[1][i].split(" ")[1] in ('years','year'):
             dateList.append(date_from_db[0][i] + relativedelta.relativedelta(years=int(date_from_db[1][i].split(" ")[0])))
+    dateList = [ql.Date(dt.day,dt.month,dt.year) for dt in dateList]
     return dateList
     

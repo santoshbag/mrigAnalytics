@@ -22,7 +22,7 @@ def get_yieldCurve(currency="INR"):
     curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
     curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
     curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y' )
-    tables = soup.find_all(class_="w3-table w3-bordered w3-border table-padding-xsmall w3-small font-family-arial")
+    tables = soup.find_all("table")
     
     yield_table = []
     price_table = []
@@ -34,12 +34,12 @@ def get_yieldCurve(currency="INR"):
         cells = row.find_all('td')
         yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:-1])
     
-    price_heads = tables[3].find_all('th')
+    price_heads = tables[4].find_all('th')
     price_table_cols = [col.text for col in price_heads]
     price_table_cols.pop(3)
     
     
-    for row in tables[3].find_all('tr'):
+    for row in tables[4].find_all('tr'):
         cells = row.find_all('td')
         price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
         
