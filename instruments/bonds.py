@@ -9,7 +9,7 @@ import QuantLib as ql
 from portfolio import Product
 
 class Bond(Product):
-    def __init__(self,name=Bond1,setupparams):
+    def __init__(self,setupparams,name='Bond1'):
         self.issue_name = name
         self.security_type = "Bond"
         self.issue_date = setupparams['issue_date']

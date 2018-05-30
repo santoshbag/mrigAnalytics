@@ -65,7 +65,7 @@ class InterestRates:
                                  self.compounding_frequency)
         
         return self.spotCurve
-    
+    #0.9846802113323603
     def getForwardRate(self,date1, 
                        date2, 
                        daycount=None, 
