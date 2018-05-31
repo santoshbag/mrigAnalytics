@@ -21,6 +21,7 @@ class Bond(Product):
         self.settlement_days = setupparams['settlement_days']
         self.facevalue = setupparams['facevalue']
         self.month_end = setupparams['month_end']
+        self.is_valued = False
         
     def getSchedule(self):
         issueDate = ql.Date(self.issue_date.day,self.issue_date.month,self.issue_date.year)
@@ -48,8 +49,8 @@ class FixedRateBond(Bond):
                                               self.coupon_rates,
                                               self.day_count)
         
-    def valuation(self,spotcurvehandle):
-        bondEngine = ql.DiscountingBondEngine(spotcurvehandle)
+    def valuation(self,yieldcurvehandle):
+        bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
         self.fixedratebond.setPricingEngine(bondEngine)
         self.is_valued = True
         
