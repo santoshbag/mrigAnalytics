@@ -36,7 +36,7 @@ if startdate >= startdate_def.date():
 stocks = [key for key in nsepy.constants.symbol_list]
 #stocks = nsepy.constants.symbol_list
 
-nseStockListLength = len(stocks)
+
 nseStocksDownloaded = 0
 counter = 0
 write_counter = 0
@@ -85,6 +85,7 @@ def get_history(symbol,startDate,endDate):
     return df
 
 stocks = TRI
+nseStockListLength = len(stocks)
 
 for stock in stocks:
     #print(stock)
