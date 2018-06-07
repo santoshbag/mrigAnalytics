@@ -4,9 +4,12 @@ Created on Fri Apr  8 11:20:48 2016
 
 @author: sbag
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
-from portfolio import Product
+
+from instruments.portfolio import Product
 
 class Bond(Product):
     def __init__(self,setupparams,name='Bond1'):
@@ -21,13 +24,14 @@ class Bond(Product):
         self.settlement_days = setupparams['settlement_days']
         self.facevalue = setupparams['facevalue']
         self.month_end = setupparams['month_end']
+        self.date_generation = setupparams['date_generation']
+        self.bondobject = None
         self.is_valued = False
         
     def getSchedule(self):
         issueDate = ql.Date(self.issue_date.day,self.issue_date.month,self.issue_date.year)
         maturityDate = ql.Date(self.maturity_date.day,self.maturity_date.month,self.maturity_date.year)
         tenor = ql.Period(self.coupon_frequency)
-        dateGeneration = ql.DateGeneration.Backward
         
         schedule = ql.Schedule(issueDate,
                                maturityDate,
@@ -35,54 +39,53 @@ class Bond(Product):
                                self.calendar,
                                self.business_convention,
                                self.business_convention,
-                               dateGeneration,
+                               self.date_generation,
                                self.month_end)
         return schedule
+    
+    def getAnalytics(self):
+        if self.is_valued:
+            bond_analytics = {'NPV':self.bondobject.NPV(),
+                              'cleanPrice' : self.bondobject.cleanPrice(),
+                              'dirtyPrice' : self.bondobject.dirtyPrice(),
+                              'Yield':self.bondobject.bondYield(),
+                              'Spread' : self.bondobject.bondYield(),
+                              'Cash Flows' : self.bondobject.cashflows()}
+        else:
+            bond_analytics = "Bond not evaluated"
+        return bond_analytics
+    
+    def valuation(self,yieldcurvehandle):
+        bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
+        self.bondobject.setPricingEngine(bondEngine)
+        self.is_valued = True
     
 class FixedRateBond(Bond):
     def __init__(self,setupparams):
         Bond.__init__(self,setupparams)
-        self.coupon_rates = [setupparams['couponrate']]
-        self.fixedratebond = ql.FixedRateBond(self.settlement_days,
+        self.coupon_rates = [setupparams['coupon_rates']]
+        self.bondobject = ql.FixedRateBond(self.settlement_days,
                                               self.facevalue,
                                               self.getSchedule(),
                                               self.coupon_rates,
                                               self.day_count)
         
-    def valuation(self,yieldcurvehandle):
-        bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
-        self.fixedratebond.setPricingEngine(bondEngine)
-        self.is_valued = True
-        
-    def getValue(self):
-        if self.is_valued:
-            value = {'NPV':self.fixedratebond.NPV(),
-                     'cleanPrice' : self.fixedratebond.cleanPrice(),
-                     'dirtyPrice' : self.fixedratebond.dirtyPrice()}
-        else:
-            value = "Bond not evaluated"
-        return value
-    
-    def getYields(self):
-        if self.is_valued:
-            value = {'Yield':self.fixedratebond.bondYield()}
-        else:
-            value = "Bond not evaluated"
-        return value
-    
-    def getSpreads(self):
-        if self.is_valued:
-            value = {'Spread' : self.fixedratebond.bondYield()}
-        else:
-            value = "Bond not evaluated"
-        return value
-    
-    def getCashflows(self):
-        if self.is_valued:
-            value = {'Cash Flows' : self.fixedratebond.cashflows()}
-        else:
-            value = "Bond not evaluated"
-        return value
+class FloatingRateBond(Bond):
+    def __init__(self,setupparams):
+        Bond.__init__(self,setupparams)
+        self.coupon_index = setupparams['coupon_index']
+        self.coupon_spread = [setupparams['coupon_spread']]
+        self.inArrears = setupparams['inArrears']
+        self.bondobject = ql.FloatingRateBond(self.settlement_days,
+                                              self.facevalue,
+                                              self.getSchedule(),
+                                              self.coupon_index,
+                                              self.day_count,
+                                              self.business_convention,
+                                              spreads=self.coupon_spread,
+                                              inArrears=self.inArrears)
+            
+
         
         
         

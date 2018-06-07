@@ -151,4 +151,18 @@ def get_date_vector(date_from_db):
             dateList.append(date_from_db[0][i] + relativedelta.relativedelta(years=int(date_from_db[1][i].split(" ")[0])))
     dateList = [ql.Date(dt.day,dt.month,dt.year) for dt in dateList]
     return dateList
+
+def args_inspector(args):
+    """
+    Does checks if the arguments are valid.
+    """
+    check = True
+    wrong_arg = ""
+    for arg_name in args:
+        if args[arg_name] == "":
+            check = False
+            wrong_arg = wrong_arg + "|"+arg_name+"-"+args[arg_name]
+    return [check,wrong_arg]
+
+            
     

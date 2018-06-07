@@ -18,14 +18,21 @@ class TermStructure:
     def __init__(self,reference_date):
         self.reference_date = reference_date
         
-    
-class InterestRates(TermStructure):
+class YieldCurveTermStructure(TermStructure):
     """
-    The Interest Rate class is the most fundamental class. It signifies the business 
+    The YieldCurveTermStructure class is the most fundamental class. It signifies the business 
     idea of the Yield Curve. This class will encapsulate the rates data and will have
     methods to calculate the Discount Factors, Forward Curve etc. 
     """
+    def __init__(self,reference_date):
+        self.reference_date = reference_date
     
+    
+class SpotZeroYieldCurve(YieldCurveTermStructure):
+    """
+    The SpotZeroYieldCurve class represents the yield curve generated from spot zero 
+    rates.
+    """
     
     def __init__(self,currency,reference_date):
         self.currency = currency
@@ -37,17 +44,41 @@ class InterestRates(TermStructure):
         self.interpolation = ql.Linear()
         #self.spot_rates = ['sd']
         self.__setDBRates()
+        ql.Settings.instance().evaluationDate = ql.Date(self.reference_date.day,
+                                                        self.reference_date.month,
+                                                        self.reference_date.year)
+        self.spotCurve = ql.ZeroCurve(self.spot_rates[0],
+                                 self.spot_rates[1],
+                                 self.day_count,
+                                 self.calendar,
+                                 self.interpolation,
+                                 self.compounding,
+                                 self.compounding_frequency)
         
     def setupCurve(self,setupparams):
-        self.spot_rates = setupparams['spot_rates'] #List, a 2D array of dates and spot rates
+        try:
+            self.spot_rates = setupparams['spot_rates'] #List, a 2D array of dates and spot rates
+        except:
+            pass
         self.compounding = setupparams['compounding']
         self.compounding_frequency = setupparams['compounding_frequency']
         self.day_count = setupparams['day_count']
         self.calendar = setupparams['calendar']
         self.interpolation = setupparams['interpolation']
+        
+        ql.Settings.instance().evaluationDate = ql.Date(self.reference_date.day,
+                                                        self.reference_date.month,
+                                                        self.reference_date.year)
+        self.spotCurve = ql.ZeroCurve(self.spot_rates[0],
+                                 self.spot_rates[1],
+                                 self.day_count,
+                                 self.calendar,
+                                 self.interpolation,
+                                 self.compounding,
+                                 self.compounding_frequency)
 
     def __setDBRates(self):
-        sql = "select curvedate, tenor, yield from yieldcurve where curve = 'INR' and curvedate='"+ self.reference_date.strftime('%Y-%m-%d')+"'"
+        sql = "select curvedate, tenor, yield from yieldcurve where curve = '"+self.currency+"' and curvedate='"+ self.reference_date.strftime('%Y-%m-%d')+"'"
         engine = mrigutilities.sql_engine()
         
         rates_df = pd.read_sql(sql,engine)
@@ -61,17 +92,6 @@ class InterestRates(TermStructure):
         self.spot_rates = [spot_dates,spot_yields]        
         
     def getSpotCurve(self):
-        
-        ql.Settings.instance().evaluationDate = ql.Date(self.reference_date.day,
-                                                        self.reference_date.month,
-                                                        self.reference_date.year)
-        self.spotCurve = ql.ZeroCurve(self.spot_rates[0],
-                                 self.spot_rates[1],
-                                 self.day_count,
-                                 self.calendar,
-                                 self.interpolation,
-                                 self.compounding,
-                                 self.compounding_frequency)
         
         return self.spotCurve
     #0.9846802113323603
@@ -167,7 +187,7 @@ class Volatilty(TermStructure):
         
         return vol_ts_handle
 
-class FlatForwardYield(InterestRates):
+class FlatForwardYieldCurve(YieldCurveTermStructure):
     """
     Flat Forward Yield class to generate constant yield term structure
     """
@@ -182,12 +202,12 @@ class FlatForwardYield(InterestRates):
     def setupCurve(self,setupparams):
         self.day_count = setupparams['day_count']
         self.calendar = setupparams['calendar']
-        self.interpolation = setupparams['interpolation']     
-
-    def getCurve(self):
-        flat_ts = ql.FlatForward(self.reference_date,
+        self.flat_ts = ql.FlatForward(ql.Date(self.reference_date.day,
+                                              self.reference_date.month,
+                                              self.reference_date.year),
                                      self.flat_rate,
                                      self.day_count)
-        flat_ts_handle = ql.YieldTermStructureHandle(flat_ts)
+        self.flat_ts_handle = ql.YieldTermStructureHandle(self.flat_ts)
         
-        return flat_ts_handle
+    def getCurve(self):
+        return self.flat_ts_handle
