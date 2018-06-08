@@ -52,5 +52,9 @@ class Libor(Index):
         
     def getName(self):
         return self.name
+    
+    def addFixing(self,fixing_list):
+            self.index.addFixings(fixing_list[0],fixing_list[1])
+
         
         

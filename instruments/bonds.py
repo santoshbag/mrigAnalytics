@@ -43,14 +43,17 @@ class Bond(Product):
                                self.month_end)
         return schedule
     
-    def getAnalytics(self):
+    def getAnalytics(self,yieldcurvehandle):
+        bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
+        self.bondobject.setPricingEngine(bondEngine)
+        self.is_valued = True
         if self.is_valued:
             bond_analytics = {'NPV':self.bondobject.NPV(),
                               'cleanPrice' : self.bondobject.cleanPrice(),
-                              'dirtyPrice' : self.bondobject.dirtyPrice(),
-                              'Yield':self.bondobject.bondYield(),
-                              'Spread' : self.bondobject.bondYield(),
-                              'Cash Flows' : self.bondobject.cashflows()}
+                              'dirtyPrice' : self.bondobject.dirtyPrice()}
+                              #'Yield':self.bondobject.bondYield(),
+                              #'Spread' : self.bondobject.bondYield(),
+                              # 'cashflows' : self.bondobject.cashflows()}
         else:
             bond_analytics = "Bond not evaluated"
         return bond_analytics
@@ -76,6 +79,12 @@ class FloatingRateBond(Bond):
         self.coupon_index = setupparams['coupon_index']
         self.coupon_spread = [setupparams['coupon_spread']]
         self.inArrears = setupparams['inArrears']
+        self.cap = setupparams['cap']
+        self.floor = setupparams['floor']
+        self.fixing = setupparams['fixing']
+        if self.fixing != None:
+            fixingdate = [self.coupon_index.fixingDate(ql.Settings.instance().evaluationDate)]
+            self.coupon_index.addFixings(fixingdate,[self.fixing])
         self.bondobject = ql.FloatingRateBond(self.settlement_days,
                                               self.facevalue,
                                               self.getSchedule(),
@@ -83,7 +92,24 @@ class FloatingRateBond(Bond):
                                               self.day_count,
                                               self.business_convention,
                                               spreads=self.coupon_spread,
-                                              inArrears=self.inArrears)
+                                              inArrears=self.inArrears,
+                                              caps=[],
+                                              floors=[])
+    def setBlackPricer(self):
+        pricer = ql.BlackIborCouponPricer()
+
+        # optionlet volatilities
+        volatility = 0.10;
+        vol = ql.ConstantOptionletVolatility(self.settlement_days,
+                                          self.calendar,
+                                          self.business_convention,
+                                          volatility,
+                                          self.day_count)
+        
+        pricer.setCapletVolatility(ql.OptionletVolatilityStructureHandle(vol))
+        #setCouponPricer(floatingRateBond.cashflows(),pricer)
+        ql.setCouponPricer(self.bondobject.cashflows(),pricer)
+        
             
 
         

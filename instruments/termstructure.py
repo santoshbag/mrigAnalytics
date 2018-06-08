@@ -47,6 +47,7 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
         ql.Settings.instance().evaluationDate = ql.Date(self.reference_date.day,
                                                         self.reference_date.month,
                                                         self.reference_date.year)
+        #print(self.spot_rates)
         self.spotCurve = ql.ZeroCurve(self.spot_rates[0],
                                  self.spot_rates[1],
                                  self.day_count,
@@ -91,7 +92,7 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
         spot_yields.insert(0,0.0)
         self.spot_rates = [spot_dates,spot_yields]        
         
-    def getSpotCurve(self):
+    def getCurve(self):
         
         return self.spotCurve
     #0.9846802113323603
@@ -120,9 +121,9 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
         discount_factor = [self.spotCurve.discount(ql.Date(date.day,date.month,date.year)) for date in dates]
         return discount_factor
     
-    def getSpotCurveHandle(self):
+    def getCurveHandle(self):
         
-        spotCurve = self.getSpotCurve()
+        spotCurve = self.getCurve()
         spotCurveHandle = ql.YieldTermStructureHandle(spotCurve)
         
         return spotCurveHandle    
@@ -205,9 +206,14 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
         self.flat_ts = ql.FlatForward(ql.Date(self.reference_date.day,
                                               self.reference_date.month,
                                               self.reference_date.year),
-                                     self.flat_rate,
-                                     self.day_count)
+                                              self.flat_rate,
+                                              self.day_count,
+                                              ql.Compounded,
+                                              ql.Semiannual)
         self.flat_ts_handle = ql.YieldTermStructureHandle(self.flat_ts)
         
     def getCurve(self):
+        return self.flat_ts
+    
+    def getCurveHandle(self):
         return self.flat_ts_handle
