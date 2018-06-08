@@ -19,6 +19,9 @@ import instruments.qlMaps as qlMaps
 objectmap = {}
 
 @xw.func
+def argcheck(x):
+    return x+5
+@xw.func
 @xw.arg('x', pd.DataFrame, index=True, header=True)
 @xw.ret(index=True, header=True,expand='table')
 def CORREL2(x):
@@ -27,9 +30,12 @@ def CORREL2(x):
 
 @xw.func
 #@xw.arg('yielddata', dict)
-@xw.ret(expand='table')
+@xw.ret(expand='table', transpose=True)
 def objectcheck():
-    return objectmap
+    keys=[]
+    for obj in objectmap.keys():
+        keys.append(str(obj))
+    return keys
 
 @xw.func
 #@xw.arg('yielddata', dict)
@@ -110,7 +116,7 @@ def mrigxl_Libor(index_name,
             objid = objid + "|" + str(args[key]) 
             
         if yieldcurvehandle.strip() in objectmap.keys():
-            ych = objectmap[yieldcurvehandle.strip()].getCurve()
+            ych = objectmap[yieldcurvehandle.strip()].getCurveHandle()
             libor = index.Libor(args['index_name'],
                                 args['tenor'],
                                 args['settlement_days'],
@@ -126,20 +132,23 @@ def mrigxl_Libor(index_name,
 @xw.func
 #@xw.arg('bonddata', dict)
 def mrigxl_Bond(issue_name,
-                         issue_date,
-                         maturity_date,
-                         face_value=100,
-                         day_count='30-360',
-                         calendar='India',
-                         business_convention='Following',
-                         month_end='True',
-                         settlement_days=3,
-                         date_generation='Backward',
-                         coupon_frequency='Semiannual',
-                         fixed_coupon_rate=None,
-                         floating_coupon_index=None,
-                         floating_coupon_spread=0,
-                         inArrears=True):
+                 issue_date,
+                 maturity_date,
+                 face_value=100,
+                 day_count='30-360',
+                 calendar='India',
+                 business_convention='Following',
+                 month_end='True',
+                 settlement_days=3,
+                 date_generation='Backward',
+                 coupon_frequency='Semiannual',
+                 fixed_coupon_rate=None,
+                 floating_coupon_index=None,
+                 floating_coupon_spread=0,
+                 inArrears=True,
+                 cap=None,
+                 floor=None,
+                 fixing=None):
     
     
     bondType = None
@@ -184,8 +193,23 @@ def mrigxl_Bond(issue_name,
             if bondType == 'floatingratebond':
                 args['coupon_index'] = objectmap[floating_coupon_index.strip()].getIndex()
                 args['coupon_spread'] = floating_coupon_spread
+                if cap != None :
+                    args['cap'] = [cap]
+                else:
+                    args['cap'] = []
+                if floor != None :
+                    args['floor'] = [floor]
+                else:
+                    args['floor'] = []
+                args['fixing'] = fixing
                 bond = bonds.FloatingRateBond(args)
-                objid = "Floating Rate Bond|"+objectmap[floating_coupon_index.strip()].getName()+"+" + str(floating_coupon_spread) + objid
+                bond.setBlackPricer()
+                objid = "Floating Rate Bond|" \
+                        + objectmap[floating_coupon_index.strip()].getName()+"+" \
+                        + str(floating_coupon_spread) \
+                        + "|" + str(args['cap']) \
+                        + "|" + str(args['floor']) \
+                        + "|" + str(args['fixing']) + objid
             
             objectmap[objid] = bond
         else:
@@ -194,6 +218,23 @@ def mrigxl_Bond(issue_name,
         objid = 'Bond Type not assigned'
     return objid
 
+@xw.func
+@xw.arg('args', dict)
+@xw.ret(expand='table')
+def mrigxl_Analytics(assetobjectid,args):
+    resultset = {'Heads' : 'Values'}
+    assettype = str(type(objectmap[assetobjectid]))[8:-2].split(".")[-1]
+    #resultset = assettype
+    #Asset is Bond
+    if assettype in ["FixedRateBond", "FloatingRateBond", "Bond"]:
+        discount_curve_id = args['Discount Curve']
+        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        resultset.update(objectmap[assetobjectid].getAnalytics(discount_curve_handle))
+        
+    #Asset is Option
+    return resultset
+    
+    
 @xw.func
 def setPricing(bondHandle, curvehandle):
     bond = objectmap[bondHandle]
