@@ -4,10 +4,12 @@ Created on Thu May 31 15:11:09 2018
 
 @author: Santosh Bag
 """
-
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
-from portfolio import Product
+from instruments.portfolio import Product
+import instruments.qlMaps as qlMaps
 
 class Option(Product):
     
@@ -32,29 +34,27 @@ class VanillaEuropeanOption(Option):
     def __init__(self,setupparams):
         Option.__init__(self,setupparams)
         self.strike = setupparams['strike']
-        self.type = [setupparams['type']]
-        self.option_name = self.underlying_name+" "+self.type+" Option "+self.maturity_date.strftime('%d-%m-%Y')
-        payoff = ql.PlainVanillaPayoff(Option.option_type[self.type],
+        self.type = setupparams['option_type']
+        self.option_name = self.underlying_name+" "+str(self.type)  +" Option "+self.maturity_date.strftime('%d-%m-%Y')
+        payoff = ql.PlainVanillaPayoff(self.type,
                                        self.strike)
-        exercise = ql.EuropeanExercise(ql.Date(self.maturity_date.day,
-                                               self.maturity_date.month,
-                                               self.maturity_date.year))
+        exercise = ql.EuropeanExercise(qlMaps.qlDates(self.maturity_date))
         self.vanilla_european_option = ql.VanillaOption(payoff,exercise)
         
     def valuation(self,
                   underlying_spot,
-                  yieldcurvehandle,
-                  volcurvehandle,
-                  dividendcurvehandle,
-                  method='BSM',
+                  yieldcurve,
+                  volcurve,
+                  dividendcurve,
+                  method='Black Scholes',
                   steps=100):
         underlying_quote = ql.SimpleQuote(underlying_spot)
         underlying_quote_handle = ql.QuoteHandle(underlying_quote)
         bsm_process = ql.BlackScholesMertonProcess(underlying_quote_handle,
-                                                       dividendcurvehandle,
-                                                       yieldcurvehandle,
-                                                       volcurvehandle)
-        if method == 'BSM':
+                                                       dividendcurve.getCurveHandle(),
+                                                       yieldcurve.getCurveHandle(),
+                                                       volcurve.getCurveHandle())
+        if method == 'Black Scholes':
             optionEngine = ql.AnalyticEuropeanEngine(bsm_process)
         else:
             optionEngine = ql.BinomialVanillaEngine(bsm_process,'crr',steps)
@@ -62,17 +62,32 @@ class VanillaEuropeanOption(Option):
         self.vanilla_european_option.setPricingEngine(optionEngine)
         self.is_valued = True
         
-    def getValue(self):
+    def getAnalytics(self):
         if self.is_valued:
             value = {'NPV':self.vanilla_european_option.NPV(),
                      'delta' : self.vanilla_european_option.delta(),
                      'gamma' : self.vanilla_european_option.gamma(),
-                     'theta' : self.vanilla_european_option.theta(),
-                     'theta_per_day' : self.vanilla_european_option.thetaPerDay(),
-                     'rho' : self.vanilla_european_option.rho(),
-                     'vega' : self.vanilla_european_option.vega(),
-                     'strike_sensitivity' : self.vanilla_european_option.strikeSensitivity(),
-                     'dividendRho' : self.vanilla_european_option.dividendRho()}
+                     'theta' : self.vanilla_european_option.theta()}
+            try:
+                value.update({'theta_per_day' : self.vanilla_european_option.thetaPerDay()})
+            except:
+                pass
+            try:
+                value.update({'rho' : self.vanilla_european_option.rho()})
+            except:
+                pass
+            try:
+                value.update({'vega' : self.vanilla_european_option.vega()})
+            except:
+                pass
+            try:
+                value.update({'strike_sensitivity' : self.vanilla_european_option.strikeSensitivity()})
+            except:
+                pass
+            try:
+                value.update({'dividendRho' : self.vanilla_european_option.dividendRho()})
+            except:
+                pass
         else:
-            value = "Bond not evaluated"
+            value = {"Status ":"Option not evaluated"}
         return value
