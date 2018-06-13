@@ -12,6 +12,7 @@ from dateutil import relativedelta
 import datetime,nsepy
 import mrigstatics
 import QuantLib as ql
+import datetime
 
 
 def get_last_row(csv_filename,lines=1):
@@ -164,5 +165,7 @@ def args_inspector(args):
             wrong_arg = wrong_arg + "|"+arg_name+"-"+args[arg_name]
     return [check,wrong_arg]
 
+def python_dates(qldates):
+    return datetime.date(qldates.year(),qldates.month(),qldates.dayOfMonth())
             
     
