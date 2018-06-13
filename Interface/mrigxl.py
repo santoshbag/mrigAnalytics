@@ -22,11 +22,13 @@ from pywintypes import Time
 objectmap = {}
 
 @xw.func
-@xw.arg('x', ndim=2, transpose=True)
+#@xw.arg('x', ndim=2, transpose=True)
 @xw.ret(expand='table', index= True, transpose=False)
 def argcheck(x):
-
-    return str(x[0])
+    re = "not assigned"
+    if x == None:
+        re = True
+    return re
 @xw.func
 @xw.arg('x', pd.DataFrame, index=True, header=True)
 @xw.ret(index=True, header=True,expand='table')
@@ -245,7 +247,8 @@ def mrigxl_Bond(issue_name,
         bondType = 'fixedratebond'
     if conversionRatio != None:
         bondType = 'convertiblebond'
-
+    if ((conversionRatio == None) and not(None in [call_schedule,put_schedule])):
+        bondType = 'callablebond'
     
     if bondType != None:    
     
@@ -315,9 +318,19 @@ def mrigxl_Bond(issue_name,
                         + "|" +str(conversionPrice) \
                         + "|" +str(credit_spread) \
                         + "|"  +objid
-    
+
+            if bondType == 'callablebond':
+                args['coupon_rates'] = fixed_coupon_rate
+                args['call_schedule'] = call_schedule
+                args['put_schedule'] = put_schedule
+                bond = bonds.FixedRateCallableBond(args)
+                #bond = "tst"
+                objid = "Callable Bond "\
+                        + "|" + str(fixed_coupon_rate)\
+                        + "|" + objid
             
             objectmap[objid] = bond
+
         else:
             objid = "Error in arguments -->"+mu.args_inspector(args)[1]
     else:
@@ -380,6 +393,7 @@ def mrigxl_Analytics(assetobjectid,args):
 #        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
         bond = objectmap[assetobjectid]
         bond.valuation(objectmap[discount_curve_id])
+        resultset.update(bond.getAnalytics())
         
     if assettype in ["FixedRateConvertibleBond"]:
         underlying_spot = args['Underlying Spot']
@@ -394,7 +408,23 @@ def mrigxl_Analytics(assetobjectid,args):
                          objectmap[volatility_curve_id],
                          objectmap[dividend_curve_id])
 
-        resultset.update(objectmap[assetobjectid].getAnalytics())
+        resultset.update(bond.getAnalytics())
+    
+    if assettype in ["FixedRateCallableBond"]:
+        discount_curve_id = args['Discount Curve']
+        mean_reversion = args['Mean Reversion']
+        rate_vol = args['Short Rate Vol']
+        grid_points = args['Hull White Grid Pts']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        bond = objectmap[assetobjectid]
+        bond.valuation(objectmap[discount_curve_id],
+                       mean_reversion,
+                       rate_vol,
+                       int(grid_points))
+
+        resultset.update(bond.getAnalytics())
+
     if 'cashflows' in resultset.keys():
         for tup in resultset['cashflows']:
             cashflow[Time(tup[0])] = tup[1]
