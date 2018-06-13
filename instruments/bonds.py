@@ -208,7 +208,64 @@ class FixedRateConvertibleBond(Bond):
             self.valuation_params.update({'yieldcurve':yieldcurve,
                                           'volcurve': volcurve,
                                           'dividendcurve': dividendcurve})
-                                                
+ 
+
+class FixedRateCallableBond(Bond):
+    def __init__(self,setupparams):
+        Bond.__init__(self,setupparams)
+        self.coupon_rates = [setupparams['coupon_rates']]
+        self.call_schedule = setupparams['call_schedule']
+        self.put_schedule = setupparams['put_schedule']
+        
+        ## Create call and put schedule
+        
+        callability_schedule = ql.CallabilitySchedule()
+        try:
+            for call_date, call_price in zip(self.call_schedule[0],self.call_schedule[1]):
+                callability_price = ql.CallabilityPrice(call_price,ql.CallabilityPrice.Clean)
+                callability_schedule.append(ql.Callability(callability_price,
+                                                           ql.Callability.Call,qlMaps.qlDates(call_date)))
+        except:
+            pass
+        try:
+            for put_date, put_price in zip(self.put_schedule[0],self.put_schedule[1]):
+                puttability_price = ql.CallabilityPrice(put_price,ql.CallabilityPrice.Clean)
+                callability_schedule.append(ql.Callability(puttability_price,
+                                                           ql.Callability.Put,qlMaps.qlDates(put_date)))            
+        except:
+            pass
+        #calc_date = ql.Settings.instance().evaluationDate
+              
+        self.bondobject = ql.CallableFixedRateBond(self.settlement_days,
+                                                   self.facevalue,     
+                                                   self.getSchedule(),
+                                                   self.coupon_rates,
+                                                   self.day_count,
+                                                   self.business_convention,
+                                                   self.facevalue,
+                                                   qlMaps.qlDates(self.issue_date),
+                                                   callability_schedule)
+
+    def valuation(self,
+                  yieldcurve,
+                  mean_reversion=0.03,
+                  rate_vol=0.12,
+                  grid_points=40):
+
+            short_rate_model = ql.HullWhite(yieldcurve.getCurveHandle(),
+                                            mean_reversion,
+                                            rate_vol)
+    
+            bondEngine = ql.TreeCallableFixedRateBondEngine(short_rate_model,
+                                                            grid_points)
+            
+            self.bondobject.setPricingEngine(bondEngine)
+            self.is_valued = True
+            self.valuation_params.update({'yieldcurve':yieldcurve,
+                                          'mean_reversion': mean_reversion,
+                                          'rate_vol': rate_vol,
+                                          'grid_points':grid_points})
+                                               
 
         
         
