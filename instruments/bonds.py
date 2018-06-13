@@ -8,6 +8,8 @@ import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
+import mrigutilities as mu
+import instruments.qlMaps as qlMaps
 
 from instruments.portfolio import Product
 
@@ -26,6 +28,7 @@ class Bond(Product):
         self.month_end = setupparams['month_end']
         self.date_generation = setupparams['date_generation']
         self.bondobject = None
+        self.valuation_params = {}
         self.is_valued = False
         
     def getSchedule(self):
@@ -43,25 +46,43 @@ class Bond(Product):
                                self.month_end)
         return schedule
     
-    def getAnalytics(self,yieldcurvehandle):
-        bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
-        self.bondobject.setPricingEngine(bondEngine)
-        self.is_valued = True
+    def getAnalytics(self):
         if self.is_valued:
-            bond_analytics = {'NPV':self.bondobject.NPV(),
-                              'cleanPrice' : self.bondobject.cleanPrice(),
-                              'dirtyPrice' : self.bondobject.dirtyPrice()}
-                              #'Yield':self.bondobject.bondYield(),
-                              #'Spread' : self.bondobject.bondYield(),
-                              # 'cashflows' : self.bondobject.cashflows()}
+            yieldcurve = self.valuation_params['yieldcurve']
+            npv = self.bondobject.NPV()
+            cleanprice = self.bondobject.cleanPrice()
+            dirtyprice = self.bondobject.dirtyPrice()
+            accrued_interest = self.bondobject.accruedAmount()
+            YTM = self.bondobject.bondYield(self.day_count,ql.Compounded,self.coupon_frequency)
+            YTMObj = ql.InterestRate(YTM,self.day_count,ql.Compounded,self.coupon_frequency)
+            zspread = ql.BondFunctions.zSpread(self.bondobject,dirtyprice,yieldcurve.getCurve(),self.day_count,ql.Compounded,self.coupon_frequency)
+            modduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Modified)
+            simduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Simple)
+            macduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Macaulay)
+            convexity = ql.BondFunctions.convexity(self.bondobject,YTMObj)
+            cashflow = [(mu.python_dates(c.date()),c.amount()) for c in self.bondobject.cashflows()]
+            #cashflowamount = [c.amount() for c in self.bondobject.cashflows()]
+            bond_analytics = {'NPV':npv,
+                              'cleanPrice' : cleanprice,
+                              'dirtyPrice' : dirtyprice,
+                              'accruedAmount' : accrued_interest,
+                              'Yield': YTM,
+                              'Spread' : zspread,
+                              'Modified Duration' : modduration,
+                              'Simple Duration' : simduration,
+                              'Macualay Duration' : macduration,
+                              'Convexity' : convexity,
+                              'cashflows' : cashflow}
         else:
-            bond_analytics = "Bond not evaluated"
-        return bond_analytics
+            bond_analytics = {'Bond Status':'Bond not evaluated'}
+        return bond_analytics#self.valuation_params.update({"class" : "Convertible"})
     
-    def valuation(self,yieldcurvehandle):
+    def valuation(self,yieldcurve):
+        yieldcurvehandle = yieldcurve.getCurveHandle()
         bondEngine = ql.DiscountingBondEngine(yieldcurvehandle)
         self.bondobject.setPricingEngine(bondEngine)
         self.is_valued = True
+        self.valuation_params.update({'yieldcurve':yieldcurve})
     
 class FixedRateBond(Bond):
     def __init__(self,setupparams):
@@ -84,6 +105,7 @@ class FloatingRateBond(Bond):
         self.fixing = setupparams['fixing']
         if self.fixing != None:
             fixingdate = [self.coupon_index.fixingDate(ql.Settings.instance().evaluationDate)]
+            ql.IndexManager.instance().clearHistory(self.coupon_index.name())
             self.coupon_index.addFixings(fixingdate,[self.fixing])
         self.bondobject = ql.FloatingRateBond(self.settlement_days,
                                               self.facevalue,
@@ -112,10 +134,81 @@ class FloatingRateBond(Bond):
         
             
 
+class FixedRateConvertibleBond(Bond):
+    def __init__(self,setupparams):
+        Bond.__init__(self,setupparams)
+        self.coupon_rates = [setupparams['coupon_rates']]
+        self.conversion_ratio = setupparams['conversion_ratio']
+        self.conversion_price = setupparams['conversion_price']
+        self.call_schedule = setupparams['call_schedule']
+        self.put_schedule = setupparams['put_schedule']
+        self.dividend_schedule = setupparams['dividend_schedule']
+        self.credit_spread = setupparams['credit_spread']
         
+        ## Create call and put schedule
         
+        callability_schedule = ql.CallabilitySchedule()
+        try:
+            for call_date, call_price in zip(self.call_schedule[0],self.call_schedule[1]):
+                callability_price = ql.CallabilityPrice(call_price,ql.CallabilityPrice.Clean)
+                callability_schedule.append(ql.Callability(callability_price,
+                                                           ql.Callability.Call,qlMaps.qlDates(call_date)))
+        except:
+            pass
+        try:
+            for put_date, put_price in zip(self.put_schedule[0],self.put_schedule[1]):
+                puttability_price = ql.CallabilityPrice(put_price,ql.CallabilityPrice.Clean)
+                callability_schedule.append(ql.Callability(puttability_price,
+                                                           ql.Callability.Put,qlMaps.qlDates(put_date)))            
+        except:
+            pass
+        ## Create dividend schedule
+        dividend_schedule = ql.DividendSchedule()
+        try:
+            for div_date, div_amount in zip(self.dividend_schedule[0],self.dividend_schedule[1]):
+                dividend_schedule.append(ql.FixedDividend(div_amount,qlMaps.qlDates(div_date)))            
+        except:
+            pass
+        calc_date = ql.Settings.instance().evaluationDate
+        print(calc_date)                                
+        #American Exercise
         
-                                            
+        exercise = ql.AmericanExercise(calc_date,qlMaps.qlDates(self.maturity_date))
+        credit_spread_handle = ql.QuoteHandle(ql.SimpleQuote(self.credit_spread))
+        
+        self.bondobject = ql.ConvertibleFixedCouponBond(exercise,
+                                                        self.conversion_ratio,
+                                                        dividend_schedule,
+                                                        callability_schedule,
+                                                        credit_spread_handle,
+                                                        qlMaps.qlDates(self.issue_date),
+                                                        self.settlement_days,
+                                                        self.coupon_rates,  
+                                                        self.day_count,  
+                                                        self.getSchedule(),
+                                                        self.facevalue)
+        
+    def valuation(self,
+                  underlying_spot,
+                  yieldcurve,
+                  volcurve,
+                  dividendcurve,
+                  steps=1000):
+
+            underlying_quote = ql.SimpleQuote(underlying_spot)
+            underlying_quote_handle = ql.QuoteHandle(underlying_quote)
+            bsm_process = ql.BlackScholesMertonProcess(underlying_quote_handle,
+                                                           dividendcurve.getCurveHandle(),
+                                                           yieldcurve.getCurveHandle(),
+                                                           volcurve.getCurveHandle())
+            bondEngine = ql.BinomialConvertibleEngine(bsm_process,'crr',steps)
+            
+            self.bondobject.setPricingEngine(bondEngine)
+            self.is_valued = True
+            self.valuation_params.update({'yieldcurve':yieldcurve,
+                                          'volcurve': volcurve,
+                                          'dividendcurve': dividendcurve})
+                                                
 
         
         
