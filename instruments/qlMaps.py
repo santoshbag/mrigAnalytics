@@ -30,6 +30,7 @@ COMPOUNDING = {'Compounded' : ql.Compounded,
 
 FREQUENCY = {'Annual' : ql.Annual,
              'Semiannual': ql.Semiannual,
+             'Quarterly' : ql.Quarterly,
              'Monthly' : ql.Monthly,
              'Weekly' : ql.Weekly,
              'Daily' : ql.Daily}
@@ -53,6 +54,9 @@ DATE_GENERATION = {'Backward' : ql.DateGeneration.Backward,
 
 INTERPOLATION = {'Linear' : ql.Linear()}
 
+OPTION = {'Call' : ql.Option.Call,
+          'Put' : ql.Option.Put}
+
 QL = {**CURRENCY, **CALENDAR, **DAYCOUNT}
 QL = CURRENCY
 QL.update(CALENDAR)
@@ -62,6 +66,7 @@ QL.update(FREQUENCY)
 QL.update(BUSINESS_CONVENTION)
 QL.update(DATE_GENERATION)
 QL.update(INTERPOLATION)
+QL.update(OPTION)
 
 
 
@@ -72,6 +77,11 @@ def period(period):
            'Y' : ql.Years}
     
     return ql.Period(int(period[:-1]),map[period[-1]])
+
+def qlDates(date):
+    return ql.Date(date.day,
+                   date.month,
+                   date.year)
 
                      
 
