@@ -14,6 +14,7 @@ import QuantLib as ql
 import mrigutilities as mu
 import instruments.termstructure as ts
 import instruments.bonds as bonds
+import instruments.swaps as swaps
 import instruments.options as options
 import instruments.index as index
 import instruments.qlMaps as qlMaps
@@ -25,10 +26,11 @@ objectmap = {}
 #@xw.arg('x', ndim=2, transpose=True)
 @xw.ret(expand='table', index= True, transpose=False)
 def argcheck(x):
-    re = "not assigned"
+    re = ql.Settings.instance().evaluationDate
+    re = mu.python_dates(re)
     if x == None:
-        re = True
-    return re
+        x= True
+    return Time(re)
 @xw.func
 @xw.arg('x', pd.DataFrame, index=True, header=True)
 @xw.ret(index=True, header=True,expand='table')
@@ -338,6 +340,96 @@ def mrigxl_Bond(issue_name,
     return objid
 
 @xw.func
+def mrigxl_Swap(fixed_pay,
+                 maturity_date,
+                 face_value,
+                 fixedleg_day_count='30-360',
+                 fixedleg_calendar='India',
+                 fixedleg_business_convention='Following',
+                 fixedleg_month_end='True',
+                 fixedleg_date_generation='Backward',
+                 fixedleg_coupon_frequency='Semiannual',
+                 fixedleg_coupon_rate=None,
+                 floatleg_day_count='30-360',
+                 floatleg_calendar='India',
+                 floatleg_business_convention='Following',
+                 floatleg_month_end='True',
+                 floatleg_date_generation='Backward',
+                 floatleg_coupon_frequency='Semiannual',
+                 floatleg_index=None,
+                 floatleg_coupon_spread=0,
+                 floatleg_fixing=None):
+    
+    
+    swapType = None
+    # Check for fixed rate bond
+    if fixedleg_coupon_rate != None:
+        swapType = 'fixedfloatswap'
+    
+    if swapType != None:    
+    
+        fixedleg_args = {'pay_recieve_flag':fixed_pay.strip(),
+                'maturity_date':maturity_date,
+                'facevalue':face_value,                      
+                'day_count':fixedleg_day_count.strip(),
+                'calendar': fixedleg_calendar.strip(),
+                'business_convention' : fixedleg_business_convention.strip(),
+                'month_end': fixedleg_month_end,
+                'date_generation' :fixedleg_date_generation.strip(),
+                'coupon_frequency' :fixedleg_coupon_frequency.strip()}
+
+        floatleg_args = {'day_count':floatleg_day_count.strip(),
+                'calendar': floatleg_calendar.strip(),
+                'business_convention' : floatleg_business_convention.strip(),
+                'month_end': floatleg_month_end,
+                'date_generation' :floatleg_date_generation.strip(),
+                'coupon_frequency' :floatleg_coupon_frequency.strip()}  
+        
+        objid = ''
+        if (mu.args_inspector(fixedleg_args)[0] and mu.args_inspector(floatleg_args)[0]):
+            for key in fixedleg_args:
+                objid = objid + "|" + str(fixedleg_args[key]) 
+            for key in floatleg_args:
+                objid = objid + "|" + str(floatleg_args[key]) 
+            
+            
+            for arg_name in fixedleg_args:
+                try:
+                    fixedleg_args[arg_name] = qlMaps.QL[fixedleg_args[arg_name]]
+                except:
+                    pass
+
+            for arg_name in floatleg_args:
+                try:
+                    floatleg_args[arg_name] = qlMaps.QL[floatleg_args[arg_name]]
+                except:
+                    pass
+                
+                
+            if swapType == 'fixedfloatswap':
+                fixedleg_args['coupon_rates'] = fixedleg_coupon_rate
+                floatleg_args['coupon_index'] = objectmap[floatleg_index.strip()].getIndex()
+                floatleg_args['coupon_spread'] = floatleg_coupon_spread
+                floatleg_args['fixing'] = floatleg_fixing             
+                swap = swaps.VanillaFixedFLoatSwap(fixedleg_args,floatleg_args)
+                objid = "Fixed Float Swap | " \
+                        + '{0:.2%}'.format(fixedleg_coupon_rate) \
+                        + "|" + objectmap[floatleg_index.strip()].getName()+"+" \
+                        + str(floatleg_coupon_spread) \
+                        + "|" + str(floatleg_args['fixing']) + objid
+            
+            objectmap[objid] = swap
+
+        else:
+            objid = "Error in arguments -->" \
+                    + mu.args_inspector(fixedleg_args)[1] \
+                    + mu.args_inspector(floatleg_args)[1]
+    else:
+        objid = 'Swap Type not assigned'
+    return objid
+
+
+@xw.func
 #@xw.arg('bonddata', dict)
 def mrigxl_Option(option_name,
                  underlying_name,
@@ -372,6 +464,10 @@ def mrigxl_Option(option_name,
         if exercise_type == 'European':
             option = options.VanillaEuropeanOption(args)
             objid = "Vanilla European | "+ objid
+
+        if exercise_type == 'American':
+            option = options.VanillaAmericanOption(args)
+            objid = "Vanilla American | "+ objid
 
         objectmap[objid] = option
     else:
@@ -425,16 +521,46 @@ def mrigxl_Analytics(assetobjectid,args):
 
         resultset.update(bond.getAnalytics())
 
+    if assettype in ["VanillaFixedFLoatSwap"]:
+        discount_curve_id = args['Discount Curve']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        swap = objectmap[assetobjectid]
+        swap.valuation(objectmap[discount_curve_id])
+
+        resultset.update(swap.getAnalytics())
+
+#Cashflow Formatting for Display
     if 'cashflows' in resultset.keys():
+        offset=1
         for tup in resultset['cashflows']:
-            cashflow[Time(tup[0])] = tup[1]
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
         resultset['-----------------'] = '-----------------'
         resultset['Cashflow Date'] = 'Cashflow Amount'
         resultset.update(cashflow)
         resultset.pop('cashflows')
+
+    if 'Fixed Leg Cashflows' in resultset.keys():
+        offset=2
+        for tup in resultset['Fixed Leg Cashflows']:
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+        resultset['-----------------'] = '-----------------'
+        resultset['Fixed Leg Cashflow Date'] = 'Fixed Leg Cashflow Amount'
+        resultset.update(cashflow)
+        resultset.pop('Fixed Leg Cashflows')
+    if 'Floating Leg Cashflows' in resultset.keys():
+        offset=3
+        for tup in resultset['Floating Leg Cashflows']:
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+        resultset['-----------------'] = '-----------------'
+        resultset['Floating Leg Cashflow Date'] = 'Floating Leg Cashflow Amount'
+        resultset.update(cashflow)
+        resultset.pop('Floating Leg Cashflows')
+    
+    
     
     #Asset is Option
-    if assettype in ["Option", "VanillaEuropeanOption"]:
+    if assettype in ["Option", "VanillaEuropeanOption", "VanillaAmericanOption"]:
         underlying_spot = args['Underlying Spot']
         discount_curve_id = args['Discount Curve']
         volatility_curve_id = args['Volatility Curve']
