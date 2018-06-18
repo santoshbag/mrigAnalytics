@@ -15,14 +15,14 @@ import QuantLib as ql
 from datetime import date
 
 
-dt = date(2018,6,7)
+dt = date(2018,6,15)
 #ql.Settings.instance().evaluationDate = ql.Date(8,6,2018)
 
 spread = 0.01
 mat = date(2018,11,30)
 #shift = [[dt,mat],[spread,spread+.005]]
-yc = ir.SpotZeroYieldCurve('INR',dt)
-#yc = ir.Flat1ForwardYieldCurve(dt,0.002)
+#yc = ir.SpotZeroYieldCurve('INR',dt)
+yc = ir.FlatForwardYieldCurve(dt,0.002)
 #yc.setupCurve({'day_count': ql.Actual360(),
 #          'calendar': ql.India()})
 
@@ -36,9 +36,9 @@ libor = i.Libor('Libor',
                 'India',
                 '30-360',
                 yc.getCurveHandle())
-libor.index.addFixing(ql.Date(4,4,2018),0.002)
-index = ql.Euribor6M(fc)
-index.addFixing(ql.Date(6,6,2018), 0.002)
+#libor.index.addFixing(ql.Date(4,4,2018),0.002)
+#index = ql.Euribor6M(fc)
+#index.addFixing(ql.Date(6,6,2018), 0.002)
 
 
 params = {'issue_date':date(2018,4,7),
