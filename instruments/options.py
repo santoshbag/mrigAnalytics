@@ -23,12 +23,44 @@ class Option(Product):
         self.maturity_date = setupparams['maturity_date']
         self.day_count = setupparams['day_count']
         self.calendar = setupparams['calendar']
+        self.optionobject = None
+        self.valuation_params = {}
         self.is_valued = False
         #self.business_convention = setupparams['business_convention']
         #self.settlement_days = setupparams['settlement_days']
         #self.facevalue = setupparams['facevalue']
         #self.month_end = setupparams['month_end']
-        
+    
+
+    def getAnalytics(self):
+        if self.is_valued:
+            value = {'NPV':self.optionobject.NPV(),
+                     'delta' : self.optionobject.delta(),
+                     'gamma' : self.optionobject.gamma(),
+                     'theta' : self.optionobject.theta()}
+            try:
+                value.update({'theta_per_day' : self.optionobject.thetaPerDay()})
+            except:
+                pass
+            try:
+                value.update({'rho' : self.optionobject.rho()})
+            except:
+                pass
+            try:
+                value.update({'vega' : self.optionobject.vega()})
+            except:
+                pass
+            try:
+                value.update({'strike_sensitivity' : self.optionobject.strikeSensitivity()})
+            except:
+                pass
+            try:
+                value.update({'dividendRho' : self.optionobject.dividendRho()})
+            except:
+                pass
+        else:
+            value = {"Status ":"Option not evaluated"}
+        return value    
         
 class VanillaEuropeanOption(Option):
     def __init__(self,setupparams):
@@ -39,7 +71,7 @@ class VanillaEuropeanOption(Option):
         payoff = ql.PlainVanillaPayoff(self.type,
                                        self.strike)
         exercise = ql.EuropeanExercise(qlMaps.qlDates(self.maturity_date))
-        self.vanilla_european_option = ql.VanillaOption(payoff,exercise)
+        self.optionobject = ql.VanillaOption(payoff,exercise)
         
     def valuation(self,
                   underlying_spot,
@@ -59,35 +91,37 @@ class VanillaEuropeanOption(Option):
         else:
             optionEngine = ql.BinomialVanillaEngine(bsm_process,'crr',steps)
         
-        self.vanilla_european_option.setPricingEngine(optionEngine)
+        self.optionobject.setPricingEngine(optionEngine)
         self.is_valued = True
         
-    def getAnalytics(self):
-        if self.is_valued:
-            value = {'NPV':self.vanilla_european_option.NPV(),
-                     'delta' : self.vanilla_european_option.delta(),
-                     'gamma' : self.vanilla_european_option.gamma(),
-                     'theta' : self.vanilla_european_option.theta()}
-            try:
-                value.update({'theta_per_day' : self.vanilla_european_option.thetaPerDay()})
-            except:
-                pass
-            try:
-                value.update({'rho' : self.vanilla_european_option.rho()})
-            except:
-                pass
-            try:
-                value.update({'vega' : self.vanilla_european_option.vega()})
-            except:
-                pass
-            try:
-                value.update({'strike_sensitivity' : self.vanilla_european_option.strikeSensitivity()})
-            except:
-                pass
-            try:
-                value.update({'dividendRho' : self.vanilla_european_option.dividendRho()})
-            except:
-                pass
-        else:
-            value = {"Status ":"Option not evaluated"}
-        return value
+class VanillaAmericanOption(Option):
+    def __init__(self,setupparams):
+        Option.__init__(self,setupparams)
+        self.strike = setupparams['strike']
+        self.type = setupparams['option_type']
+        self.option_name = self.underlying_name+" "+str(self.type)  +" Option "+self.maturity_date.strftime('%d-%m-%Y')
+        payoff = ql.PlainVanillaPayoff(self.type,
+                                       self.strike)
+        
+        calc_date = ql.Settings.instance().evaluationDate
+        exercise = ql.AmericanExercise(calc_date,qlMaps.qlDates(self.maturity_date))
+        self.optionobject = ql.VanillaOption(payoff,exercise)
+        
+    def valuation(self,
+                  underlying_spot,
+                  yieldcurve,
+                  volcurve,
+                  dividendcurve,
+                  method='Binomial',
+                  steps=100):
+        underlying_quote = ql.SimpleQuote(underlying_spot)
+        underlying_quote_handle = ql.QuoteHandle(underlying_quote)
+        bsm_process = ql.BlackScholesMertonProcess(underlying_quote_handle,
+                                                       dividendcurve.getCurveHandle(),
+                                                       yieldcurve.getCurveHandle(),
+                                                       volcurve.getCurveHandle())
+        optionEngine = ql.BinomialVanillaEngine(bsm_process,'crr',steps)
+        
+        self.optionobject.setPricingEngine(optionEngine)
+        self.is_valued = True
+   
