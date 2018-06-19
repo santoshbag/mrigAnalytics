@@ -16,6 +16,7 @@ import instruments.termstructure as ts
 import instruments.bonds as bonds
 import instruments.swaps as swaps
 import instruments.options as options
+import instruments.capsfloors as capsfloors
 import instruments.index as index
 import instruments.qlMaps as qlMaps
 from pywintypes import Time
@@ -470,6 +471,63 @@ def mrigxl_Option(option_name,
             objid = "Vanilla American | "+ objid
 
         objectmap[objid] = option
+    else:
+        objid = "Error in arguments -->"+mu.args_inspector(args)[1]
+    return objid
+
+@xw.func
+def mrigxl_CapFloor(option_name,
+                 start_date,
+                 maturity_date,
+                 cap_or_floor,
+                 strike,
+                 face_value=1000000,
+                 day_count='30-360',
+                 calendar='India',
+                 business_convention='Following',
+                 month_end='True',
+                 settlement_days=3,
+                 date_generation='Forward',
+                 coupon_frequency='Quarterly',
+                 floating_coupon_index=None,
+                 floating_coupon_spread=0,
+                 fixing=None):
+    
+    args = {'option_name':option_name.strip(),
+            'start_date':start_date,
+            'maturity_date':maturity_date,
+            'cap_or_floor': cap_or_floor.strip(),
+            'strike':strike,
+            'facevalue':face_value,                      
+            'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'business_convention' : business_convention.strip(),
+            'month_end': month_end,
+            'settlement_days':int(settlement_days),
+            'date_generation' :date_generation.strip(),
+            'coupon_frequency' :coupon_frequency.strip()}
+    
+    objid = ''
+    if mu.args_inspector(args)[0]:
+        for key in args:
+            objid = objid + "|" + str(args[key]) 
+        
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+    
+        args['coupon_index'] = objectmap[floating_coupon_index.strip()].getIndex()
+        args['coupon_spread'] = floating_coupon_spread
+        args['fixing'] = fixing
+        capfloor = capsfloors.CapsFloors(args)
+        objid = cap_or_floor + "|" \
+                + objectmap[floating_coupon_index.strip()].getName()+"+" \
+                + str(floating_coupon_spread) \
+                + "|" + str(args['fixing']) + objid
+        
+        objectmap[objid] = capfloor
     else:
         objid = "Error in arguments -->"+mu.args_inspector(args)[1]
     return objid
