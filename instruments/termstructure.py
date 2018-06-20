@@ -130,7 +130,7 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
                                  self.compounding_frequency)
         self.curve = self.spotCurve
         
-        if self.shiftparameter[0][0] != None:
+        if self.shiftparameter != None:
             self.setShift(self.shiftparameter)
 
     def __setDBRates(self):
@@ -210,7 +210,7 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
         
         self.curve = self.flat_ts
 
-        if self.shiftparameter[0][0] != None:
+        if self.shiftparameter != None:
             self.setShift(self.shiftparameter)
         
     def getCurve(self):
@@ -283,3 +283,51 @@ class FlatVolatilityCurve(Volatilty):
     
     def getCurveHandle(self):
         return self.vol_ts_handle
+
+class ConstantVolatilityCurve(Volatilty):
+    """
+    Flat Vol class to generate constant volatility term structure
+    """    
+    
+    def __init__(self,constant_vol):
+        self.constant_vol= constant_vol
+        self.vol_ts = ql.SimpleQuote(self.constant_vol)
+        self.vol_ts_handle = ql.QuoteHandle(self.vol_ts)
+        
+    def getCurve(self):
+        return self.vol_ts
+    
+    def getCurveHandle(self):
+        return self.vol_ts_handle
+
+class CapFloorVolatilitySurface(Volatilty):
+    """
+    Cap Floor Volatility surface 
+    """    
+    def __init__(self,setupparams):
+        self.strikes = setupparams['strikes']
+        self.expiries = setupparams['expiries']
+        self.vols = setupparams['vols']
+        self.day_count = setupparams['day_count']
+        self.calendar = setupparams['calendar']
+        self.business_convention = setupparams['business_convention']
+        self.settlement_days = setupparams['settlement_days']
+        
+        expiries = [ql.Period(int(i),ql.Years) for i in self.expiries]
+        vols = ql.Matrix(len(self.expiries),len(self.strikes))
+        #expiries = [ql.Period(i, ql.Years) for i in range(1,11)] + [ql.Period(12, ql.Years)]
+        for i in range(vols.rows()):
+            for j in range(vols.columns()):
+                vols[i][j] = self.vols[i][j]
+        
+        self.vol_surface = ql.CapFloorTermVolSurface(self.settlement_days,
+                                                     self.calendar,
+                                                     self.business_convention,
+                                                     expiries,
+                                                     self.strikes,
+                                                     vols,
+                                                     self.day_count)
+        
+        
+    def getCurve(self):
+        return self.vol_surface
