@@ -2,7 +2,7 @@
 """
 Created on Fri Apr  8 11:20:48 2016
 
-@author: sbag
+@author: Santosh Bag
 """
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
