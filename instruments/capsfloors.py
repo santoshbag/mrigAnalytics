@@ -61,38 +61,27 @@ class CapsFloors(Option):
     
     def getAnalytics(self):
         if self.is_valued:
-            yieldcurve = self.valuation_params['yieldcurve']
-            npv = self.bondobject.NPV()
-            cleanprice = self.bondobject.cleanPrice()
-            dirtyprice = self.bondobject.dirtyPrice()
-            accrued_interest = self.bondobject.accruedAmount()
-            YTM = self.bondobject.bondYield(self.day_count,ql.Compounded,self.coupon_frequency)
-            YTMObj = ql.InterestRate(YTM,self.day_count,ql.Compounded,self.coupon_frequency)
-            zspread = ql.BondFunctions.zSpread(self.bondobject,dirtyprice,yieldcurve.getCurve(),self.day_count,ql.Compounded,self.coupon_frequency)
-            modduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Modified)
-            simduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Simple)
-            macduration = ql.BondFunctions.duration(self.bondobject,YTMObj,ql.Duration.Macaulay)
-            convexity = ql.BondFunctions.convexity(self.bondobject,YTMObj)
-            cashflow = [(mu.python_dates(c.date()),c.amount()) for c in self.bondobject.cashflows()]
+            npv = self.optionobject.NPV()
+#            atmrate= self.optionobject.atmRate()
+            cashflow = [(mu.python_dates(c.date()),c.amount()) for c in self.optionobject.floatingLeg()]
             #cashflowamount = [c.amount() for c in self.bondobject.cashflows()]
-            bond_analytics = {'NPV':npv,
-                              'cleanPrice' : cleanprice,
-                              'dirtyPrice' : dirtyprice,
-                              'accruedAmount' : accrued_interest,
-                              'Yield': YTM,
-                              'Spread' : zspread,
-                              'Modified Duration' : modduration,
-                              'Simple Duration' : simduration,
-                              'Macualay Duration' : macduration,
-                              'Convexity' : convexity,
+            capfloor_analytics = {'NPV':npv,
+                                  #'ATM Rate':atmrate,
                               'cashflows' : cashflow}
         else:
-            bond_analytics = {'Bond Status':'Bond not evaluated'}
-        return bond_analytics#self.valuation_params.update({"class" : "Convertible"})
+            capfloor_analytics = {'CapFloor Status':'CapFloor not evaluated'}
+        return capfloor_analytics#self.valuation_params.update({"class" : "Convertible"})
     
     def valuation(self,yieldcurve,volcurve):
         yieldcurvehandle = yieldcurve.getCurveHandle()
-        volcurvehandle = volcurve.getCurveHandle()
+        voltype = str(type(volcurve))[8:-2].split(".")[-1]
+        if voltype == "CapFloorVolatilitySurface":
+            optionlet_surface = ql.OptionletStripper1(volcurve.getCurve(),self.coupon_index)
+            volcurvehandle = ql.OptionletVolatilityStructureHandle(
+                    ql.StrippedOptionletAdapter(optionlet_surface))
+        if voltype == "ConstantVolatilityCurve":
+            volcurvehandle = volcurve.getCurveHandle()
+        
         capfloorEngine = ql.BlackCapFloorEngine(yieldcurvehandle,volcurvehandle)
         self.optionobject.setPricingEngine(capfloorEngine)
         self.is_valued = True
