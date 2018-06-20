@@ -20,18 +20,28 @@ import instruments.capsfloors as capsfloors
 import instruments.index as index
 import instruments.qlMaps as qlMaps
 from pywintypes import Time
+import matplotlib.pyplot as plt
 
 objectmap = {}
 
 @xw.func
-#@xw.arg('x', ndim=2, transpose=True)
+@xw.arg('x', ndim=1, transpose=True)
 @xw.ret(expand='table', index= True, transpose=False)
 def argcheck(x):
     re = ql.Settings.instance().evaluationDate
     re = mu.python_dates(re)
-    if x == None:
-        x= True
-    return Time(re)
+    #if x == None:
+     #   x= True
+    return x[2]
+
+@xw.func
+def myplot(n):
+    sht = xw.Book.caller().sheets.active
+    fig = plt.figure()
+    plt.plot(range(int(n)),label="myplot")
+    sht.pictures.add(fig, name='MyPlot', update=True)
+    return 'Plotted with n={}'.format(n)
+
 @xw.func
 @xw.arg('x', pd.DataFrame, index=True, header=True)
 @xw.ret(index=True, header=True,expand='table')
@@ -170,6 +180,62 @@ def mrigxl_FlatVolatilityCurve(reference_date,
         fvyc = ts.FlatVolatilityCurve(reference_date,spot_vols)
         fvyc.setupCurve(args)
         objectmap[objid] = fvyc
+    else:
+        objid = "Error in arguments -->"+mu.args_inspector(args)[1]
+    return objid
+
+@xw.func
+#@xw.arg('yielddata', dict)
+def mrigxl_ConstantVolatilityCurve(spot_vols):
+    objid = 'CVC'
+    args = {'spot_vols' : spot_vols}
+    
+    if mu.args_inspector(args)[0]:
+        for key in args:
+            objid = objid + "|" + str(args[key]) 
+
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        cvc = ts.ConstantVolatilityCurve(spot_vols)
+        objectmap[objid] = cvc
+    else:
+        objid = "Error in arguments -->"+mu.args_inspector(args)[1]
+    return objid
+    
+@xw.func
+@xw.arg('expiries', ndim=1, transpose=True)
+@xw.arg('strikes', ndim=1,)
+#@xw.arg('yielddata', dict)
+def mrigxl_CapFloorVolatilitySurface(day_count='30-360',
+                                 calendar='India',
+                                 business_convention='Following',
+                                 settlement_days=3,
+                                 strikes=None,
+                                 expiries=None,
+                                 vols=None):
+    objid = 'CFVS'
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'business_convention' : business_convention.strip(),
+            'settlement_days':int(settlement_days)}
+    
+    if mu.args_inspector(args)[0]:
+        for key in args:
+            objid = objid + "|" + str(args[key]) 
+
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        args['strikes'] = strikes
+        args['expiries'] = expiries
+        args['vols'] = vols        
+        cfvs = ts.CapFloorVolatilitySurface(args)
+        objectmap[objid] = cfvs
     else:
         objid = "Error in arguments -->"+mu.args_inspector(args)[1]
     return objid
@@ -588,6 +654,17 @@ def mrigxl_Analytics(assetobjectid,args):
 
         resultset.update(swap.getAnalytics())
 
+    if assettype in ["CapsFloors"]:
+        discount_curve_id = args['Discount Curve']
+        volatility_curve_id = args['Volatility Curve']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        capfloor = objectmap[assetobjectid]
+        capfloor.valuation(objectmap[discount_curve_id],
+                           objectmap[volatility_curve_id])
+
+        resultset.update(capfloor.getAnalytics())
+
 #Cashflow Formatting for Display
     if 'cashflows' in resultset.keys():
         offset=1
@@ -650,6 +727,20 @@ def bondAnalytics(bondHandle):
     
     return bond.NPV()
 
+@xw.func
+def graphplot(objectid):
+    curve = objectmap[objectid]
+    sht = xw.Book.caller().sheets.active
+    fig = plt.figure()
+    start = datetime.date(2018,6,19)
+    dates = [start+datetime.timedelta(days=180*i) for i in range(0,20)]
+    discounts = curve.getDiscountFactor(dates)
+    forwards = [curve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+    #plt.plot(discounts,"--",label="discounts")
+    plt.plot(forwards[1:],"-",label="forwards")
+    plt.legend(bbox_to_anchor=(0.5, 0.25))
+    sht.pictures.add(fig, name='MyPlot', update=True)
+    return 'Plotted with years=10'
 
 
 if __name__ == '__main__':
