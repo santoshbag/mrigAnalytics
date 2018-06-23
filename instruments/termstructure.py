@@ -29,6 +29,7 @@ class YieldCurveTermStructure(TermStructure):
     def __init__(self,reference_date):
         self.reference_date = reference_date
         self.curve = None
+        self.basecurve = None   #Basecurve is the original curve
 
     def setShift(self,date_spread_vector):
         """
@@ -55,6 +56,7 @@ class YieldCurveTermStructure(TermStructure):
             self.shiftedCurve = ql.SpreadedLinearZeroInterpolatedTermStructure(curveHandle,
                                                                           spread_handles,
                                                                           dateList)
+            self.shiftedCurve.enableExtrapolation()
         self.curve = self.shiftedCurve
         return self.shiftedCurve
     
@@ -68,6 +70,15 @@ class YieldCurveTermStructure(TermStructure):
         
         return self.curve
 
+    def getBaseCurve(self):
+        
+        return self.basecurve
+
+    def getReferenceDate(self):
+        
+        return self.reference_date
+    
+    
     def getCurveHandle(self):
         
         curve = self.getCurve()
@@ -75,6 +86,53 @@ class YieldCurveTermStructure(TermStructure):
         
         return curveHandle
 
+###########Curve Anaytics####################
+
+    def getZeroRate(self,date, 
+                       daycount=None, 
+                       compounding=None,
+                       frequency=None):
+        
+        if daycount is None:
+            daycount=self.day_count
+        if compounding is None:
+            compounding=self.compounding
+        if frequency is None:
+            frequency=self.compounding_frequency
+        
+        zero_rate = self.curve.zeroRate(qlMaps.qlDates(date),
+                                              daycount,
+                                              compounding,
+                                              frequency)
+        return zero_rate.rate()
+        
+
+
+    def getForwardRate(self,date1, 
+                       date2, 
+                       daycount=None, 
+                       compounding=None,
+                       frequency=None):
+        
+        if daycount is None:
+            daycount=self.day_count
+        if compounding is None:
+            compounding=self.compounding
+        if frequency is None:
+            frequency=self.compounding_frequency
+        
+        forward_rate = self.curve.forwardRate(qlMaps.qlDates(date1),
+                                              qlMaps.qlDates(date2),
+                                              daycount,
+                                              compounding,
+                                              frequency)
+        return forward_rate.rate()
+        
+    def getDiscountFactor(self,dates):
+        
+        discount_factor = [self.curve.discount(qlMaps.qlDates(date)) for date in dates]
+        return discount_factor
+    
     
 class SpotZeroYieldCurve(YieldCurveTermStructure):
     """
@@ -104,7 +162,8 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
                                  self.compounding,
                                  self.compounding_frequency)
         self.curve = self.spotCurve
-
+        self.curve.enableExtrapolation()
+        self.basecurve = self.spotCurve
         
     def setupCurve(self,setupparams):
         try:
@@ -129,6 +188,8 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
                                  self.compounding,
                                  self.compounding_frequency)
         self.curve = self.spotCurve
+        self.curve.enableExtrapolation()
+        self.basecurve = self.spotCurve
         
         if self.shiftparameter != None:
             self.setShift(self.shiftparameter)
@@ -209,7 +270,8 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
                                               self.compounding_frequency)
         
         self.curve = self.flat_ts
-
+        self.curve.enableExtrapolation()
+        
         if self.shiftparameter != None:
             self.setShift(self.shiftparameter)
         
@@ -327,7 +389,12 @@ class CapFloorVolatilitySurface(Volatilty):
                                                      self.strikes,
                                                      vols,
                                                      self.day_count)
-        
+        self.vol_surface.enableExtrapolation()
         
     def getCurve(self):
         return self.vol_surface
+    
+    def getVolatility(self,
+                      expiry,
+                      strike):
+        return self.vol_surface.volatility(expiry,strike)
