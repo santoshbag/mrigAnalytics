@@ -734,6 +734,7 @@ def bondAnalytics(bondHandle):
 @xw.func
 def mrigxl_ratePlot(objectid,location,pltname=None):
     
+    MINI_SIZE = 6
     SMALL_SIZE = 8
     MEDIUM_SIZE = 10
     BIGGER_SIZE = 12
@@ -747,7 +748,7 @@ def mrigxl_ratePlot(objectid,location,pltname=None):
     plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('legend', fontsize=MINI_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
     plt.rcParams['savefig.facecolor']=bg_color
     plt.rcParams['savefig.edgecolor']=border
@@ -774,11 +775,13 @@ def mrigxl_ratePlot(objectid,location,pltname=None):
     
     rate_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
     rate_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    rate_ax.grid(which='major',color=fg_color)
     for spine in rate_ax.spines.values():
         spine.set_color(fg_color)
 
     disc_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
     disc_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    disc_ax.grid(which='minor',color=fg_color)
     for spine in disc_ax.spines.values():
         spine.set_color(fg_color)
 
@@ -791,8 +794,8 @@ def mrigxl_ratePlot(objectid,location,pltname=None):
     #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
     forwards = [curve.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
     zeroes = [curve.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
-    rate_ax.plot(tenors[1:],zeroes[1:],"--",label="Spot")
-    rate_ax.plot(tenors[1:],forwards[1:],"-",label="6M Forward")
+    rate_ax.plot(tenors[1:],zeroes[1:],"yellow",label="Spot")
+    rate_ax.plot(tenors[1:],forwards[1:],"maroon",label="6M Forward")
     #plt.legend(bbox_to_anchor=(0.60, 0.30))
     disc_ax.plot(tenors[1:],discounts[1:],'C6',label="Discount Factors")
 
@@ -826,7 +829,7 @@ def mrigxl_volSurface(objectid,location,pltname=None):
     
     bg_color = 'dimgray'
     fg_color = 'white'
-    
+    border= 'yellow'
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
     plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
@@ -842,24 +845,25 @@ def mrigxl_volSurface(objectid,location,pltname=None):
         pltname = "PLOT_"+objectid
     #basecurve = curve.getBaseCurve()
     sht = xw.Book.caller().sheets.active
-    fig = plt.figure(figsize=(4,4), facecolor=bg_color, edgecolor=fg_color)
-    fig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
+    volfig = plt.figure(figsize=(4,4), facecolor=bg_color, edgecolor=fg_color)
+    volfig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
     
-    ax = fig.add_subplot(111,projection='3d')
-    fig.subplots_adjust(top=0.85)
+    ax = volfig.add_subplot(111,projection='3d')
+    volfig.subplots_adjust(top=0.85)
     ax.patch.set_facecolor(bg_color)
     ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
     ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
     ax.zaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-    #for spine in ax.spines.values():
-     #   spine.set_color(fg_color)
+    ax.grid(b=True,color=fg_color)
+    for spine in ax.spines.values():
+        spine.set_color(fg_color)
     
     
     ax.set_xlabel('Years',color=fg_color)
     ax.set_ylabel('Strikes',color=fg_color)
     ax.set_zlabel('Volatility',color=fg_color)
     
-    years = np.arange(1,20,1)
+    years = np.arange(1,10,1)
     strikes = np.arange(0.01,0.15,0.01)
     YEARS, STRIKES = np.meshgrid(years,strikes)
     vols = np.array([volsurface.getVolatility(float(year),float(strike)) for year,strike in zip(np.ravel(YEARS),np.ravel(STRIKES))])
@@ -874,7 +878,7 @@ def mrigxl_volSurface(objectid,location,pltname=None):
     #disc_ax.legend(bbox_to_anchor=(0.60, 0.30))
     #rate_ax.legend(bbox_to_anchor=(0.40, 0.30))
     #plt.legend([rate_ax,disc_ax])
-    sht.pictures.add(fig, 
+    sht.pictures.add(volfig, 
                      name=pltname, 
                      update=True,
                      left=sht.range(location).left,
