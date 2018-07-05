@@ -168,4 +168,35 @@ def args_inspector(args):
 def python_dates(qldates):
     return datetime.date(qldates.year(),qldates.month(),qldates.dayOfMonth())
             
+def getStockData(symbol,start_date,end_date):
     
+    sql = "select * from stock_history where date >='"+ start_date.strftime('%Y-%m-%d') \
+        + "' and date <'"+ end_date.strftime('%Y-%m-%d') \
+        + "' and symbol='" \
+        + symbol + "'"
+        
+    engine = sql_engine()
+    stock_df = pd.read_sql(sql,engine)
+    if not stock_df.empty:
+        stock_df.set_index('date',inplace=True)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    return stock_df
+ 
+def getMFNAV(reference_date, isinlist=None):
+    
+    sql = "select * from mf_nav_history where \"Date\">='"+ reference_date.strftime('%Y-%m-%d') +"' and \"ISIN Div Payout/ ISIN Growth\" in ("
+    engine = sql_engine()
+    for isin in isinlist:
+        sql = sql +"'"+ isin + "',"
+    sql = sql[:-1] + ")"
+    nav_df = pd.read_sql(sql,engine)
+    nav_df.set_index('Date',inplace=True)
+    return nav_df
+
+def getTransactionCosts():
+    cost = mrigstatics.TR_CHARGES['BROK']\
+            +mrigstatics.TR_CHARGES['STT/CTT']\
+            +mrigstatics.TR_CHARGES['EXCH']\
+            +mrigstatics.TR_CHARGES['GST']*(mrigstatics.TR_CHARGES['BROK']+mrigstatics.TR_CHARGES['EXCH'])
+            
+    return cost

@@ -93,3 +93,14 @@ VR_MF_CODE = {}
 VR_LOGIN = {'VR_URL':'https://www.valueresearchonline.com/registration/loginprocess.asp',
             'CRED': {'username': 'santosh.bag@gmail.com','password': 'Xanto123!'}}
 
+
+
+"""
+ZERODHA CHARGES
+"""
+
+TR_CHARGES ={'BROK':0,
+             'STT/CTT':0.001,
+             'EXCH':0.0000325,
+             'GST':0.18,
+             'SEBI':15}
