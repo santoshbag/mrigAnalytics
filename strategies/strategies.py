@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import research.math as rm
 
 class Strategy():
     def __init__(self):
@@ -144,8 +145,13 @@ class MovingCrossover(Momentum):
 if __name__ == '__main__':
     sd = datetime.date(2016,5,31)
     ed = datetime.date(2018,7,4)
-    trades = MovingCrossover('BHEL',60,90)
-    trades.backtest(sd,ed)
+    trades1 = MovingCrossover('HDFCBANK',60,90)
+    trades1.backtest(sd,ed)
+    trades2 = MovingCrossover('MARUTI',60,90)
+    trades2.backtest(sd,ed)
+
+    rm.isNormal(np.array(list(trades2.portfolio['returns'])))
+    rm.linreg(trades1.portfolio['returns'][1:519].values,trades2.portfolio['returns'][1:519].values)
 
 
     
