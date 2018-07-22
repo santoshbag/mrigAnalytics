@@ -93,6 +93,17 @@ VR_MF_CODE = {}
 VR_LOGIN = {'VR_URL':'https://www.valueresearchonline.com/registration/loginprocess.asp',
             'CRED': {'username': 'santosh.bag@gmail.com','password': 'Xanto123!'}}
 
+"""
+ Money Control Stock codes
+"""
+MC_STOCK_CODE = {}
+
+MC_URLS = {'MC_CODES_URL':'https://www.moneycontrol.com/india/stockpricequote/',
+           'MC_RATIOS_URL':'https://www.moneycontrol.com/financials/',
+           'MC_QTRLY_RESULTS_URL':'https://www.moneycontrol.com/financials/',
+           'MC_BALANCE_SHEET_URL':'https://www.moneycontrol.com/financials/',
+           'MC_PROFIT_LOSS_URL':'https://www.moneycontrol.com/financials/',
+           'MC_CASHFLOW_STATEMENT_URL':'https://www.moneycontrol.com/financials/'}
 
 
 """

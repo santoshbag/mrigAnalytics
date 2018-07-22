@@ -37,12 +37,16 @@ if last_download_date != timestamp.strftime("%x"):
     sub_header_count = 0
     for line in data:
         line =  str(line,'utf-8')#+";"+timestamp.strftime("%x-%X")
+        #print(line)
         line = line.split(";")
+        #print(line)
         if len(line) > 1:
             sub_header_count = 0
+            #print(line)
             try:
-                current_date = line[7].split("\r\n",1)[:-1][0]
-                navs.append(line[7].split("\r\n",1)[:-1]+[mutual_fund_house,mutual_fund_scheme_type]+line[1:-1]+[timestamp.strftime("%x-%X")])
+                current_date = line[-1].split("\r\n",1)[:-1][0]
+                navs.append(line[-1].split("\r\n",1)[:-1]+[mutual_fund_house,mutual_fund_scheme_type]+line[1:-1]+["",""]+[timestamp.strftime("%x-%X")])
+                #print(navs)
                 written= True
             except:
                 pass
@@ -61,7 +65,7 @@ if last_download_date != timestamp.strftime("%x"):
     if written:
         navs = DataFrame(navs[1:],columns=navs_cols)
         #navs = DataFrame(navs[22:23],columns=navs_cols)
-
+        #print(navs.tail(n=20))
         navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
         navs = navs.drop('Time Stamp',axis=1)
         dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
