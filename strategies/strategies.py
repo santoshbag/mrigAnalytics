@@ -144,7 +144,7 @@ class MovingCrossover(Momentum):
         
 if __name__ == '__main__':
     sd = datetime.date(2016,5,31)
-    ed = datetime.date(2018,7,4)
+    ed = datetime.date(2018,7,18)
     trades1 = MovingCrossover('HDFCBANK',60,90)
     trades1.backtest(sd,ed)
     trades2 = MovingCrossover('MARUTI',60,90)
