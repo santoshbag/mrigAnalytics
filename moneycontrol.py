@@ -298,6 +298,309 @@ def get_CashFLowStatement(symbol=None):
         #print(ratios_dict_str)
         #engine.execute(sql)
 
+def get_CorporateActions(symbol=None):
+    
+    engine = mrigutilities.sql_engine()
+    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    codes = engine.execute(sql).fetchall()
+    codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
+    if not symbol:
+        symbollist = codes
+    else:
+        symbollist = [symbol]
+    successful_download = []
+    for symbol in symbollist:
+        meeting_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/board-meetings/"+symbol.split(":")[-2].strip()
+        dividend_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/dividends/"+symbol.split(":")[-2].strip()
+        bonus_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/bonus/"+symbol.split(":")[-2].strip()
+        rights_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/rights/"+symbol.split(":")[-2].strip()
+        splits_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/splits/"+symbol.split(":")[-2].strip()
+        s = requests.Session()
+        
+        # Download Meeting details
+        response = s.get(meeting_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        timestamp = datetime.datetime.now()
+    
+        sym = soup.find_all(class_="FL gry10")[0]
+        sym = sym.contents[2].split(":")[1].strip()
+        meeting_table = soup.find_all(class_='tbldivid')
+        rows = meeting_table[0].find_all("tr")
+        select_sql = "SELECT to_char(meeting_date, 'YYYY-MM-DD'), meeting_detail from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'MEETING'"
+        meeting_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, meeting_date, meeting_detail) VALUES " 
+        insert_data_list = []
+        for row in rows:
+            try:
+                meeting_date = row.find_all("td")[0].text.strip().replace(",","")
+                meeting_date = datetime.datetime.strptime(meeting_date,'%d-%m-%Y')
+                if meeting_date != "":
+                    meeting_detail = row.find_all("td")[1].text.strip().replace(",","").replace("'","_").replace("%"," per")
+                    insert_data_list.append((meeting_date.strftime('%Y-%m-%d'),meeting_detail))
+#                    meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
+#                          + timestamp.strftime('%Y-%m-%d') + "','" \
+#                          + meeting_date.strftime('%Y-%m-%d') + "','" \
+#                          + meeting_detail + "', 'MONEYCONTROL'),"           
+            except:
+                pass
+            #print(sql)
+        #print(meeting_sql)
+        #engine.execute(meeting_sql[:-1])
+        existing_data = engine.execute(select_sql).fetchall()
+        existing_data = [tuple(a) for a in existing_data]
+        #print(insert_data_list)
+        #print("#################")
+        insert_data_list = set(insert_data_list) - set(existing_data)
+        #print(existing_data)
+        #print("-----")
+        #print(insert_data_list)
+        for data in insert_data_list:
+            meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
+                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                          + data[0] + "','" \
+                          + data[1] + "'),"
+        #engine.execute(meeting_sql[:-1])
+        try:
+            engine.execute(meeting_sql[:-1])
+            successful_download.append(sym)
+            print("Downloaded Board Meetings for "+sym)
+        except:
+            pass
+        
+        
+        # Download Dividends
+        response = s.get(dividend_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        timestamp = datetime.datetime.now()
+
+        dividend_table = soup.find_all(class_='tbldivid')
+        rows = dividend_table[0].find_all("tr")
+        select_sql = "SELECT to_char(announcement_date, 'YYYY-MM-DD'), record_date,dividend_per, dividend_remark from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'DIVIDEND'"
+        dividend_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, announcement_date,record_date, dividend_per, dividend_remark) VALUES "
+        insert_data_list = []
+        for row in rows:
+            try:
+                announcement_date = row.find_all("td")[0].text.strip().replace(",","")
+                announcement_date = datetime.datetime.strptime(announcement_date,'%d-%m-%y')
+                record_date = row.find_all("td")[1].text.strip().replace(",","")
+                #record_date = datetime.datetime.strptime(record_date,'%d-%m-%y')
+                if announcement_date != "":
+                    dividend_per = row.find_all("td")[3].text.strip().replace(",","").replace("%","per")
+                    dividend_remark = row.find_all("td")[4].text.strip().replace(",","").replace("%","per")
+                    insert_data_list.append((announcement_date.strftime('%Y-%m-%d'),record_date,dividend_per,dividend_remark))
+#                    dividend_sql = dividend_sql + "( '" \
+#                                  + sym + "','DIVIDEND','" \
+#                                  + timestamp.strftime('%Y-%m-%d') + "','" \
+#                                  + announcement_date.strftime('%Y-%m-%d') + "','" \
+#                                  + record_date + "','" \
+#                                  + dividend_per + "','" +dividend_remark + "','MONEYCONTROL'),"
+            except:
+                pass
+        
+        existing_data = engine.execute(select_sql).fetchall()
+        existing_data = [tuple(a) for a in existing_data]
+        #print(insert_data_list)
+        #print("#################")
+        insert_data_list = set(insert_data_list) - set(existing_data)
+        #print(existing_data)
+        #print("-----")
+        #print(insert_data_list)
+        for data in insert_data_list:
+            dividend_sql = dividend_sql + "('"+sym + "','DIVIDEND','" \
+                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                          + data[0] + "','" \
+                          + data[1] + "','" \
+                          + data[2] + "','" \
+                          + data[3] + "'),"
+        #print(dividend_sql)
+        #engine.execute(dividend_sql[:-1])
+        try:
+            engine.execute(dividend_sql[:-1])
+            successful_download.append(sym)
+            print("Downloaded Dividends for "+sym)
+        except:
+            pass
+        
+        #print(ratios_dict_str)
+        #engine.execute(sql)
+
+        # Download Bonus
+        response = s.get(bonus_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        timestamp = datetime.datetime.now()
+
+        bonus_table = soup.find_all(class_='tbldivid')
+        rows = bonus_table[0].find_all("tr")
+        select_sql = "SELECT to_char(announcement_date, 'YYYY-MM-DD'), record_date, ex_date, bonus_ratio from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'BONUS'"
+        bonus_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, announcement_date,record_date, ex_date, bonus_ratio) VALUES "
+        insert_data_list = []
+        for row in rows:
+            try:
+                announcement_date = row.find_all("td")[0].text.strip().replace(",","")
+                announcement_date = datetime.datetime.strptime(announcement_date,'%d-%m-%Y')
+                record_date = row.find_all("td")[1].text.strip().replace(",","")
+                ex_date = row.find_all("td")[3].text.strip().replace(",","")
+
+                if announcement_date != "":
+                    bonus_ratio = row.find_all("td")[1].text.strip().replace(",","").replace("%"," per")
+                    insert_data_list.append((announcement_date.strftime('%Y-%m-%d'),record_date,ex_date,bonus_ratio))
+#                    bonus_sql = bonus_sql + "( '" \
+#                                          + sym + "','BONUS','" \
+#                                          + timestamp.strftime('%Y-%m-%d') + "','" \
+#                                          + announcement_date.strftime('%Y-%m-%d') + "','" \
+#                                          + record_date + "','" \
+#                                          + ex_date + "','" \
+#                                          + bonus_ratio + "', 'MONEYCONTROL'),"
+            except:
+                pass
+        
+        existing_data = engine.execute(select_sql).fetchall()
+        existing_data = [tuple(a) for a in existing_data]
+        #print(insert_data_list)
+        #print("#################")
+        insert_data_list = set(insert_data_list) - set(existing_data)
+        #print(existing_data)
+        #print("-----")
+        #print(insert_data_list)
+        for data in insert_data_list:
+            bonus_sql = bonus_sql + "('"+sym + "','BONUS','" \
+                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                          + data[0] + "','" \
+                          + data[1] + "','" \
+                          + data[2] + "','" \
+                          + data[3] + "'),"
+        #print(sql)
+        try:
+            engine.execute(bonus_sql[:-1])
+            successful_download.append(sym)
+            print("Downloaded Bonuses for "+sym)
+        except:
+            pass
+        
+        
+        # Download Rights
+        response = s.get(rights_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        timestamp = datetime.datetime.now()
+
+        rights_table = soup.find_all(class_='tbldivid')
+        rows = rights_table[0].find_all("tr")
+        select_sql = "SELECT to_char(announcement_date, 'YYYY-MM-DD'), record_date, ex_date, rights_ratio, rights_premium from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'RIGHTS'"
+        rights_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, announcement_date,record_date, ex_date, rights_ratio, rights_premium) VALUES "
+        insert_data_list = []
+        for row in rows:
+            try:
+                announcement_date = row.find_all("td")[0].text.strip().replace(",","")
+                announcement_date = datetime.datetime.strptime(announcement_date,'%d-%m-%Y')
+                record_date = row.find_all("td")[4].text.strip().replace(",","")
+                #record_date = datetime.datetime.strptime(record_date,'%d-%m-%Y')
+                ex_date = row.find_all("td")[5].text.strip().replace(",","")
+                #ex_date = datetime.datetime.strptime(ex_date,'%d-%m-%Y')
+
+                if announcement_date != "":
+                    rights_ratio = row.find_all("td")[1].text.strip().replace(",","").replace("%"," per")
+                    rights_premium = row.find_all("td")[3].text.strip().replace(",","").replace("%"," per")
+                    insert_data_list.append((announcement_date.strftime('%Y-%m-%d'),record_date,ex_date,rights_ratio,rights_premium))
+#                    rights_sql = rights_sql + "( '" \
+#                                          + sym + "','RIGHTS','" \
+#                                          + timestamp.strftime('%Y-%m-%d') + "','" \
+#                                          + announcement_date.strftime('%Y-%m-%d') + "','" \
+#                                          + record_date + "','" \
+#                                          + ex_date + "','" \
+#                                          + rights_ratio + "','" +rights_premium + "','MONEYCONTROL'),"
+            except:
+                pass
+                    
+       # print(rights_sql)
+        #engine.execute(rights_sql[:-1])
+        
+        existing_data = engine.execute(select_sql).fetchall()
+        existing_data = [tuple(a) for a in existing_data]
+        #print(insert_data_list)
+        #print("#################")
+        insert_data_list = set(insert_data_list) - set(existing_data)
+        #print(existing_data)
+        #print("-----")
+        #print(insert_data_list)
+        for data in insert_data_list:
+            rights_sql = rights_sql + "('"+sym + "','RIGHTS','" \
+                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                          + data[0] + "','" \
+                          + data[1] + "','" \
+                          + data[2] + "','" \
+                          + data[3] + "','" \
+                          + data[4] + "'),"
+            
+        try:
+            engine.execute(rights_sql[:-1])
+            successful_download.append(sym)
+            print("Downloaded Rights for "+sym)
+        except:
+            pass
+        
+        #print(ratios_dict_str)
+        #engine.execute(sql)
+
+        # Download Splits
+        response = s.get(splits_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        timestamp = datetime.datetime.now()
+
+        splits_table = soup.find_all(class_='tbldivid')
+        rows = splits_table[0].find_all("tr")
+        select_sql = "SELECT to_char(announcement_date, 'YYYY-MM-DD'), ex_date, split from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'SPLITS'"
+        split_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, announcement_date, ex_date, split) VALUES "
+        insert_data_list = []
+        for row in rows:
+            try:
+                announcement_date = row.find_all("td")[0].text.strip().replace(",","")
+                announcement_date = datetime.datetime.strptime(announcement_date,'%d-%m-%Y')
+                ex_date = row.find_all("td")[3].text.strip().replace(",","")
+                #ex_date = datetime.datetime.strptime(ex_date,'%d-%m-%Y')
+
+                if announcement_date != "":
+                    split_ratio = float(row.find_all("td")[1].text.strip().replace(",",""))/float(row.find_all("td")[2].text.strip().replace(",",""))
+                    insert_data_list.append((announcement_date.strftime('%Y-%m-%d'),ex_date,str(split_ratio)))
+#                    split_sql = split_sql + "( '" \
+#                                          + sym + "','SPLITS','" \
+#                                          + timestamp.strftime('%Y-%m-%d') + "','" \
+#                                          + announcement_date.strftime('%Y-%m-%d') + "','" \
+#                                          + ex_date + "','" \
+#                                          + split_ratio + "','MONEYCONTROL'),"
+
+            except:
+                pass
+                            #print(sql)
+        existing_data = engine.execute(select_sql).fetchall()
+        existing_data = [tuple(a) for a in existing_data]
+        #print(insert_data_list)
+        #print("#################")
+        insert_data_list = set(insert_data_list) - set(existing_data)
+        #print(existing_data)
+        #print("-----")
+        #print(insert_data_list)
+        for data in insert_data_list:
+            split_sql = split_sql + "('"+sym + "','SPLITS','" \
+                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                          + data[0] + "','" \
+                          + data[1] + "','" \
+                          + str(data[2]) + "'),"
+        
+        #engine.execute(split_sql[:-1])
+        try:
+            engine.execute(split_sql[:-1])
+            successful_download.append(sym)
+            print("Downloaded Splits for "+sym)
+        except:
+            pass
+        
+        print("Downloaded Corporate Actions for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
+        #print(ratios_dict_str)
+        #engine.execute(sql)
 
 
 
@@ -310,5 +613,6 @@ if __name__ == '__main__':
 #    get_BalanceSheet("MS24:marutisuzukiindia")
 #    get_BalanceSheet()   
     #get_ProfitLossStatement()
-    get_CashFLowStatement()
+    #get_CashFLowStatement()
+    get_CorporateActions()
 

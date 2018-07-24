@@ -103,7 +103,8 @@ MC_URLS = {'MC_CODES_URL':'https://www.moneycontrol.com/india/stockpricequote/',
            'MC_QTRLY_RESULTS_URL':'https://www.moneycontrol.com/financials/',
            'MC_BALANCE_SHEET_URL':'https://www.moneycontrol.com/financials/',
            'MC_PROFIT_LOSS_URL':'https://www.moneycontrol.com/financials/',
-           'MC_CASHFLOW_STATEMENT_URL':'https://www.moneycontrol.com/financials/'}
+           'MC_CASHFLOW_STATEMENT_URL':'https://www.moneycontrol.com/financials/',
+           'MC_CORP_ACTION_URL':'https://www.moneycontrol.com/company-facts/'}
 
 
 """
