@@ -40,6 +40,11 @@ class MovingCrossover(Momentum):
                                            self.start_date,
                                            self.end_date)
         
+        if self.symbol == 'BAJFINANCE':
+            for i in self.symbol_data.index:
+                if i >= datetime.date(2016,9,8):
+                    self.symbol_data.loc[i,'close'] = self.symbol_data.loc[i,'close']*10
+        
         if not self.symbol_data.empty:
             # Initialize the `signals` DataFrame with the `signal` column
             self.signals = pd.DataFrame(index=self.symbol_data.index)
@@ -145,13 +150,13 @@ class MovingCrossover(Momentum):
 if __name__ == '__main__':
     sd = datetime.date(2016,5,31)
     ed = datetime.date(2018,7,18)
-    trades1 = MovingCrossover('HDFCBANK',60,90)
+    trades1 = MovingCrossover('BAJFINANCE',60,90)
     trades1.backtest(sd,ed)
-    trades2 = MovingCrossover('MARUTI',60,90)
-    trades2.backtest(sd,ed)
+    #trades2 = MovingCrossover('MARUTI',60,90)
+    #trades2.backtest(sd,ed)
 
     rm.isNormal(np.array(list(trades2.portfolio['returns'])))
-    rm.linreg(trades1.portfolio['returns'][1:519].values,trades2.portfolio['returns'][1:519].values)
+    #rm.linreg(trades1.portfolio['returns'][1:519].values,trades2.portfolio['returns'][1:519].values)
 
 
     

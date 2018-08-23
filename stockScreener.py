@@ -5,53 +5,64 @@ Created on Fri Sep 15 09:01:52 2017
 @author: Santosh Bag
 """
 
-import nsepy
-from datetime import date, timedelta
-from pandas import DataFrame
-#from sqlalchemy import create_engine
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+import mrigutilities as mu
+import datetime, dateutil.relativedelta
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import research.math as rm
 
-nseStockList = open("nseStockList1.txt","r")
-#nseStockPrices = open("nseStockHistory.csv","a+")
+today = datetime.date.today()
+engine = mu.sql_engine()
 
-stocks = [line.split("\n")[0] for line in nseStockList]
-#stocks = nsepy.constants.symbol_list
-counter = 0
-write_counter = 0
-stocksdata = DataFrame()
-startdate= date.today() - timedelta(days=30)
-enddate= date.today()
-nseStockPrices = open("nseStockScreener_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+"""
+BIG MONEY ZACK screener
 
-#engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
+Min 20-day trading volume > 50,000
+Log return of 24 weeks : top 20
+Log return of 12 weeks : top 10
+Log return of 4 weeks : top 3
+"""
+startdate = today - dateutil.relativedelta.relativedelta(weeks=27)
 
+volumedate = today - datetime.timedelta(days=20)
+sql = "select symbol from (select symbol, min(volume) as minvol from stock_history where series='EQ' and date > '"+volumedate.strftime('%Y-%m-%d') +"' group by symbol) as foo where minvol > 50000"
+sql = "select  date, symbol, close_adj, volume_adj, daily_log_returns from stock_returns_adj where date > '"+startdate.strftime('%Y-%m-%d') + "' and symbol in ("+sql+")"
+stock_df = pd.read_sql(sql,engine)
+if not stock_df.empty:
+    #for i in range(0,len(stock_df['date'])-1):
+    #    stock_df.iloc[i]['date'] = datetime.datetime.combine(stock_df.iloc[i]['date'],datetime.time())
+    #stock_df.date = pd.DatetimeIndex(stock_df.date)
+    stock_df.set_index(['date','symbol'],inplace=True)
+start = today -dateutil.relativedelta.relativedelta(weeks=24)
+returns = stock_df.reset_index().pivot('date','symbol','daily_log_returns')
+ret24W = returns[start:].sum()
+ret24W.name = 'ret24W'
 
-for stock in stocks:
-    #print(stock)
-    counter = counter + 1
-    try:
-        stockdata = nsepy.get_history(symbol=stock,start=startdate,end=enddate)
-#        if counter==1:
-#            stocksdata = stockdata
-#        else:
-        stocksdata = stocksdata.append(stockdata)
-    except:
-        pass
-    if counter >=50:
-        if write_counter >=1:
-            stocksdata.to_csv(nseStockPrices, header=False)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
-        else:
-            stocksdata.to_csv(nseStockPrices)
-            #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False)
-        stocksdata = DataFrame()
-        counter = 0
-        write_counter = write_counter + 1
-        
-if write_counter >=1:
-    stocksdata.to_csv(nseStockPrices, header=False)
-    #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False)
-else:
-     stocksdata.to_csv(nseStockPrices)
-     #stocksdata.to_sql('stock_history',engine, if_exists='append', index=False, header=False))
-nseStockPrices.close()
+start = today -dateutil.relativedelta.relativedelta(weeks=12)
+returns = stock_df.reset_index().pivot('date','symbol','daily_log_returns')
+ret12W = returns[start:].sum()
+ret12W.name = 'ret12W'
+
+start = today -dateutil.relativedelta.relativedelta(weeks=4)
+returns = stock_df.reset_index().pivot('date','symbol','daily_log_returns')
+ret4W = returns[start:].sum()
+ret4W.name = 'ret4W'
+
+stockreturns = pd.concat([ret24W,ret12W,ret4W],axis=1)
+
+stockreturns = stockreturns.sort_values(by='ret24W',ascending=0).head(20)
+#print(stockreturns)
+stockreturns = stockreturns.sort_values(by='ret12W',ascending=0).head(10)
+stockreturns = stockreturns.sort_values(by='ret4W',ascending=0).head(3)
+
+bigmoneyzack_stocks = list(stockreturns.index)
+print(bigmoneyzack_stocks)
+for i in bigmoneyzack_stocks:
+    stock_df.xs(i,level='symbol')['close_adj'].plot()
+    
+

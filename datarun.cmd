@@ -24,6 +24,15 @@ echo Mutual Funds NAV downloaded
 echo Yield Curves download started
 python.exe yieldcurve.py
 echo Yield Curves downloaded
+echo Gold Prices download started
+python.exe goldprice.py
+echo Gold Prices downloaded
+echo Crude Oil Prices download started
+python.exe crudeoilprices.py
+echo Crude Oil Prices downloaded
+echo Exchange Rates download started 
+python.exe exchangeratesHistory.py %startdate% %enddate%
+echo Exchange Rates downloaded
 echo Stock History download started
 python.exe stockHistory.py %startdate% %enddate%
 echo Stock History downloaded 
@@ -33,9 +42,12 @@ echo NSE Index History downloaded
 echo Total Return History download started
 python.exe totalreturnindicesHistory.py %startdate% %enddate%
 echo Total Return History downloaded
-echo Futures History download started
-python.exe futuresHistory.py %startdate% %enddate%
-echo Futures History downloaded
+echo Mutual Funds Snapshots and Holdings download started
+python.exe mutual_funds.py
+echo Mutual Funds Snapshots and Holdings downloaded
+rem echo Futures History download started
+rem python.exe futuresHistory.py %startdate% %enddate%
+rem echo Futures History downloaded
 exit /B 1
 
 :usage

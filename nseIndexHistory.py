@@ -73,6 +73,8 @@ for index in indices:
             indicesdata = indicesdata[0]
             try:
                 indicesdata.set_index('date',inplace=True)
+                indicesdata['close_adj'] = indicesdata['close']
+                indicesdata['volume_adj'] = indicesdata['volume']
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
@@ -83,7 +85,9 @@ for index in indices:
             errorLog.write(indicesdata[1]+" already downloaded \n")
             indicesdata = indicesdata[0]
             try:
-                indicesdata.set_index('date',inplace=True)                
+                indicesdata.set_index('date',inplace=True)
+                indicesdata['close_adj'] = indicesdata['close']
+                indicesdata['volume_adj'] = indicesdata['volume']
                 indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass        
@@ -100,7 +104,9 @@ if write_counter >=1:
     errorLog.write(indicesdata[1]+" already downloaded \n")
     indicesdata = indicesdata[0]
     try:
-        indicesdata.set_index('date',inplace=True)                
+        indicesdata.set_index('date',inplace=True)
+        indicesdata['close_adj'] = indicesdata['close']
+        indicesdata['volume_adj'] = indicesdata['volume']
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
     except:
         pass
@@ -111,7 +117,9 @@ else:
      errorLog.write(indicesdata[1]+" already downloaded \n")
      indicesdata = indicesdata[0]
      try:
-        indicesdata.set_index('date',inplace=True)                
+        indicesdata.set_index('date',inplace=True)
+        indicesdata['close_adj'] = indicesdata['close']
+        indicesdata['volume_adj'] = indicesdata['volume']
         indicesdata.to_sql('stock_history',engine, if_exists='append', index=True)
      except:
         pass

@@ -39,7 +39,7 @@ def get_MCStockCodes():
 def get_MCRatios(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -72,7 +72,7 @@ def get_MCRatios(symbol=None):
                 except:
                     pass
             ratios_dict_str =  str(ratios_dict)[1:-1].replace("'","").replace(",","|").replace("%","per")  
-            sql = "INSERT INTO ratios (symbol, ratio_date, download_date, ratios_dictionary) VALUES ( '" \
+            sql = "INSERT INTO ratios_1 (symbol, ratio_date, download_date, ratios_dictionary) VALUES ( '" \
                                               + sym + "','" \
                                               + ratio_date.strftime('%Y-%m-%d') + "','" \
                                               + timestamp.strftime('%Y-%m-%d') + "','" \
@@ -87,11 +87,176 @@ def get_MCRatios(symbol=None):
         print("Downloaded Ratios for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
         #print(ratios_dict_str)
         #engine.execute(sql)
+def populate_ratios_table():
+    
+    engine = mrigutilities.sql_engine()
+    ratioList = []
+    sql = "select * from ratios_1"
+    ratios = engine.execute(sql).fetchall()
+    sql  = "select column_name from information_schema.columns where table_schema ='public' and table_name ='ratios'"
+    columns = engine.execute(sql).fetchall()
+    columns = [column[0] for column in columns]
+    sql  = "select code_value from codes where code_name ='ratios'"
+    column_maps = engine.execute(sql).fetchall()
+    column_maps = {code.split(":")[0]:code.split(":")[1] for code in column_maps[0][0].split("|")}
+    for line in ratios:
+        datavector = ["" for column in columns]
+        datavector[0] = line[0]
+        datavector[1] = line[1]
+        datavector[2] = line[2]
+        ratioline = [code.split(":") for code in line[3].split("|")]
+        for item in ratioline:
+            try:
+                datavector[columns.index(column_maps[item[0]])] = item[1]
+            except:
+                pass
+        ratioList.append(datavector)
+    #print(ratioList)
+    ratioList = pandas.DataFrame(ratioList,columns=columns)
+    ratioList = mrigutilities.clean_df_db_dups(ratioList,'ratios',engine,dup_cols=["symbol","ratio_date"],leftIdx=True)
+    ratioList = ratioList[0]
+    #print(ratioList)
+    ratioList.to_sql('ratios',engine, if_exists='append', index=False)
+    
+
+def get_FaceValue(symbol=None):
+    
+    engine = mrigutilities.sql_engine()
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
+    codes = engine.execute(sql).fetchall()
+    codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
+    if not symbol:
+        symbollist = codes
+    else:
+        symbollist = [symbol]
+    for symbol in symbollist:
+        url = mrigstatics.MC_URLS['MC_CODES_URL'] +"finance-general/"+ symbol.split(":")[-1].strip()+"/"+symbol.split(":")[-2].strip()
+        #print(url)
+        s = requests.Session()
+        response = s.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        nsesym = soup.find_all(class_="FL gry10")[0]
+        nsesym = nsesym.contents[2].split(":")[1].strip()
+#        marketcap = soup.find_all(class_="FR gD_12")[0].text.strip()
+        facevalue = soup.find_all(class_="FR gD_12")[10].text.strip()
+        update_tuple = ""
+        update_tuple = update_tuple + "('"+nsesym+"','"+facevalue+"'),"
+    sql = "UPDATE security_master as sm set "\
+                              + "sm.face_value = c.face_value "\
+                              + "from (values "+update_tuple[:-1] + ") "\
+                              + "as c(nsesym,face_value) "\
+                              + "where c.nsesym = sm.symbol"
+        #print(sql)
+    #try:
+    engine.execute(sql)
+    #except:
+    #    pass
+    #print(ratios_dict_str)
+        #engine.execute(sql)
+
+def get_OutShares(symbol=None):
+    
+    engine = mrigutilities.sql_engine()
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
+    codes = engine.execute(sql).fetchall()
+    codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
+    #sql = "select symbol, close from stock_history where date in (select max(date) from stock_history)"
+    #prices = pandas.read_sql(sql,engine,index_col='symbol')
+    if not symbol:
+        symbollist = codes
+    else:
+        symbollist = [symbol]
+    slist = []
+    for symbol in symbollist:
+        url = mrigstatics.MC_URLS['MC_CODES_URL'] +"finance-general/"+ symbol.split(":")[-1].strip()+"/"+symbol.split(":")[-2].strip()
+        #print(url)
+        s = requests.Session()
+        response = s.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+            
+        nsesym = soup.find_all(class_="FL gry10")[0]
+        nsesym = nsesym.contents[2].split(":")[1].strip()
+        sector = soup.find_all(class_="FL gry10")[0].contents[7].text.strip()
+        marketcap = soup.find_all(class_="FR gD_12")[0].text.strip().replace(",","")
+        price = soup.find_all(class_="th03 gD_12")[22].text.strip().replace(",","")
+        try:
+            outshares = float(marketcap)/float(price)*10000000
+            slist.append([nsesym,sector,marketcap,price,outshares])
+        except:
+            pass
+#        update_tuple = ""
+#        update_tuple = update_tuple + "('"+nsesym+"','"+int(float(marketcap)*10000000/float(prices.loc[nsesym]['close']))+"'),"
+#    sql = "UPDATE security_master as sm set "\
+#                              + "sm.outstanding_shares = c.outshares "\
+#                              + "from (values "+update_tuple[:-1] + ") "\
+#                              + "as c(nsesym,outshares) "\
+#                              + "where c.nsesym = sm.symbol"
+    slist = pandas.DataFrame(slist,columns=['symbol','sector','marketcap_cr','price','outshares'])
+    slist.to_csv("stock_sector1.csv",index=False,header=True)
+    #try:
+        #engine.execute(sql)
+    #except:
+    #    pass
+    #print(ratios_dict_str)
+        #engine.execute(sql)
+
+def get_OutShares_NSE(symbol=None):
+    
+    engine = mrigutilities.sql_engine()
+    sql = "select distinct symbol from security_master"
+    codes = engine.execute(sql).fetchall()
+    codes = [code[0] for code in codes]
+    #sql = "select symbol, close from stock_history where date in (select max(date) from stock_history)"
+    #prices = pandas.read_sql(sql,engine,index_col='symbol')
+    if not symbol:
+        symbollist = codes
+    else:
+        symbollist = [symbol]
+    slist = []
+    for symbol in symbollist:
+        url = "https://nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol="+symbol.strip()+"&illiquid=0&smeFlag=0&itpFlag=0"
+        #url = mrigstatics.MC_URLS['MC_CODES_URL'] +"finance-general/"+ symbol.split(":")[-1].strip()+"/"+symbol.split(":")[-2].strip()
+        #print(url)
+        s = requests.Session()
+        response = s.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
         
+        div = soup.find("div" , {"id":"responseDiv"})
+        marketcap = div.text[div.text.find(":", div.text.find("cm_ffm"))+2:div.text.find(".", div.text.find("cm_ffm"))+3].replace(",","")
+        vwap = div.text[div.text.find(":", div.text.find("averagePrice"))+2:div.text.find(".", div.text.find("averagePrice"))+3].replace(",","")
+        fv = div.text[div.text.find(":", div.text.find("faceValue"))+2:div.text.find(".", div.text.find("faceValue"))+3]        
+        name = div.text[div.text.find(":", div.text.find("companyName"))+2:div.text.find(",", div.text.find("companyName"))-1]
+        exdate = div.text[div.text.find(":", div.text.find("exDate"))+2:div.text.find(",", div.text.find("exDate"))-1]
+        recorddate = div.text[div.text.find(":", div.text.find("recordDate"))+2:div.text.find(",", div.text.find("recordDate"))-1]
+        dividend = div.text[div.text.find(":", div.text.find("purpose"))+2:div.text.find(",", div.text.find("purpose"))-1]
+        
+        try:
+            outshares = float(marketcap)/float(vwap)*10000000
+            slist.append([symbol,name,fv,marketcap,vwap,outshares,dividend,exdate,recorddate])
+        except:
+            pass
+#        update_tuple = ""
+#        update_tuple = update_tuple + "('"+nsesym+"','"+int(float(marketcap)*10000000/float(prices.loc[nsesym]['close']))+"'),"
+#    sql = "UPDATE security_master as sm set "\
+#                              + "sm.outstanding_shares = c.outshares "\
+#                              + "from (values "+update_tuple[:-1] + ") "\
+#                              + "as c(nsesym,outshares) "\
+#                              + "where c.nsesym = sm.symbol"
+    slist = pandas.DataFrame(slist,columns=['symbol','name','facev','marketcap_cr','vwap','outshares','dividend','exdate','recorddate'])
+    slist.to_csv("stock_nse.csv",index=False,header=True)
+    #try:
+        #engine.execute(sql)
+    #except:
+    #    pass
+    #print(ratios_dict_str)
+        #engine.execute(sql)
+        
+       
 def get_MCQtrly_Results(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -144,7 +309,7 @@ def get_MCQtrly_Results(symbol=None):
 def get_BalanceSheet(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -197,7 +362,7 @@ def get_BalanceSheet(symbol=None):
 def get_ProfitLossStatement(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -249,7 +414,7 @@ def get_ProfitLossStatement(symbol=None):
 def get_CashFLowStatement(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -301,7 +466,7 @@ def get_CashFLowStatement(symbol=None):
 def get_CorporateActions(symbol=None):
     
     engine = mrigutilities.sql_engine()
-    sql = "select code_value from codes where code_name='MONEY_CONTROL_STOCK_CODES' limit 1"
+    sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
     codes = [code.split(": ")[1] for code in codes[0][0].split("|")]
     if not symbol:
@@ -607,12 +772,13 @@ def get_CorporateActions(symbol=None):
 if __name__ == '__main__':
     #get_MCStockCodes()
     
-#    get_MCRatios()
+    #get_MCRatios()
+    #populate_ratios_table()
 #    get_MCQtrly_Results()
     #get_MCQtrly_Results("MS24:marutisuzukiindia")
 #    get_BalanceSheet("MS24:marutisuzukiindia")
 #    get_BalanceSheet()   
     #get_ProfitLossStatement()
     #get_CashFLowStatement()
-    get_CorporateActions()
-
+    #get_OutShares_NSE()
+    #get_CorporateActions()

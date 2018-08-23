@@ -74,8 +74,11 @@ TR_INDICES = {'Broad_Market' : ['NIFTY 50',
 YIELD CURVE DATA FROM www.worldgovernmentbonds.com
 """
 
-WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/'}
-CURVE_LIST = ['INR']
+WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/',
+                 'USD': 'http://www.worldgovernmentbonds.com/country/united-states/',
+                 'GBP': 'http://www.worldgovernmentbonds.com/country/united-kingdom//'}
+
+CURVE_LIST = ['INR','USD','GBP']
 
 COLUMN_MAPPINGS = {'ResidualMaturity':'tenor',
                    'Yield':'yield',
@@ -105,6 +108,39 @@ MC_URLS = {'MC_CODES_URL':'https://www.moneycontrol.com/india/stockpricequote/',
            'MC_PROFIT_LOSS_URL':'https://www.moneycontrol.com/financials/',
            'MC_CASHFLOW_STATEMENT_URL':'https://www.moneycontrol.com/financials/',
            'MC_CORP_ACTION_URL':'https://www.moneycontrol.com/company-facts/'}
+
+
+"""
+ OECD Data
+"""
+MC_STOCK_CODE = {}
+
+OECD_DATABASE_CODES = {'BALANCE_OF_PAYMENTS' : 'MEI_BOP6',
+             'BUSINESS_TENDENCY':'MEI_BTS_COS',
+             'COMPOSITE_LEADING_INDICATORS':'MEI_CLI',
+             'FINANCIAL_STATISTICS':'MEI_FIN',
+             'INDUSTRY':'MEI_REAL',
+             'INTERNATIONAL_TRADE':'MEI_TRD',
+             'LABOUR_MARKET':'STLABOUR',
+             'CONSUMER_PRICES':'MEI_PRICES',
+             'PRODUCER_PRICE_INDICES':'MEI_PRICES_PPI',
+             'PPP':'PPPGDP',
+             'COMPARATIVE_PRICES':'CPL',
+             'GDP':'QNA'}
+
+OECD_URLS = {'BALANCE_OF_PAYMENTS' : 'https://stats.oecd.org/SDMX-JSON/data/MEI_BOP6/.IND../all?startPeriod=1947',
+             'BUSINESS_TENDENCY':'https://stats.oecd.org/SDMX-JSON/data/MEI_BTS_COS/.IND../all?startPeriod=1947',
+             'COMPOSITE_LEADING_INDICATORS':'https://stats.oecd.org/SDMX-JSON/data/MEI_CLI/.IND./all?startPeriod=1947',
+             'FINANCIAL_STATISTICS':'https://stats.oecd.org/SDMX-JSON/data/MEI_FIN/.IND./all?startPeriod=1947',
+             'INDUSTRY':'https://stats.oecd.org/SDMX-JSON/data/MEI_REAL/.IND./all?startPeriod=1947',
+             'INTERNATIONAL_TRADE':'https://stats.oecd.org/SDMX-JSON/data/MEI_TRD/.IND../all?startPeriod=1947',
+             'LABOUR_MARKET':'STLABOUR',
+             'CONSUMER_PRICES':'MEI_PRICES',
+             'PRODUCER_PRICE_INDICES':'https://stats.oecd.org/SDMX-JSON/data/MEI_PRICES_PPI/.IND../all?startPeriod=1947',
+             'PPP':'https://stats.oecd.org/SDMX-JSON/data/PPPGDP/.IND/all?startPeriod=1947',
+             'COMPARATIVE_PRICES':'CPL',
+             'GDP':'https://stats.oecd.org/SDMX-JSON/data/QNA/IND.../all?startPeriod=1947'}
+
 
 
 """

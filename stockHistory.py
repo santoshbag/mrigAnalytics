@@ -71,6 +71,8 @@ for stock in stocks:
             stocksdata = stocksdata[0]
             try:
                 stocksdata.set_index('date',inplace=True)
+                stocksdata['close_adj'] = stocksdata['close']
+                stocksdata['volume_adj'] = stocksdata['volume']
                 stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
@@ -82,6 +84,8 @@ for stock in stocks:
             stocksdata = stocksdata[0]
             try:
                 stocksdata.set_index('date',inplace=True)
+                stocksdata['close_adj'] = stocksdata['close']
+                stocksdata['volume_adj'] = stocksdata['volume']
                 stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
             except:
                 pass
@@ -99,6 +103,8 @@ if write_counter >=1:
     stocksdata = stocksdata[0]
     try:
         stocksdata.set_index('date',inplace=True)
+        stocksdata['close_adj'] = stocksdata['close']
+        stocksdata['volume_adj'] = stocksdata['volume']
         stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
     except:
         pass
@@ -110,6 +116,8 @@ else:
      stocksdata = stocksdata[0]
      try:
          stocksdata.set_index('date',inplace=True)
+         stocksdata['close_adj'] = stocksdata['close']
+         stocksdata['volume_adj'] = stocksdata['volume']
          stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
      except:
          pass

@@ -178,7 +178,13 @@ def getStockData(symbol,start_date,end_date):
     engine = sql_engine()
     stock_df = pd.read_sql(sql,engine)
     if not stock_df.empty:
+        for i in range(0,len(stock_df['date'])-1):
+            stock_df.iloc[i]['date'] = datetime.datetime.combine(stock_df.iloc[i]['date'],datetime.time())
+        stock_df.date = pd.DatetimeIndex(stock_df.date)
         stock_df.set_index('date',inplace=True)
+        #for i in range(0,len(stock_df.index)-1):
+         #   stock_df.index[i] = datetime.datetime.combine(stock_df.index[i], datetime.time())
+
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return stock_df
  

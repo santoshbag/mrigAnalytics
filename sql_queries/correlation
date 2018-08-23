@@ -1,0 +1,27 @@
+insert into correlations
+(select date, stock, stockprice, 
+corr(stockprice,nifty) over (partition by stock order by date rows between 19 preceding and current row) as nifty_20_corr,
+corr(stockprice,nifty) over (partition by stock order by date rows between 49 preceding and current row) as nifty_50_corr,
+corr(stockprice,nifty) over (partition by stock order by date rows between 149 preceding and current row) as nifty_150_corr,
+corr(stockprice,nifty) over (partition by stock order by date rows between 249 preceding and current row) as nifty_250_corr,
+corr(stockprice,brent) over (partition by stock order by date rows between 19 preceding and current row) as brent_20_corr,
+corr(stockprice,brent) over (partition by stock order by date rows between 49 preceding and current row) as brent_50_corr,
+corr(stockprice,brent) over (partition by stock order by date rows between 149 preceding and current row) as brent_150_corr,
+corr(stockprice,brent) over (partition by stock order by date rows between 249 preceding and current row) as brent_250_corr,
+corr(stockprice,gold) over (partition by stock order by date rows between 19 preceding and current row) as gold_20_corr,
+corr(stockprice,gold) over (partition by stock order by date rows between 49 preceding and current row) as gold_50_corr,
+corr(stockprice,gold) over (partition by stock order by date rows between 149 preceding and current row) as gold_150_corr,
+corr(stockprice,gold) over (partition by stock order by date rows between 249 preceding and current row) as gold_250_corr
+
+from
+(select sh.date as date, sh.symbol as stock, sh.close_adj as stockprice , sh1.close as nifty , 
+ to_number(co.price,'99999.99') as brent, 
+ to_number(gp.price,'99999.99') as gold
+from stock_history sh
+inner join stock_history sh1 on sh.date = sh1.date
+inner join crudeoil_prices co on sh.date = co.value_date
+inner join gold_prices gp on sh.date = gp.value_date
+where sh.series='EQ' and sh1.series='IN'
+and sh1.symbol='NIFTY 50'
+and co.crude_benchmark='BRENT'
+order by sh.symbol, sh.date asc) as dat)
