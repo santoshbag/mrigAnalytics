@@ -148,18 +148,18 @@ def get_equity_fundlist():
     
         
 if __name__ == '__main__':
-    
+#    
     today = datetime.date.today()
-    #weekly download of fundsnapshots and fund portfolio holdings
-    
+#    #weekly download of fundsnapshots and fund portfolio holdings
+#    
     if today.strftime('%A') == 'Thursday':
         get_VR_MF_CODES()
         eqlist = get_equity_fundlist()
-        #get_fund_snapshots()
+        get_fund_snapshots()
         get_fund_portfolios(eqlist)
-
-#    fs = get_fund_portfolios(eqlist)
-    #fs = get_fund_snapshots()
+#
+##    fs = get_fund_portfolios(eqlist)
+#    #fs = get_fund_snapshots()
     #print (fs)
       
         

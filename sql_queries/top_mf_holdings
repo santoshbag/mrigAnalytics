@@ -1,0 +1,10 @@
+select  count(mfp.fund) , mfp.company,(select symbol from security_master where value_research_name = mfp.company ) as symbol
+from mf_portfolios as mfp inner join mf_snapshot as mfs 
+on  mfp.fund = mfs.fund 
+where
+to_number(mfs.rating,'9')=5 and
+to_number(mfp.holding_current,'99.99')>0 and 
+mfp.download_date = (select download_date from mf_snapshot order by download_date desc limit 1) and
+mfp.download_date = mfs.download_date
+group by mfp.company
+order by count desc

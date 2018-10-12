@@ -1,0 +1,10 @@
+CREATE TEMP TABLE tmp_x (SYMBOL text, NAME text, FC text); -- but see below
+
+COPY tmp_x FROM 'F:\Mrig Analytics\Development\mrigAnalytics\NSE_FC.csv' (FORMAT csv);
+
+UPDATE security_master
+SET stock_name = tmp_x.NAME
+FROM   tmp_x
+WHERE  security_master.symbol = tmp_x.SYMBOL;
+
+DROP TABLE tmp_x; -- else it is dropped at end of session automatically

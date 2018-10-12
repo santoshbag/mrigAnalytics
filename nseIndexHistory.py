@@ -41,6 +41,11 @@ nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%
 errorLog.write("\n########### START OF nseIndexHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 engine = mrigutilities.sql_engine()
 
+disable_sql = "alter table stock_history disable trigger return_trigger"
+enable_sql = "alter table stock_history enable trigger return_trigger"
+
+engine.execute(disable_sql)
+
 #Indices = Indices[4:6]
 
 for index in indices:
@@ -124,6 +129,7 @@ else:
      except:
         pass
 print(str(nseIndicesDownloaded) +" Indices downloaded of a total of "+ str(nseIndexListLength)+" Indices ")
+engine.execute(enable_sql)
 nseIndexPrices.close()
 errorLog.write("\n########### END OF nseIndexHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
 errorLog.close()

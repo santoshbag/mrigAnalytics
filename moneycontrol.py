@@ -7,7 +7,7 @@ This module deals with data downloads and manipulation from Money Control
 """
 
 import requests
-import datetime,pandas
+import datetime,pandas,time
 from bs4 import BeautifulSoup
 import mrigstatics,mrigutilities
 
@@ -56,35 +56,37 @@ def get_MCRatios(symbol=None):
         timestamp = datetime.datetime.now()
     
         ratios_dict = {}
-        sym = soup.find_all(class_="FL gry10")[0]
-        sym = sym.contents[2].split(":")[1].strip()
-        ratio_table = soup.find_all(class_='table4')[2]  # table 3 contains the ratios.
-        rows = ratio_table.find_all("tr")
-        ratio_dates = [row.text for row in rows[2].find_all("td")[1:]]
-        for i in range(1,len(ratio_dates)+1):
-            ratio_date = "30-"+ratio_dates[i-1].split(" ")[0]+"-"+ratio_dates[i-1].split(" ")[1]
-            ratio_date = datetime.datetime.strptime(ratio_date,'%d-%b-%y')
-            for row in rows[4:-4]:
+        try:
+            sym = soup.find_all(class_="FL gry10")[0]
+            sym = sym.contents[2].split(":")[1].strip()
+            ratio_table = soup.find_all(class_='table4')[2]  # table 3 contains the ratios.
+            rows = ratio_table.find_all("tr")
+            ratio_dates = [row.text for row in rows[2].find_all("td")[1:]]
+            for i in range(1,len(ratio_dates)+1):
+                ratio_date = "30-"+ratio_dates[i-1].split(" ")[0]+"-"+ratio_dates[i-1].split(" ")[1]
+                ratio_date = datetime.datetime.strptime(ratio_date,'%d-%b-%y')
+                for row in rows[4:-4]:
+                    try:
+                        ratio_name = row.find_all("td")[0].text.strip().replace(",","")
+                        if ratio_name != "":
+                            ratios_dict[ratio_name] = row.find_all("td")[i].text.strip().replace(",","")
+                    except:
+                        pass
+                ratios_dict_str =  str(ratios_dict)[1:-1].replace("'","").replace(",","|").replace("%","per")  
+                sql = "INSERT INTO ratios_1 (symbol, ratio_date, download_date, ratios_dictionary) VALUES ( '" \
+                                                  + sym + "','" \
+                                                  + ratio_date.strftime('%Y-%m-%d') + "','" \
+                                                  + timestamp.strftime('%Y-%m-%d') + "','" \
+                                                  + ratios_dict_str +"')"
+                #print(sql)
                 try:
-                    ratio_name = row.find_all("td")[0].text.strip().replace(",","")
-                    if ratio_name != "":
-                        ratios_dict[ratio_name] = row.find_all("td")[i].text.strip().replace(",","")
+                    engine.execute(sql)
+                    successful_download.append(sym)
                 except:
                     pass
-            ratios_dict_str =  str(ratios_dict)[1:-1].replace("'","").replace(",","|").replace("%","per")  
-            sql = "INSERT INTO ratios_1 (symbol, ratio_date, download_date, ratios_dictionary) VALUES ( '" \
-                                              + sym + "','" \
-                                              + ratio_date.strftime('%Y-%m-%d') + "','" \
-                                              + timestamp.strftime('%Y-%m-%d') + "','" \
-                                              + ratios_dict_str +"')"
-            #print(sql)
-            try:
-                engine.execute(sql)
-                successful_download.append(sym)
-            except:
-                pass
-        
-        print("Downloaded Ratios for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
+        except:
+            pass
+        print("Downloaded Ratios for "+symbol+" | "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
         #print(ratios_dict_str)
         #engine.execute(sql)
 def populate_ratios_table():
@@ -474,7 +476,9 @@ def get_CorporateActions(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
-    for symbol in symbollist:
+    #pos = symbollist.index('SC49:somanyceramics')
+    for symbol in symbollist:#[pos+1:]:
+        print(symbol+"---------")
         meeting_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/board-meetings/"+symbol.split(":")[-2].strip()
         dividend_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/dividends/"+symbol.split(":")[-2].strip()
         bonus_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/bonus/"+symbol.split(":")[-2].strip()
@@ -483,58 +487,73 @@ def get_CorporateActions(symbol=None):
         s = requests.Session()
         
         # Download Meeting details
-        response = s.get(meeting_url)
+        try:
+            response = s.get(meeting_url)
+        except ConnectionError as e:
+            print("Santosh Error---"+e)
+            time.sleep(2*60)
+            response = s.get(meeting_url)
+            
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
-    
-        sym = soup.find_all(class_="FL gry10")[0]
-        sym = sym.contents[2].split(":")[1].strip()
-        meeting_table = soup.find_all(class_='tbldivid')
-        rows = meeting_table[0].find_all("tr")
-        select_sql = "SELECT to_char(meeting_date, 'YYYY-MM-DD'), meeting_detail from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'MEETING'"
-        meeting_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, meeting_date, meeting_detail) VALUES " 
-        insert_data_list = []
-        for row in rows:
+        
+        try:
+            sym = soup.find_all(class_="FL gry10")[0]
+            sym = sym.contents[2].split(":")[1].strip()
+            meeting_table = soup.find_all(class_='tbldivid')
+            rows = meeting_table[0].find_all("tr")
+            select_sql = "SELECT to_char(meeting_date, 'YYYY-MM-DD'), meeting_detail from corporate_actions where symbol = '"+sym+"' and corporate_action_type = 'MEETING'"
+            meeting_sql = "INSERT INTO corporate_actions (symbol, corporate_action_type, download_date, source, meeting_date, meeting_detail) VALUES " 
+            insert_data_list = []
+            for row in rows:
+                try:
+                    meeting_date = row.find_all("td")[0].text.strip().replace(",","")
+                    meeting_date = datetime.datetime.strptime(meeting_date,'%d-%m-%Y')
+                    if meeting_date != "":
+                        meeting_detail = row.find_all("td")[1].text.strip().replace(",","").replace("'","_").replace("%"," per")
+                        insert_data_list.append((meeting_date.strftime('%Y-%m-%d'),meeting_detail))
+    #                    meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
+    #                          + timestamp.strftime('%Y-%m-%d') + "','" \
+    #                          + meeting_date.strftime('%Y-%m-%d') + "','" \
+    #                          + meeting_detail + "', 'MONEYCONTROL'),"           
+                except:
+                    pass
+                #print(sql)
+            #print(meeting_sql)
+            #engine.execute(meeting_sql[:-1])
+            existing_data = engine.execute(select_sql).fetchall()
+            existing_data = [tuple(a) for a in existing_data]
+            #print(insert_data_list)
+            #print("#################")
+            insert_data_list = set(insert_data_list) - set(existing_data)
+            #print(existing_data)
+            #print("-----")
+            #print(insert_data_list)
+            for data in insert_data_list:
+                meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
+                              + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
+                              + data[0] + "','" \
+                              + data[1] + "'),"
+            #engine.execute(meeting_sql[:-1])
             try:
-                meeting_date = row.find_all("td")[0].text.strip().replace(",","")
-                meeting_date = datetime.datetime.strptime(meeting_date,'%d-%m-%Y')
-                if meeting_date != "":
-                    meeting_detail = row.find_all("td")[1].text.strip().replace(",","").replace("'","_").replace("%"," per")
-                    insert_data_list.append((meeting_date.strftime('%Y-%m-%d'),meeting_detail))
-#                    meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
-#                          + timestamp.strftime('%Y-%m-%d') + "','" \
-#                          + meeting_date.strftime('%Y-%m-%d') + "','" \
-#                          + meeting_detail + "', 'MONEYCONTROL'),"           
+                engine.execute(meeting_sql[:-1])
+                successful_download.append(sym)
+                print("Downloaded Board Meetings for "+sym)
             except:
                 pass
-            #print(sql)
-        #print(meeting_sql)
-        #engine.execute(meeting_sql[:-1])
-        existing_data = engine.execute(select_sql).fetchall()
-        existing_data = [tuple(a) for a in existing_data]
-        #print(insert_data_list)
-        #print("#################")
-        insert_data_list = set(insert_data_list) - set(existing_data)
-        #print(existing_data)
-        #print("-----")
-        #print(insert_data_list)
-        for data in insert_data_list:
-            meeting_sql = meeting_sql + "('"+sym + "','MEETING','" \
-                          + timestamp.strftime('%Y-%m-%d') + "','MONEYCONTROL','" \
-                          + data[0] + "','" \
-                          + data[1] + "'),"
-        #engine.execute(meeting_sql[:-1])
-        try:
-            engine.execute(meeting_sql[:-1])
-            successful_download.append(sym)
-            print("Downloaded Board Meetings for "+sym)
         except:
             pass
+            
+            # Download Dividends
+        #response = s.get(dividend_url)
+        try:
+            response = s.get(dividend_url)
+        except ConnectionError as e:
+            print("Santosh Error---"+e)
+            time.sleep(2*60)
+            response = s.get(dividend_url)
         
-        
-        # Download Dividends
-        response = s.get(dividend_url)
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -592,6 +611,13 @@ def get_CorporateActions(symbol=None):
 
         # Download Bonus
         response = s.get(bonus_url)
+        try:
+            response = s.get(bonus_url)
+        except ConnectionError as e:
+            print("Santosh Error---"+e)
+            time.sleep(2*60)
+            response = s.get(bonus_url)
+        
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -647,6 +673,13 @@ def get_CorporateActions(symbol=None):
         
         # Download Rights
         response = s.get(rights_url)
+        try:
+            response = s.get(rights_url)
+        except ConnectionError as e:
+            print("Santosh Error---"+e)
+            time.sleep(2*60)
+            response = s.get(rights_url)
+        
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -710,7 +743,14 @@ def get_CorporateActions(symbol=None):
         #engine.execute(sql)
 
         # Download Splits
-        response = s.get(splits_url)
+        #response = s.get(splits_url)
+        try:
+            response = s.get(splits_url)
+        except ConnectionError as e:
+            print("Santosh Error---"+e)
+            time.sleep(2*60)
+            response = s.get(splits_url)
+        
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -770,15 +810,15 @@ def get_CorporateActions(symbol=None):
 
 
 if __name__ == '__main__':
-    #get_MCStockCodes()
+    get_MCStockCodes()
     
-    #get_MCRatios()
-    #populate_ratios_table()
+#    get_MCRatios()
+#    populate_ratios_table()
 #    get_MCQtrly_Results()
     #get_MCQtrly_Results("MS24:marutisuzukiindia")
 #    get_BalanceSheet("MS24:marutisuzukiindia")
 #    get_BalanceSheet()   
-    #get_ProfitLossStatement()
+#    get_ProfitLossStatement()
     #get_CashFLowStatement()
     #get_OutShares_NSE()
-    #get_CorporateActions()
+    get_CorporateActions()

@@ -1,4 +1,4 @@
-insert into correlations
+insert into price_correlations
 (select date, stock, stockprice, 
 corr(stockprice,nifty) over (partition by stock order by date rows between 19 preceding and current row) as nifty_20_corr,
 corr(stockprice,nifty) over (partition by stock order by date rows between 49 preceding and current row) as nifty_50_corr,

@@ -38,7 +38,10 @@ stocksdata = DataFrame()
 nseStockPrices = open(data_folder+"nseStockHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
 
 engine = mrigutilities.sql_engine()
+disable_sql = "alter table stock_history disable trigger return_trigger"
+enable_sql = "alter table stock_history enable trigger return_trigger"
 
+engine.execute(disable_sql)
 #engine = create_engine('postgresql+psycopg2://postgres:xanto007@localhost:5432/RB_WAREHOUSE')
 
 database_cols = {'%Deliverble':'per_deliverable_volume'}
@@ -123,5 +126,6 @@ else:
          pass
 print(str(nseStocksDownloaded) +" Stocks downloaded of a total of "+ str(nseStockListLength)+" Stocks ")
 nseStockPrices.close()
+engine.execute(enable_sql)
 engine.dispose()
 errorLog.close()

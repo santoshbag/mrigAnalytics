@@ -19,6 +19,14 @@ def get_yieldCurve(currency="INR"):
     
     soup = BeautifulSoup(response.text, 'html.parser')
     
+    yield_table_num = {'INR':2,
+                       'USD':3,
+                       'GBP':3}
+    
+    price_table_num = {'INR':4,
+                       'USD':5,
+                       'GBP':5}
+    
     curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
     curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
     curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y' )
@@ -27,19 +35,19 @@ def get_yieldCurve(currency="INR"):
     yield_table = []
     price_table = []
     
-    yield_heads = tables[2].find_all('th')
+    yield_heads = tables[yield_table_num[currency]].find_all('th')
     yield_table_cols = [col.text for col in yield_heads]
     
-    for row in tables[2].find_all('tr'):
+    for row in tables[yield_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
         yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:-1])
     
-    price_heads = tables[4].find_all('th')
+    price_heads = tables[price_table_num[currency]].find_all('th')
     price_table_cols = [col.text for col in price_heads]
     price_table_cols.pop(3)
     
     
-    for row in tables[4].find_all('tr'):
+    for row in tables[price_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
         price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
         
