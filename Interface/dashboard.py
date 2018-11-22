@@ -29,7 +29,7 @@ colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 
 @xw.func
 @xw.ret(expand='table', transpose=False)
-def mrigxl_db_fx(location):
+def mrigxl_db_fx(location,sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -58,20 +58,22 @@ def mrigxl_db_fx(location):
     plt = mp.singleScaleLine_plots(labels,'INRUSD')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
-    primary.plot(dates,fxrates,"orange",label="SpotFX")
     
-    sht.pictures.add(fig, 
-                     name='INRUSD', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
+    primary.plot(dates,fxrates,"orange",label="SpotFX")
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet]     
+        sht.pictures.add(fig, 
+                         name='INRUSD', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return fxdb
 
 @xw.func
 @xw.ret(expand='table', transpose=False)
-def mrigxl_db_crude(location):
+def mrigxl_db_crude(location,sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -100,10 +102,12 @@ def mrigxl_db_crude(location):
     plt = mp.singleScaleLine_plots(labels,'Brent')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
+   
     primary.plot(dates,oilrates,"orange",label="SpotFX")
-    
-    sht.pictures.add(fig, 
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet]  
+        sht.pictures.add(fig, 
                      name='Brent', 
                      update=True,
                      left=sht.range(location).left,
@@ -113,7 +117,7 @@ def mrigxl_db_crude(location):
 
 @xw.func
 @xw.ret(expand='table', transpose=False)
-def mrigxl_db_nifty(location):
+def mrigxl_db_nifty(location,sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -127,36 +131,39 @@ def mrigxl_db_nifty(location):
     dates = [item[0] for item in niftyrates]
     niftyrates = [item[1] for item in niftyrates]
     
-    todaynifty = niftyrates[0]
-    yesterdaynifty = niftyrates[1]
+    todaynifty = mu.getIndexQuote('NIFTY 50')   #niftyrates[0]
+    yesterdaynifty = niftyrates[0]
     lastmonthnifty = niftyrates[-1]
     lastweeknifty = niftyrates[6]
 
-    dailyniftychange = float(todaynifty/yesterdaynifty -1)
-    weeklyniftychange = float(todaynifty/lastweeknifty -1)
-    monthlyniftychange = float(todaynifty/lastmonthnifty -1)
+    dailyniftychange = todaynifty/float(yesterdaynifty) -1
+    weeklyniftychange = todaynifty/float(lastweeknifty) -1
+    monthlyniftychange = todaynifty/float(lastmonthnifty) -1
      
-    niftydb = [[dates[0],dates[6],dates[-1]],[todaynifty,lastweeknifty,lastmonthnifty],[dailyniftychange,weeklyniftychange,monthlyniftychange]]
+    niftydb = [[today,dates[6],dates[-1]],[todaynifty,lastweeknifty,lastmonthnifty],[dailyniftychange,weeklyniftychange,monthlyniftychange]]
     
     labels = ['Dates','Nifty']
     plt = mp.singleScaleLine_plots(labels,'Nifty')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
+    dates.insert(0,today)
+    niftyrates.insert(0,todaynifty)
     primary.plot(dates,niftyrates,"orange",label="Nifty")
-    
-    sht.pictures.add(fig, 
-                     name='Nifty', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='Nifty', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return niftydb
 
     
 @xw.func
 @xw.ret(expand='table', transpose=False)
-def mrigxl_db_gold(location):
+def mrigxl_db_gold(location,sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -185,21 +192,22 @@ def mrigxl_db_gold(location):
     plt = mp.singleScaleLine_plots(labels,'Gold')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
-    primary.plot(dates,goldrates,"orange",label="Gold")
     
-    sht.pictures.add(fig, 
-                     name='Gold', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
-#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    primary.plot(dates,goldrates,"orange",label="Gold")
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='Gold', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+    #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return golddb
 
 
 @xw.func
 @xw.ret(expand='table', transpose=False)
-def mrigxl_db_rates(location):
+def mrigxl_db_rates(location,sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -267,18 +275,20 @@ def mrigxl_db_rates(location):
     primary.plot(INRdates,INRyield1y,"pink",label="INR 1Y")
     primary.plot(USDdates,USDyield3m,"cyan",label="USD 3M")
     primary.plot(USDdates,USDyield1y,"yellow",label="USD 1Y")
-    
-    sht.pictures.add(fig, 
-                     name='Rates', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
-#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='Rates', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+    #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return rates
 
 @xw.func
 @xw.ret(expand='table', transpose=True)
-def mrigxl_top_mf_holdings(location,tenor='6M'):
+def mrigxl_top_mf_holdings(location,tenor='6M',sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -293,7 +303,6 @@ def mrigxl_top_mf_holdings(location,tenor='6M'):
     plt = mp.singleScaleLine_plots(labels,'Returns')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
     
     cum_returns = ["Returns(An)"]
     color = 0
@@ -308,13 +317,15 @@ def mrigxl_top_mf_holdings(location,tenor='6M'):
         primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
         primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
         color = color + 1
-        
-    sht.pictures.add(fig, 
-                     name='Returns', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
-                        
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet]     
+        sht.pictures.add(fig, 
+                         name='Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                            
                         
     lis = list(top_holdings['company'])
     lis.insert(0,"Top MF Holdings")
@@ -323,7 +334,7 @@ def mrigxl_top_mf_holdings(location,tenor='6M'):
         
 @xw.func
 @xw.ret(expand='table', transpose=True)
-def mrigxl_nifty_sectors(location,tenor='6M'):
+def mrigxl_nifty_sectors(location,tenor='6M',sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -342,14 +353,13 @@ def mrigxl_nifty_sectors(location,tenor='6M'):
     plt = mp.singleScaleLine_plots(labels,'Sector Returns')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
     
     sector = ["Sectors"]
     cum_returns = ["Returns(An)"]
     color = 0
     for sym in sectors:
         try:
-            stk = stocks.Stock(sym)
+            stk = stocks.Index(sym)
             stk.get_returns(tenor)
             dates = list(stk.daily_logreturns.index)
             cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
@@ -362,18 +372,21 @@ def mrigxl_nifty_sectors(location,tenor='6M'):
             color = color + 1
         except:
             pass
-    sht.pictures.add(fig, 
-                     name='Sector Returns', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet]     
+        sht.pictures.add(fig, 
+                         name='Sector Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
                         
     ret_lis = [sector,cum_returns]
     return ret_lis
         
 @xw.func
 @xw.ret(expand='table', transpose=True)
-def mrigxl_bigmoneyzacks(location,tenor='6M'):
+def mrigxl_bigmoneyzacks(location,tenor='6M',sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -388,7 +401,7 @@ def mrigxl_bigmoneyzacks(location,tenor='6M'):
     plt = mp.singleScaleLine_plots(labels,'BM Returns')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
+    
     
     cum_returns = ["Returns(An)"]
     color = 0
@@ -403,12 +416,14 @@ def mrigxl_bigmoneyzacks(location,tenor='6M'):
         primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
         primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
         color = color + 1
-        
-    sht.pictures.add(fig, 
-                     name='BM Returns', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='BM Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
                         
                         
     symlist = list(top_holdings.index)
@@ -424,7 +439,7 @@ def mrigxl_bigmoneyzacks(location,tenor='6M'):
     
 @xw.func
 @xw.ret(expand='table', transpose=True)
-def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M'):
+def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M',sheet='None'):
     
     today = datetime.date.today()
     lastweek = today - datetime.timedelta(weeks=1)
@@ -436,7 +451,6 @@ def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M'):
     plt = mp.singleScaleLine_plots(labels,'Industry')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
-    sht = xw.Book.caller().sheets.active
     
     ind_list = ["Industry"]                    
     cum_returns = ["Returns(An)"]
@@ -451,13 +465,398 @@ def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M'):
         primary.plot(dates,cum_return_series,list(colors.keys())[color*2],label=sym)
         primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=4)
         color = color + 1
-        
-    sht.pictures.add(fig, 
-                     name='Industry', 
-                     update=True,
-                     left=sht.range(location).left,
-                     top=sht.range(location).top)
-                        
+
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet]       
+        sht.pictures.add(fig, 
+                         name='Industry', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                            
     return [ind_list,cum_returns]
     
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_smallcapgrowth(location,tenor='6M',sheet='None'):
+    
+    today = datetime.date.today()
+    lastweek = today - datetime.timedelta(weeks=1)
+    lastmonth = today - relativedelta.relativedelta(months=1)
+
+    top_holdings = ss.small_cap_growth()
+    
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'SCG Returns')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    
+    cum_returns = ["Returns(An)"]
+    color = 0
+    for sym in top_holdings.index:
+        stk = stocks.Stock(sym)
+        stk.get_returns(tenor)
+        dates = list(stk.daily_logreturns.index)
+        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+        if period <= 1: period = 1
+        cum_returns.append(float(stk.daily_logreturns.sum()/period))
+        primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
+        primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+        color = color + 1
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='SCG Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                        
+                        
+    symlist = list(top_holdings.index)
+    symlist.insert(0,"SCG Holdings")
+    eps = list(top_holdings.eps_growth)
+    eps.insert(0,"EPS Growth")
+    pe = list(top_holdings.pe)
+    pe.insert(0,"P/E")
+    ps = list(top_holdings.ps)
+    ps.insert(0,"P/Sales")
+    ret_lis = [symlist,cum_returns,eps,pe,ps]
+    return ret_lis
+
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_tafa(location,tenor='6M',sheet='None'):
+    
+    today = datetime.date.today()
+    lastweek = today - datetime.timedelta(weeks=1)
+    lastmonth = today - relativedelta.relativedelta(months=1)
+
+    top_holdings = ss.ta_fa()
+    
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'TAFA Returns')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    
+    cum_returns = ["Returns(An)"]
+    color = 0
+    for sym in top_holdings.index:
+        stk = stocks.Stock(sym)
+        stk.get_returns(tenor)
+        dates = list(stk.daily_logreturns.index)
+        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+        if period <= 1: period = 1
+        cum_returns.append(float(stk.daily_logreturns.sum()/period))
+        primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
+        primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+        color = color + 1
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='TAFA Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                        
+                        
+    symlist = list(top_holdings.index)
+    symlist.insert(0,"TAFA Holdings")
+    eps = list(top_holdings.eps_growth)
+    eps.insert(0,"EPS Growth")
+    pe = list(top_holdings.pe)
+    pe.insert(0,"P/E")
+    ps = list(top_holdings.ps)
+    ps.insert(0,"P/Sales")
+    ret_lis = [symlist,cum_returns,eps,pe,ps]
+    return ret_lis
         
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_newhighs(location,tenor='6M',sheet='None'):
+    
+    today = datetime.date.today()
+    lastweek = today - datetime.timedelta(weeks=1)
+    lastmonth = today - relativedelta.relativedelta(months=1)
+
+    top_holdings = ss.newhighs()
+    
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'NewHighs Returns')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    
+    cum_returns = ["Returns(An)"]
+    color = 0
+    for sym in top_holdings.index:
+        stk = stocks.Stock(sym)
+        stk.get_returns(tenor)
+        dates = list(stk.daily_logreturns.index)
+        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+        if period <= 1: period = 1
+        cum_returns.append(float(stk.daily_logreturns.sum()/period))
+        primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
+        primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+        color = color + 1
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='NewHighs Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                        
+                        
+    symlist = list(top_holdings.index)
+    symlist.insert(0,"New Highs")
+    eps = list(top_holdings.eps_growth)
+    eps.insert(0,"EPS Growth")
+    pe = list(top_holdings.pe)
+    pe.insert(0,"P/E")
+    ps = list(top_holdings.ps)
+    ps.insert(0,"P/Sales")
+    list12W = list(top_holdings.ret12W)
+    list12W.insert(0,"12 Week Return")
+    list4W = list(top_holdings.ret4W)
+    list4W.insert(0,"4 Week Return")
+    
+    ret_lis = [symlist,cum_returns,list12W,list4W,eps]
+    return ret_lis
+
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_growthincome(location,tenor='6M',sheet='None'):
+    
+    today = datetime.date.today()
+    lastweek = today - datetime.timedelta(weeks=1)
+    lastmonth = today - relativedelta.relativedelta(months=1)
+
+    top_holdings = ss.growth_income()
+    
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'GrowthIncome Returns')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    
+    cum_returns = ["Returns(An)"]
+    color = 0
+    for sym in top_holdings.index:
+        stk = stocks.Stock(sym)
+        stk.get_returns(tenor)
+        dates = list(stk.daily_logreturns.index)
+        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+        if period <= 1: period = 1
+        cum_returns.append(float(stk.daily_logreturns.sum()/period))
+        primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
+        primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+        color = color + 1
+    
+    if sheet != 'None':
+        sht = xw.Book.caller().sheets[sheet] 
+        sht.pictures.add(fig, 
+                         name='GrowthIncome Returns', 
+                         update=True,
+                         left=sht.range(location).left,
+                         top=sht.range(location).top)
+                        
+                        
+    symlist = list(top_holdings.index)
+    symlist.insert(0,"Growth Income")
+    roe = list(top_holdings.return_on_equity)
+    roe.insert(0,"Return on Equity")
+    pe = list(top_holdings.pe)
+    pe.insert(0,"P/E")
+    beta = list(top_holdings.beta)
+    beta.insert(0,"Beta")
+#    list12W = list(top_holdings.ret12W)
+#    list12W.insert(0,"12 Week Return")
+#    list4W = list(top_holdings.ret4W)
+#    list4W.insert(0,"4 Week Return")
+    
+    ret_lis = [symlist,cum_returns,roe,pe,beta]
+    return ret_lis
+
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_news():
+    sql = "select distinct type, date, title, description from media \
+           where date > ((select max(date) from media) - interval '1 week') \
+           order by type ,date desc"
+           
+    
+    engine =  mu.sql_engine()
+    
+    news = pd.read_sql(sql,engine)
+    
+    newstype = list(news.type)
+    newsdate = list(news.date)
+    newstitle = list(news.title)
+    newsdesc = list(news.description)
+    
+    news = [newstype,newsdate,newstitle,newsdesc]
+    return news
+
+@xw.func
+@xw.ret(expand='table', transpose=False)
+def mrigxl_quote(symbol):
+    
+#    symbol = symbol.replace('&','\&')
+    stk = stocks.Stock(symbol)
+    
+    labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
+    quotes = [stk.quote['lastPrice'],
+              stk.quote['open'],
+              stk.quote['previousClose'],
+              stk.quote['dayHigh'],
+              stk.quote['dayLow'],
+              stk.quote['high52'],
+              stk.quote['low52']]
+    ret_lis = [labels,quotes]
+    return ret_lis
+
+@xw.func
+@xw.ret(expand='table', transpose=True)
+def mrigxl_stocklist():
+    sql = "select distinct symbol from security_master"
+           
+    
+    engine =  mu.sql_engine()
+    
+    stocklist = pd.read_sql(sql,engine)
+    
+    stocklist = list(stocklist.symbol)
+    return stocklist
+    
+def mrigxl_stock():
+    
+    sheet='Stock'
+    sht = xw.Book.caller().sheets[sheet]
+    symbol = sht.range('B2').value
+    tenor = sht.range('M2').value
+    stk = stocks.Stock(symbol)
+    nifty = stocks.Index('NIFTY 50')
+    price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
+    quotes = [stk.quote['lastPrice'],
+              stk.quote['open'],
+              stk.quote['previousClose'],
+              stk.quote['dayHigh'],
+              stk.quote['dayLow'],
+              stk.quote['high52'],
+              stk.quote['low52']]
+    price_list = [price_labels,quotes]
+    sht.range('D3:J3').clear_contents()
+    sht.range('D2').value = price_list
+    
+    cum_returns = []
+    return_labels = ['1W','4W','12W','24W', '1Y','3Y']
+    for i in range(0,len(return_labels)):
+        stk.get_returns(return_labels[i])
+        cum_returns.append('NA')
+#        dates = list(stk.daily_logreturns.index)
+#        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        try:
+            period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+            if period <= 1: period = 1
+            cum_returns[i] = (float(stk.daily_logreturns.sum()/period))
+        except:
+            pass
+    return_list = [return_labels,cum_returns]
+    sht.range('D9:J9').clear_contents()
+    sht.range('D8').value = return_list
+             
+    stk.get_price_vol(tenor)
+    
+    labels = ['Dates','Price']
+    plt = mp.singleScaleLine_plots(labels,'Price')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    dates = list(stk.pricevol_data.index)
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    primary.plot(dates,list(stk.pricevol_data['50_day_SMA']),"C2",label='50 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['200_day_SMA']),"C3",label='200 Day SMA')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+    
+    sht.pictures.add(fig, 
+                     name='Price', 
+                     update=True,
+                     left=sht.range('L3').left,
+                     top=sht.range('L3').top)
+    
+    labels = ['Dates','Price']
+    plt = mp.singleScaleLine_plots(labels,'Bands')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_Band']),"C2",label='Bollinger')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_UBand']),"C3",label='Boll Upper')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_LBand']),"C4",label='Boll Lower')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+    
+    sht.pictures.add(fig, 
+                     name='Bands', 
+                     update=True,
+                     left=sht.range('L35').left,
+                     top=sht.range('L35').top)
+
+
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'Returns')
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    stk.get_returns(tenor)
+    nifty.get_returns(tenor)
+    dates = list(stk.daily_logreturns.index)
+    cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+    nifty_dates = list(nifty.daily_logreturns.index)
+    nifty_cum_return_series = list(nifty.daily_logreturns.daily_log_returns.cumsum())
+    primary.plot(dates,cum_return_series,"C3",label=symbol)
+    primary.plot(nifty_dates,nifty_cum_return_series,"C4",label='NIFTY')
+    if(stk.industry != ""):
+        industry_ret = ss.sector_returns("10",tenor)
+        industry_ret_dates = list(industry_ret[industry_ret['industry'] == stk.industry].index)
+        industry_ret_cum_return_series = list(industry_ret[industry_ret['industry'] == stk.industry].daily_log_returns.cumsum())
+        primary.plot(industry_ret_dates,industry_ret_cum_return_series,"C2",label=stk.industry)
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+
+    sht.pictures.add(fig, 
+                     name='Returns', 
+                     update=True,
+                     left=sht.range('L17').left,
+                     top=sht.range('L17').top)
+    
+    stk.get_ratios()
+#    ratios = [list(stk.ratio_data.columns),stk.ratio_data.values.tolist()[0]]
+    
+    sht.range('D15:J500').clear_contents()
+    if not stk.ratio_data.empty:
+#        ratios = [['Ratio Date',stk.ratio_data.index[0]],[" "," "]]
+#        ratioheads = list(stk.ratio_data.columns)
+#        ratiovals = stk.ratio_data.values.tolist()[0]
+#        for i in range(2,len(stk.ratio_data.columns)):
+#            if ratiovals[i] != '':
+#                if abs(float(ratiovals[i])) > 100000.00:
+#                    ratios.append([ratioheads[i].replace('_',' ').upper()+' (lacs)',float(ratiovals[i])/100000])
+#                else:
+#                    ratios.append([ratioheads[i].replace('_',' ').upper(),ratiovals[i]])
+        rd = stk.ratio_data.transpose()
+        to_drop = ['symbol','download_date','rank','business_per_branch','business_per_employ', 'interest_income_per_branch','interest_income_per_employee', 'net_profit_per_branch','net_profit_per_employee']
+        rd.drop(to_drop,axis=0,inplace=True)
+        rd.rename(index=lambda x: x.upper().replace('_'," "),inplace=True)
+#        rd.rename(columns=lambda x: x.upper().replace('_'," "),inplace=True)
+        rd.replace('',np.nan,inplace=True)
+        rd.dropna(how='all',axis=0,inplace=True)
+        sht.range('D15').value = rd
+    optionchain = stk.optionChain()
+    sht.range('W3:AR500').clear_contents()
+    sht.range('W3').value = optionchain
