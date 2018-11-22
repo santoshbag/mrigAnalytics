@@ -1,0 +1,10 @@
+select * from corporate_actions where (corporate_action_type='SPLITS' or corporate_action_type='BONUS') and announcement_date > '2016-01-01' order by announcement_date desc
+
+select symbol, avgvolume from (select symbol, round(avg(volume), 0) as avgvolume from stock_history where series='EQ' and date > '2018-07-01' group by symbol) as voldata where avgvolume > 100000 order by avgvolume desc
+
+select * from ratios where symbol='HDFCBANK'
+
+SELECT symbol, date, close,
+       ((close / lag(close, 1) OVER (PARTITION BY symbol ORDER BY date)) - 1)* 100 AS daily_return
+FROM stock_history where date > '2018-01-01' and series='EQ'
+Order by symbol, date

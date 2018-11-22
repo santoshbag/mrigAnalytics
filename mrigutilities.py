@@ -9,11 +9,12 @@ import pandas as pd
 from collections import deque
 from sqlalchemy import create_engine
 from dateutil import relativedelta
-import datetime,nsepy
+import datetime,nsepy, nsetools
 import mrigstatics
 import QuantLib as ql
-import datetime
-
+from urllib.parse import quote
+import requests
+from bs4 import BeautifulSoup
 
 def get_last_row(csv_filename,lines=1):
     with open(csv_filename,'r') as f:
@@ -110,11 +111,13 @@ def get_futures_expiry(startdate,enddate):
     expiryDateList = []
     if startdate > enddate:
         expiryDateList = None
+    enddate = enddate + relativedelta.relativedelta(months=3)
     for yr in range(startdate.year,enddate.year+1):
         for mon in range(1,13):
             dt = datetime.date(yr,mon,20)
-            if(dt < enddate + relativedelta.relativedelta(months=3)):
-                expiryDateList.append(last_thursday_of_month(dt))
+            dt = last_thursday_of_month(dt)
+            if(startdate <= dt <= enddate):
+                expiryDateList.append(dt)
     return expiryDateList
 
 def test_df():
@@ -130,6 +133,11 @@ def get_Quandl():
     QUANDL_API_KEY = 'C33qTjnTYtCkx7UZ6H3R'
     
     return QUANDL_API_KEY
+
+def get_AV():
+    ALPHAVANTAGE_API_KEY = 'Q9CXTLUR0A69B3D9'
+    
+    return ALPHAVANTAGE_API_KEY
 
 def get_finalColumns(cols=None):
     if cols is not None:
@@ -167,6 +175,29 @@ def args_inspector(args):
 
 def python_dates(qldates):
     return datetime.date(qldates.year(),qldates.month(),qldates.dayOfMonth())
+
+def getIndexData(symbol,start_date,end_date):
+    
+    sql = "select * from stock_history where series = 'IN' and date >='"+ start_date.strftime('%Y-%m-%d') \
+        + "' and date <'"+ end_date.strftime('%Y-%m-%d') \
+        + "' and symbol='" \
+        + symbol + "'"
+        
+    engine = sql_engine()
+    index_df = pd.read_sql(sql,engine)
+    if not index_df.empty:
+        for i in range(0,len(index_df['date'])-1):
+            index_df.iloc[i]['date'] = datetime.datetime.combine(index_df.iloc[i]['date'],datetime.time())
+        index_df.date = pd.DatetimeIndex(index_df.date)
+        index_df.set_index('date',inplace=True)
+        #for i in range(0,len(stock_df.index)-1):
+         #   stock_df.index[i] = datetime.datetime.combine(stock_df.index[i], datetime.time())
+
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    return index_df
+
+
+
             
 def getStockData(symbol,start_date,end_date):
     
@@ -187,7 +218,28 @@ def getStockData(symbol,start_date,end_date):
 
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return stock_df
- 
+
+def getStockQuote(symbol):
+    stockQuote  = nsepy.get_quote(quote(symbol,safe=''))
+    
+    return stockQuote
+
+def getIndexQuote(symbol):
+    nse= nsetools.Nse()
+    indexQuote  = nse.get_index_quote(symbol)['lastPrice']
+    
+    return float(indexQuote)
+
+def getIndustry(symbol):
+    sql = "select distinct industry from security_master where symbol = '"+symbol+"'"
+    engine = sql_engine()
+    industry = engine.execute(sql).fetchall()
+    
+    if (len(industry) > 0):
+        return industry[0][0]
+    else:
+        return ""
+
 def getMFNAV(reference_date, isinlist=None):
     
     sql = "select * from mf_nav_history where \"Date\">='"+ reference_date.strftime('%Y-%m-%d') +"' and \"ISIN Div Payout/ ISIN Growth\" in ("
@@ -206,3 +258,6 @@ def getTransactionCosts():
             +mrigstatics.TR_CHARGES['GST']*(mrigstatics.TR_CHARGES['BROK']+mrigstatics.TR_CHARGES['EXCH'])
             
     return cost
+
+if __name__ == '__main__':
+    optionChain('ICICIBANK')

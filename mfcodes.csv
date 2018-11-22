@@ -1,0 +1,46 @@
+mf_category_code,mf_category_name
+DT-BK & PSU,Debt: Banking and PSU
+DT-CB,Debt: Corporate Bond
+DT-CR,Debt: Credit Risk
+DT-DB,Debt: Dynamic Bond
+DT-FL,Debt: Floater
+DT-FMP,Debt: FMP
+DT-GL,Debt: Gilt
+DT-GL 10Y CD,Debt: Gilt with 10 year Constant Duration
+DT-LD,Debt: Low Duration
+DT-LIQ,Debt: Liquid
+DT-LONG D,Debt: Long Duration
+DT-M to LD,Debt: Medium to Long Duration
+DT-MD,Debt: Medium Duration
+DT-MM,Debt: Money Market
+DT-OVERNHT,Debt: Overnight
+DT-SD,Debt: Short Duration
+DT-USD,Debt: Ultra Short Duration
+EQ-ELSS,Equity: ELSS
+EQ-L&MC,Equity: Large & MidCap
+EQ-LC,Equity: Large Cap
+EQ-MC,Equity: Mid Cap
+EQ-MLC,Equity: Multi Cap
+EQ-SC,Equity: Small Cap
+EQ-VAL,Equity: Value Oriented
+HY-AH,Hybrid: Aggressive Hybrid
+HY-AR,Hybrid: Arbitrage
+HY-BH,Hybrid: Balanced Hybrid
+HY-CH,Hybrid: Conservative Hybrid
+HY-DAA,Hybrid: Dynamic Asset Allocation
+HY-EQ S,Hybrid: Equity Savings
+HY-MAA,Hybrid: Multi Asset Allocation
+EQ-S BANKING,Equity: Sectoral-Banking
+EQ-S FMCG,Equity: Sectoral-FMCG
+EQ-S INFRA,Equity: Sectoral-Infrastructure
+EQ-S Pharma,Equity: Sectoral-Pharma
+EQ-S IT,Equity: Sectoral-Technology
+EQ-THEMATIC,Equity: Thematic
+EQ-T DIV Y,Equity: Thematic-Dividend Yield
+EQ-T Energy,Equity: Thematic-Energy
+EQ-T MNC,Equity: Thematic-MNC
+EQ-T PSU,Equity: Thematic-PSU
+EQ-T Consumption,Equity:Thematic-Consumption
+EQ-INTL,Equity: International
+Gold-Funds,Commodities: Gold
+HY-BA,Hybrid: Balanced Advantage

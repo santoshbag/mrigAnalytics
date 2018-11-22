@@ -19,11 +19,11 @@ def get_yieldCurve(currency="INR"):
     
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    yield_table_num = {'INR':2,
+    yield_table_num = {'INR':3,
                        'USD':3,
                        'GBP':3}
     
-    price_table_num = {'INR':4,
+    price_table_num = {'INR':5,
                        'USD':5,
                        'GBP':5}
     
@@ -37,29 +37,38 @@ def get_yieldCurve(currency="INR"):
     
     yield_heads = tables[yield_table_num[currency]].find_all('th')
     yield_table_cols = [col.text for col in yield_heads]
-    
+    yield_table_cols = ['ResidualMaturity','Yield','Chg 1M','Chg 6M']
+            
     for row in tables[yield_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
-        yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:-1])
+        yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:5])
+        
     
     price_heads = tables[price_table_num[currency]].find_all('th')
     price_table_cols = [col.text for col in price_heads]
     price_table_cols.pop(3)
-    
+#    print(yield_table_cols)
     
     for row in tables[price_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
         price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
-        
+    
+    dupindex = []    
     for items in yield_table:
         if items == []:
-            yield_table.remove(items)
+            dupindex.append(yield_table.index(items))
+    for dups in dupindex:
+        yield_table.pop(dups)
     
+    dupindex = []    
     for items in price_table:
         if items == []:
-            price_table.remove(items)
+            dupindex.append(price_table.index(items))
+    for dups in dupindex:
+        price_table.pop(dups)
     
-    yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols[1:-1]))
+#    print(yield_table)
+    yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols))
     yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
     yield_table.insert(0,column='curvedate',value=curve_date)
     yield_table.insert(1,column='curve',value=currency)

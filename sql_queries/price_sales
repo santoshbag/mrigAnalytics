@@ -1,0 +1,8 @@
+select pnl.symbol,pnl.pnl_statement_date, pnl.total_revenue, 
+		(select close_adj from stock_history as sh where sh.symbol = pnl.symbol order by date desc limit 1) as price,
+        (select close_adj from stock_history as sh where sh.symbol = pnl.symbol order by date desc limit 1)/
+        (to_number(pnl.total_revenue,'99999999.99')*10000000/(select to_number(sm.outstanding_shares,'9999999999.99') 
+                                                             from security_master as sm where sm.symbol = pnl.symbol limit 1)) as price_sales
+        from income_statement_view as pnl where 
+        to_number(pnl.total_revenue,'99999999.99') <>0
+        order by pnl.symbol,pnl.pnl_statement_date desc

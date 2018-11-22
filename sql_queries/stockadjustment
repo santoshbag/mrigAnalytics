@@ -1,0 +1,20 @@
+drop aggregate if exists cumulative_mul(float8);
+
+CREATE AGGREGATE cumulative_mul(float8) (SFUNC = float8mul, STYPE = float8);
+
+create table corp_action_temp (symbol text, announcement_date date, ex_date date, factor float8);
+
+insert into corp_action_temp
+select symbol, announcement_date, to_date(ex_date,'DD-MM-YYYY') as ex_date, cumulative_mul("mult") as factor from 
+(select symbol, announcement_date, ex_date,split,bonus_ratio, to_number(concat(1/to_number(split,'99'), 
+                                                  (to_number(split_part(bonus_ratio,':',1),'99'))/(to_number(split_part(bonus_ratio,':',1),'99')+to_number(split_part(bonus_ratio,':',2),'99'))),'99.99') as mult 
+                                                  from corporate_actions 
+                                                  where corporate_action_type in ('SPLITS','BONUS') 
+                                                  and ex_date <> '-' 
+                                                  order by symbol,announcement_date) as corpaction 
+                                                group by symbol, announcement_date, ex_date order by symbol, announcement_date
+                                                
+select sh.symbol, sh.date , sh.close, ca.ex_date, ca.factor from
+		stock_history as sh inner join corp_action_temp as ca on sh.symbol = ca.symbol and sh.date = ca.ex_date
+        order by sh.symbol, sh.date
+                                                

@@ -1,0 +1,41 @@
+select symbol, pnl_statement_date, substr(pnl_statement_dictionary,position('Total Revenue:'in pnl_statement_dictionary)+14,
+                                          (position('EXPENSES:'in pnl_statement_dictionary)-position('Total Revenue:'in pnl_statement_dictionary))-16) 
+                                          as Total_Revenue,
+                                    substr(pnl_statement_dictionary,position('Total Expenses:'in pnl_statement_dictionary)+16,
+                                          (position('Profit/Loss Before Exceptional ExtraOrdinary Items And Tax:'in pnl_statement_dictionary)-position('Total Expenses:'in pnl_statement_dictionary))-18) 
+                                          as Total_Expenses,
+                                    substr(pnl_statement_dictionary,position('Profit/Loss For The Period:'in pnl_statement_dictionary)+28,
+                                          (position(' OTHER ADDITIONAL INFORMATION:'in pnl_statement_dictionary)-position('Profit/Loss For The Period:'in pnl_statement_dictionary))-29) 
+                                          as Profit_Loss
+                                    
+                                          from pnl_statement 
+                                          
+                                          where 
+                                          position('Total Revenue:'in pnl_statement_dictionary) > 1 and 
+                                          position('EXPENSES:'in pnl_statement_dictionary) > 1 and
+                                          position('Total Expenses:'in pnl_statement_dictionary) > 1 and 
+                                          position('Profit/Loss Before Exceptional ExtraOrdinary Items And Tax:'in pnl_statement_dictionary) > 1 and
+                                          position('Profit/Loss For The Period:'in pnl_statement_dictionary) > 1 and 
+                                          position(' OTHER ADDITIONAL INFORMATION:'in pnl_statement_dictionary) > 1
+union
+
+select symbol, pnl_statement_date, substr(pnl_statement_dictionary,position('Total Income:'in pnl_statement_dictionary)+13,
+                                          (position('EXPENDITURE:'in pnl_statement_dictionary)-position('Total Income:'in pnl_statement_dictionary))-15) 
+                                          as Total_Revenue,
+                                    substr(pnl_statement_dictionary,position('Total Expenditure:'in pnl_statement_dictionary)+19,
+                                          (position('Net Profit / Loss for The Year:'in pnl_statement_dictionary)-position('Total Expenditure:'in pnl_statement_dictionary))-21) 
+                                          as Total_Expenses,
+                                    substr(pnl_statement_dictionary,position('Total Appropriations:'in pnl_statement_dictionary)+21,
+                                          (position(' OTHER INFORMATION:'in pnl_statement_dictionary)-position('Total Appropriations:'in pnl_statement_dictionary))-22) 
+                                          as Profit_Loss
+                                    
+                                          from pnl_statement 
+                                          
+                                          where 
+                                          position('Total Income:'in pnl_statement_dictionary) > 1 and 
+                                          position('EXPENDITURE:'in pnl_statement_dictionary) > 1 and
+                                          position('Total Expenditure:'in pnl_statement_dictionary) > 1 and 
+                                          position('Net Profit / Loss for The Year:'in pnl_statement_dictionary) > 1 and
+                                          position('Total Appropriations:'in pnl_statement_dictionary) > 1 and 
+                                          position('OTHER INFORMATION:'in pnl_statement_dictionary) > 1
+

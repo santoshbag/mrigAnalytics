@@ -82,8 +82,10 @@ CURVE_LIST = ['INR','USD','GBP']
 
 COLUMN_MAPPINGS = {'ResidualMaturity':'tenor',
                    'Yield':'yield',
-                   'Change1M (Value 1M ago)':'Change1M_Value_1M_ago',
-                   'Change6M (Value 6M ago)':'Change6M_Value_6M_ago',
+#                   'Change1M (Value 1M ago)':'Change1M_Value_1M_ago',
+#                   'Change6M (Value 6M ago)':'Change6M_Value_6M_ago',
+                   'Chg 1M':'Change1M_Value_1M_ago',
+                   'Chg 6M':'Change6M_Value_6M_ago'
                    }
 
 
@@ -108,6 +110,37 @@ MC_URLS = {'MC_CODES_URL':'https://www.moneycontrol.com/india/stockpricequote/',
            'MC_PROFIT_LOSS_URL':'https://www.moneycontrol.com/financials/',
            'MC_CASHFLOW_STATEMENT_URL':'https://www.moneycontrol.com/financials/',
            'MC_CORP_ACTION_URL':'https://www.moneycontrol.com/company-facts/'}
+
+
+MC_MEDIA_URLS = {'MC_BROKERRECOS_URL':'http://www.moneycontrol.com/rss/brokeragerecos.xml',
+                 'MC_BUZZSTOCKS_URL':'http://www.moneycontrol.com/rss/buzzingstocks.xml',
+                 'MC_LATESTNEWS_URL':'http://www.moneycontrol.com/rss/latestnews.xml',
+                 'MC_POPULAR_URL':'http://www.moneycontrol.com/rss/mostpopular.xml',
+                 'MC_BUSINESS_URL':'http://www.moneycontrol.com/rss/business.xml',
+                 'MC_ECONOMY_URL':'http://www.moneycontrol.com/rss/economy.xml',
+                 'MC_MARKETREPORT_URL':'http://www.moneycontrol.com/rss/marketreports.xml',
+                 'MC_GLOBAL_URL':'http://www.moneycontrol.com/rss/internationalmarkets.xml',
+                 'MC_MARKETOUTLOOK_URL':'http://www.moneycontrol.com/rss/marketoutlook.xml',
+                 'MC_TECHNICALS_URL':'http://www.moneycontrol.com/rss/technicals.xml',
+                 'MC_IPONEWS_URL':'http://www.moneycontrol.com/rss/iponews.xml',
+                 'MC_COMMODITIES_URL':'http://www.moneycontrol.com/rss/commodities.xml',
+                 'MC_RESULTS_URL':'http://www.moneycontrol.com/rss/results.xml',
+                 }
+
+ET_MEDIA_URLS = {'MC_BROKERRECOS_URL':'http://www.moneycontrol.com/rss/brokeragerecos.xml',
+                 'MC_BUZZSTOCKS_URL':'http://www.moneycontrol.com/rss/buzzingstocks.xml',
+                 'MC_LATESTNEWS_URL':'http://www.moneycontrol.com/rss/latestnews.xml',
+                 'MC_POPULAR_URL':'http://www.moneycontrol.com/rss/mostpopular.xml',
+                 'MC_BUSINESS_URL':'http://www.moneycontrol.com/rss/business.xml',
+                 'MC_ECONOMY_URL':'http://www.moneycontrol.com/rss/economy.xml',
+                 'MC_MARKETREPORT_URL':'http://www.moneycontrol.com/rss/marketreports.xml',
+                 'MC_GLOBAL_URL':'http://www.moneycontrol.com/rss/internationalmarkets.xml',
+                 'MC_MARKETOUTLOOK_URL':'http://www.moneycontrol.com/rss/marketoutlook.xml',
+                 'MC_TECHNICALS_URL':'http://www.moneycontrol.com/rss/technicals.xml',
+                 'MC_IPONEWS_URL':'http://www.moneycontrol.com/rss/iponews.xml',
+                 'MC_COMMODITIES_URL':'http://www.moneycontrol.com/rss/commodities.xml',
+                 'MC_RESULTS_URL':'http://www.moneycontrol.com/rss/results.xml',
+                 }
 
 
 """

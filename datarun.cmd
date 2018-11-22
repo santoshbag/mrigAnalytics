@@ -42,10 +42,10 @@ echo NSE Index History downloaded
 echo Total Return History download started
 python.exe totalreturnindicesHistory.py %startdate% %enddate%
 echo Total Return History downloaded
-echo Populating daily returns
-python.exe sql_stored_procs.py
 echo -----Weekly and Monthly data downloads-----
 python.exe datarun.py
+echo Populating daily returns
+python.exe sql_stored_procs.py
 rem echo Futures History download started
 rem python.exe futuresHistory.py %startdate% %enddate%
 rem echo Futures History downloaded

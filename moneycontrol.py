@@ -476,8 +476,14 @@ def get_CorporateActions(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
-    #pos = symbollist.index('SC49:somanyceramics')
-    for symbol in symbollist:#[pos+1:]:
+    bm_sym = []
+    div_sym = []
+    split_sym = []
+    bonus_sym = []
+    rights_sym = []
+    
+    pos = symbollist.index('DI:daburindia')
+    for symbol in symbollist[pos+1:]:
         print(symbol+"---------")
         meeting_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/board-meetings/"+symbol.split(":")[-2].strip()
         dividend_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/dividends/"+symbol.split(":")[-2].strip()
@@ -490,7 +496,7 @@ def get_CorporateActions(symbol=None):
         try:
             response = s.get(meeting_url)
         except ConnectionError as e:
-            print("Santosh Error---"+e)
+            print("Santosh Error---")
             time.sleep(2*60)
             response = s.get(meeting_url)
             
@@ -539,7 +545,8 @@ def get_CorporateActions(symbol=None):
             try:
                 engine.execute(meeting_sql[:-1])
                 successful_download.append(sym)
-                print("Downloaded Board Meetings for "+sym)
+                bm_sym.append(sym)
+                #print("Downloaded Board Meetings for "+sym)
             except:
                 pass
         except:
@@ -550,7 +557,7 @@ def get_CorporateActions(symbol=None):
         try:
             response = s.get(dividend_url)
         except ConnectionError as e:
-            print("Santosh Error---"+e)
+            print("Santosh Error---")
             time.sleep(2*60)
             response = s.get(dividend_url)
         
@@ -602,7 +609,8 @@ def get_CorporateActions(symbol=None):
         try:
             engine.execute(dividend_sql[:-1])
             successful_download.append(sym)
-            print("Downloaded Dividends for "+sym)
+            div_sym.append(sym)
+            #print("Downloaded Dividends for "+sym)
         except:
             pass
         
@@ -614,7 +622,7 @@ def get_CorporateActions(symbol=None):
         try:
             response = s.get(bonus_url)
         except ConnectionError as e:
-            print("Santosh Error---"+e)
+            print("Santosh Error---")
             time.sleep(2*60)
             response = s.get(bonus_url)
         
@@ -666,17 +674,18 @@ def get_CorporateActions(symbol=None):
         try:
             engine.execute(bonus_sql[:-1])
             successful_download.append(sym)
-            print("Downloaded Bonuses for "+sym)
+            bonus_sym.append(sym)
+            #print("Downloaded Bonuses for "+sym)
         except:
             pass
         
         
         # Download Rights
-        response = s.get(rights_url)
+        #response = s.get(rights_url)
         try:
             response = s.get(rights_url)
         except ConnectionError as e:
-            print("Santosh Error---"+e)
+            print("Santosh Error---")
             time.sleep(2*60)
             response = s.get(rights_url)
         
@@ -735,7 +744,8 @@ def get_CorporateActions(symbol=None):
         try:
             engine.execute(rights_sql[:-1])
             successful_download.append(sym)
-            print("Downloaded Rights for "+sym)
+            rights_sym.append(sym)
+            #print("Downloaded Rights for "+sym)
         except:
             pass
         
@@ -747,7 +757,7 @@ def get_CorporateActions(symbol=None):
         try:
             response = s.get(splits_url)
         except ConnectionError as e:
-            print("Santosh Error---"+e)
+            print("Santosh Error---")
             time.sleep(2*60)
             response = s.get(splits_url)
         
@@ -799,11 +809,17 @@ def get_CorporateActions(symbol=None):
         try:
             engine.execute(split_sql[:-1])
             successful_download.append(sym)
-            print("Downloaded Splits for "+sym)
+            split_sym.append(sym)
+            #print("Downloaded Splits for "+sym)
         except:
             pass
         
-        print("Downloaded Corporate Actions for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
+    print("Downloaded Corporate Actions for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
+    print("Downloaded Board Meetings for "+str(bm_sym))
+    print("Downloaded Bonus for "+str(bonus_sym))
+    print("Downloaded Dividends for "+str(div_sym))
+    print("Downloaded Rights for "+str(rights_sym))
+    print("Downloaded Splits for "+str(split_sym))
         #print(ratios_dict_str)
         #engine.execute(sql)
 

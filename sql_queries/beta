@@ -1,0 +1,13 @@
+select date, stock, daily_log_returns, monthly_log_returns,
+covar_samp(monthly_log_returns,nifty_monthly) over (partition by stock order by date rows between 3*365 preceding and current row)/
+var_samp(nifty_monthly) over (partition by stock order by date rows between 3*365 preceding and current row) as beta
+
+from
+(select sh.date as date, sh.symbol as stock, sh.daily_log_returns as daily_log_returns,
+ sum(sh.daily_log_returns) over (partition by sh.symbol order by sh.date rows between 29 preceding and current row ) as monthly_log_returns , 
+ sh1.daily_log_returns as nifty_daily,
+ sum(sh1.daily_log_returns) over (order by sh1.date rows between 29 preceding and current row )as nifty_monthly 
+from daily_returns sh
+inner join daily_returns sh1 on sh.date = sh1.date
+where sh1.symbol='NIFTY 50'
+order by sh.symbol, sh.date asc) as dat

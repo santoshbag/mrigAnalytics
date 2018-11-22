@@ -1,0 +1,5 @@
+select dr.date,(select dr1.price from daily_returns dr1 where dr1.symbol='NIFTY 50' and dr1.date=dr.date),
+(select dr2.price from daily_returns dr2 where dr2.symbol='HDFCBANK' and dr2.date=dr.date) 
+from daily_returns dr where  dr.date > now() - interval '1 year'
+
+select * from daily_returns where price is not null and date > (now() - interval '1 year') and symbol='NIFTY 50'

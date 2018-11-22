@@ -91,7 +91,7 @@ def top_mf_holdings(holding_percent=5):
     holdings = pd.read_sql(sql,engine)
     #for hld in holdings:
         
-    #print(holdings['company'])
+    #print(holdings)
     return holdings
 
 def top_mf_smallcap_holdings(holding_percent=5):
@@ -214,7 +214,7 @@ def top_mf_value_holdings(holding_percent=5):
         
     print(holdings)
 
-def sector_returns(num_companies_per_sector=10,period='1Y'):
+def sector_returns(num_companies_per_sector='10',period='1Y'):
           
     today = datetime.date.today()
     years=0
@@ -279,16 +279,11 @@ def small_cap_growth():
     small_caps['ps'] = small_caps['close']/small_caps['sales_per_share']
     small_caps = small_caps.loc[small_caps['rank'] == 1]
     small_caps = small_caps.loc[small_caps['eps_growth'] > 0]
-#    for inds in set(small_caps['industry']):
-#        #print(inds)
-#        small_caps.loc[small_caps['industry'] == inds,'pemedian'] = small_caps.loc[small_caps['industry'] == inds]['pe'].median()
-#        small_caps.loc[small_caps['industry'] == inds,'psmedian'] = small_caps.loc[small_caps['industry'] == inds]['ps'].median()
-#        small_caps.loc[small_caps['industry'] == inds,'eps_growth_median'] = small_caps.loc[small_caps['industry'] == inds]['eps_growth'].median()
-        #print(small_caps.loc[small_caps['industry'] == inds]['pe'].median())
     EPSGrowth = small_caps.loc[small_caps['eps_growth'] >= 1.2*small_caps['eps_growth_median']]
     EPSGrowth = EPSGrowth.loc[EPSGrowth['eps_growth'] <= 0.5]
     PELow = EPSGrowth.loc[EPSGrowth['pe'] <= EPSGrowth['pemedian']]
-    PSLow = PELow.loc[PELow['ps'] <= PELow['psmedian']].sort_values(by='ps').head(10)
+    PSLow = PELow.loc[PELow['ps'] <= PELow['psmedian']]
+    PSLow = PSLow.sort_values(by='ps',ascending=1).head(7)
     print(PSLow[['industry','close','basic_eps','eps_growth','pe','ps','pemedian','psmedian','eps_growth_median']])
     return(PSLow)
 
@@ -350,36 +345,29 @@ def ta_fa():
           
     engine = mu.sql_engine()
     ta_fa = pd.read_sql(sql,engine)
+    print(set(ta_fa.index))    
+
     if not ta_fa.empty:
         ta_fa.set_index('symbol',inplace=True)
     ta_fa['pe'] = ta_fa['close']/ta_fa['basic_eps']
     ta_fa['ps'] = ta_fa['close']/ta_fa['sales_per_share']
     ta_fa = ta_fa.loc[ta_fa['rank'] == 1]
     ta_fa = ta_fa.loc[ta_fa['eps_growth'] > 0]
-#    for inds in set(ta_fa['industry']):
-#        #print(inds)
-#        ta_fa.loc[ta_fa['industry'] == inds,'pemedian'] = ta_fa.loc[ta_fa['industry'] == inds]['pe'].median()
-#        ta_fa.loc[ta_fa['industry'] == inds,'psmedian'] = ta_fa.loc[ta_fa['industry'] == inds]['ps'].median()
-#        ta_fa.loc[ta_fa['industry'] == inds,'eps_growth_median'] = ta_fa.loc[ta_fa['industry'] == inds]['eps_growth'].median()
-    
-    
-        #print(ta_fa.loc[ta_fa['industry'] == inds]['pe'].median())
-    print(set(ta_fa.index))    
     EPSGrowth = ta_fa.loc[ta_fa['eps_growth'] >= ta_fa['eps_growth_median']]
-#    EPSGrowth = EPSGrowth.loc[EPSGrowth['eps_growth'] <= 0.5]
-#    PELow = EPSGrowth.loc[EPSGrowth['pe'] <= EPSGrowth['pemedian']]
     PSLow = EPSGrowth.loc[EPSGrowth['ps'] <= EPSGrowth['psmedian']]
-    #print(PSLow.loc['ASHOKLEY'].sort_values(by='date'))#[['industry','close','basic_eps','eps_growth','pe','ps','pemedian','psmedian','eps_growth_median']])
     start24 = today -dateutil.relativedelta.relativedelta(weeks=24)
     start12 = today -dateutil.relativedelta.relativedelta(weeks=12)
     start4 = today -dateutil.relativedelta.relativedelta(weeks=4)
     print(set(PSLow.index))
+    PSLow['ret24W'] = "NA"
+    PSLow['ret12W'] = "NA"
+    PSLow['ret4W'] = "NA"
     for sym in set(PSLow.index):
-        #print(inds)
+        print(sym)
         PSLow.loc[sym,'ret24W'] = PSLow.loc[PSLow['date'] >= start24].loc[sym]['daily_log_returns'].sum()
         PSLow.loc[sym,'ret12W'] = PSLow.loc[PSLow['date'] >= start12].loc[sym]['daily_log_returns'].sum()
         PSLow.loc[sym,'ret4W'] = PSLow.loc[PSLow['date'] >= start4].loc[sym]['daily_log_returns'].sum()
-    PSLow = PSLow[['industry','eps_growth','ps','ret24W','ret12W','ret4W','eps_growth_median','psmedian']].drop_duplicates()
+    #PSLow = PSLow[['industry','eps_growth','ps','ret24W','ret12W','ret4W','eps_growth_median','psmedian']].drop_duplicates()
     print(PSLow)
     return(PSLow)
 
@@ -423,26 +411,15 @@ def newhighs():
     newhighs['ps'] = newhighs['close']/newhighs['sales_per_share']
     newhighs = newhighs.loc[newhighs['rank'] == 1]
     newhighs = newhighs.loc[newhighs['eps_growth'] > 0]
-#    for inds in set(newhighs['industry']):
-#        #print(inds)
-#        newhighs.loc[newhighs['industry'] == inds,'pemedian'] = newhighs.loc[newhighs['industry'] == inds]['pe'].median()
-#        newhighs.loc[newhighs['industry'] == inds,'psmedian'] = newhighs.loc[newhighs['industry'] == inds]['ps'].median()
-#        newhighs.loc[newhighs['industry'] == inds,'eps_growth_median'] = newhighs.loc[newhighs['industry'] == inds]['eps_growth'].median()
-    
-    
-        #print(newhighs.loc[newhighs['industry'] == inds]['pe'].median())
     print(set(newhighs.index))    
     EPSGrowth = newhighs.loc[newhighs['eps_growth'] >= newhighs['eps_growth_median']]
     PELow = EPSGrowth.loc[EPSGrowth['pe'] <= EPSGrowth['pemedian']]
     PSLow = PELow.loc[PELow['ps'] <= PELow['psmedian']]
-    #print(PSLow.loc['ASHOKLEY'].sort_values(by='date'))#[['industry','close','basic_eps','eps_growth','pe','ps','pemedian','psmedian','eps_growth_median']])
     start24 = today -dateutil.relativedelta.relativedelta(weeks=24)
     start12 = today -dateutil.relativedelta.relativedelta(weeks=12)
     start4 = today -dateutil.relativedelta.relativedelta(weeks=4)
     #print(set(PSLow.index))
     for sym in set(PSLow.index):
-        #print(inds)
-#        PSLow.loc[sym,'ret24W'] = PSLow.loc[PSLow['date'] >= start24].loc[sym]['daily_log_returns'].sum()
         PSLow.loc[sym,'ret12W'] = PSLow.loc[PSLow['date'] >= start12].loc[sym]['daily_log_returns'].sum()
         PSLow.loc[sym,'ret4W'] = PSLow.loc[PSLow['date'] >= start4].loc[sym]['daily_log_returns'].sum()
     PSLow = PSLow.loc[PSLow['ret12W'] > 0]
@@ -479,13 +456,6 @@ def growth_income():
     growth_income['pe'] = growth_income['close']/growth_income['basic_eps']
     growth_income['divyld'] = 100*growth_income['dividend_per_share'].astype(float)/growth_income['close']
     growth_income = growth_income.loc[growth_income['rank'] == 1]
-    
-    #print(returns[returns['symbol'] == 'HDFCBANK'].loc[datetime.date(2018,7,31)]) # and returns['price'].empty ])
-    #print(returns.loc['ICICIBANK'])
-    
-#    growth_income = growth_income.loc[growth_income['eps_growth'] > 0]
-#    print(set(growth_income.index))    
-#    EPSGrowth = growth_income.loc[growth_income['eps_growth'] >= growth_income['eps_growth_median']]
     PELow = growth_income.loc[growth_income['pe'] <= growth_income['niftype']]
 #    print(PELow[['pe','return_on_equity','debt_to_equity','divyld']])
     ROEHigh = PELow.loc[PELow['return_on_equity'].astype(float) >= PELow['niftyroe']]
@@ -502,7 +472,7 @@ def growth_income():
     DIVHigh = DIVHigh.loc[DIVHigh['beta']<= 1]
     DIVHigh = DIVHigh.sort_values(by='divyld', ascending=0)
     print(DIVHigh.head(7))
-    return(DIVHigh)
+    return(DIVHigh.head(7))
 
     
     
@@ -516,6 +486,8 @@ if __name__ == '__main__':
 #    top_mf_value_holdings()    
 #    small_cap_growth()
 #     roe_growth()
-#     ta_fa()
+#    ta_fa()
+#     newhighs()
 #      momentum()
       growth_income()
+#      top_mf_holdings()
