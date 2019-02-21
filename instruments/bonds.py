@@ -15,6 +15,7 @@ from instruments.portfolio import Product
 
 class Bond(Product):
     def __init__(self,setupparams,name='Bond1'):
+        super(Bond).__init__('Bond')
         self.issue_name = name
         self.security_type = "Bond"
         self.issue_date = setupparams['issue_date']
@@ -30,6 +31,7 @@ class Bond(Product):
         self.bondobject = None
         self.valuation_params = {}
         self.is_valued = False
+        super(Bond).productMetadataSet = setupparams
         
     def getSchedule(self):
         issueDate = ql.Date(self.issue_date.day,self.issue_date.month,self.issue_date.year)
@@ -73,6 +75,8 @@ class Bond(Product):
                               'Macualay Duration' : macduration,
                               'Convexity' : convexity,
                               'cashflows' : cashflow}
+            super(Bond).resultSet = bond_analytics
+            super(Bond).value = npv
         else:
             bond_analytics = {'Bond Status':'Bond not evaluated'}
         return bond_analytics#self.valuation_params.update({"class" : "Convertible"})
@@ -93,6 +97,7 @@ class FixedRateBond(Bond):
                                               self.getSchedule(),
                                               self.coupon_rates,
                                               self.day_count)
+        super(Bond).productMetadataSet = setupparams
         
 class FloatingRateBond(Bond):
     def __init__(self,setupparams):
@@ -117,6 +122,8 @@ class FloatingRateBond(Bond):
                                               inArrears=self.inArrears,
                                               caps=[],
                                               floors=[])
+        super(Bond).productMetadataSet = setupparams
+             
     def setBlackPricer(self):
         pricer = ql.BlackIborCouponPricer()
 
@@ -144,6 +151,7 @@ class FixedRateConvertibleBond(Bond):
         self.put_schedule = setupparams['put_schedule']
         self.dividend_schedule = setupparams['dividend_schedule']
         self.credit_spread = setupparams['credit_spread']
+        super(Bond).productMetadataSet = setupparams
         
         ## Create call and put schedule
         
@@ -216,7 +224,7 @@ class FixedRateCallableBond(Bond):
         self.coupon_rates = [setupparams['coupon_rates']]
         self.call_schedule = setupparams['call_schedule']
         self.put_schedule = setupparams['put_schedule']
-        
+        super(Bond).productMetadataSet = setupparams
         ## Create call and put schedule
         
         callability_schedule = ql.CallabilitySchedule()

@@ -54,6 +54,13 @@ for stock in stocks:
     #print(stock)
     counter = counter + 1
     #print(stock)
+    if len(stocks) < 50:
+        steps = len(stocks)
+    else:
+        steps = 50
+    sys.stdout.write("\r[%-*s] %d%%" % (steps,'='*int(counter/(len(stocks)/steps)), int(100/len(stocks)*counter)))
+    sys.stdout.flush()
+    
     try:
         startdate = datetime.datetime.strptime(stock[1],'%m/%d/%y').date() + datetime.timedelta(days=1)
         

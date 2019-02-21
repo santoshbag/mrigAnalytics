@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html >
+<head>
+  <!-- Site made with Mobirise Website Builder v4.8.10, https://mobirise.com -->
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Mobirise v4.8.10, mobirise.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="shortcut icon" href="{% static 'assets/images/mriglogo_icon_half.png' %}" type="image/x-icon">
+  <meta name="description" content="Web Site Builder Description">
+  <title>Option Strategies {{strategy}}</title>
+  <link rel="stylesheet" href="{% static 'assets/tether/tether.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-grid.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-reboot.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/datatables/data-tables.bootstrap4.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/theme/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/mobirise/css/mbr-additional.css' %}" type="text/css">
+  
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: "Lato", sans-serif;
+}
+
+.sidenav {
+  width: 140px;
+  position: fixed;
+  z-index: 1;
+  top: 80px;
+  left: 10px;
+  background: #eee;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+.sidenav a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 15px;
+  color: #2196F3;
+  display: block;
+}
+
+.sidenav a:hover {
+  color: #064579;
+}
+
+.main {
+  margin-left: 140px; /* Same width as the sidebar + left position in px */
+  font-size: 28px; /* Increased text to enable scrolling */
+  padding: 0px 10px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidenav {padding-top: 15px;}
+  .sidenav a {font-size: 18px;}
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.topnav {
+  overflow: hidden;
+  position: fixed;
+  z-index: 1;
+  top: 0px;
+  width: 100%;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+input[type=button], input[type=submit], input[type=reset] {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 4px 32px;
+  text-decoration: none;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+
+</style>
+  
+  
+  
+</head>
+<body>
+
+<div class="sidenav">
+<a class="body-item mbr-fonts-style display-7"  style="padding: 5px;" href="#prices">Option Strategy</a>
+<form class="body-item mbr-fonts-style display-7" style="padding: 2px 5px;" name = "form" action = "{% url "os" %}" method = "POST" >{% csrf_token %}
+<h>{{slist|safe}} </h>
+<input type="submit">    
+</form>
+{% if strategy %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#strategyscreen">Strategy Screen</a>
+{% endif %}
+</div>
+
+
+  <link rel="stylesheet" href="{% static 'assets/dropdown/css/style.css' %}" class="cid-rfSjApRui9" id="menu1-a" data-rv-view="8">
+  <section class="menu cid-rfSjApRui9" once="menu" id="menu1-a">
+
+<div class="topnav">
+ <a style="padding: 1px 1px;"href="/">
+<img src="{% static 'assets/images/mrigweblogo.png' %}" style="width:140px;height:50px;">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</a>
+  <a href="/">Home</a>
+  <a href="/stock/">Stocks</a>
+  <a href="/ss/">Stock Strategies</a>
+  <a class="active" href="/os/">Option Strategies</a>
+  <a href="/news/">News</a>
+  <a href="/">About Us</a>
+</div>
+</section>
+<br>
+<br>
+
+  <section class="section-table cid-rfI3i2lFgM mbr-parallax-background" id="table1-3">
+
+  
+  <div class="mbr-overlay" style="opacity: 0.8; background-color: rgb(15, 118, 153);">
+  </div>
+  <div class="container container-table " style="margin-left:150px";>
+    <br>
+    {% if strategy %}
+    <h3 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+     {{strategy_desc}} </h3>    
+
+      <div class="table-wrapper">
+        <div class="container">
+          
+        </div>
+
+        <div class="container scroll" id="strategyscreen">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+          Strategy Screen </h5>
+          <table class="table" cellspacing="0" border="1" id="myTable">
+          <thead> 
+          {{oc|safe}}
+          </table>
+        </div>
+
+        <div class="container table-info-container">
+          
+        </div>
+        {% endif %}
+      </div>
+    </div>
+</section>
+
+
+  <script src="{% static 'assets/popper/popper.min.js' %}"></script>
+  <script src="{% static 'assets/tether/tether.min.js' %}"></script>
+  <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'assets/smoothscroll/smooth-scroll.js' %}"></script>
+  <script src="{% static 'assets/datatables/jquery.data-tables.min.js' %}"></script>
+  <script src="{% static 'assets/datatables/data-tables.bootstrap4.min.js' %}"></script>
+  <script src="{% static 'assets/parallax/jarallax.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'assets/theme/js/script.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
+  
+</body>
+</html>

@@ -41,6 +41,7 @@ class CapsFloors(Option):
             self.optionobject = ql.Cap(ibor_leg,[self.strike])
         if self.cap_or_floor == 'FLOOR':
             self.optionobject = ql.Floor(ibor_leg,[self.strike])
+        
     
         
     def getSchedule(self):
@@ -68,6 +69,8 @@ class CapsFloors(Option):
             capfloor_analytics = {'NPV':npv,
                                   #'ATM Rate':atmrate,
                               'cashflows' : cashflow}
+            super(Option).resultSet = capfloor_analytics
+            super(Option).value = npv     
         else:
             capfloor_analytics = {'CapFloor Status':'CapFloor not evaluated'}
         return capfloor_analytics#self.valuation_params.update({"class" : "Convertible"})

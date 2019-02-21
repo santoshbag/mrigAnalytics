@@ -17,12 +17,11 @@ import xml.etree.ElementTree as ET
 
 
 def get_MCNews():
-    
+    print("News download started\n")
     for urlkey in mrigstatics.MC_MEDIA_URLS.keys():
         url = mrigstatics.MC_MEDIA_URLS[urlkey]
         s = requests.Session()
         response = s.get(url)
-    
         tree = ET.fromstring(response.text)
         recos = []
         desc = []
@@ -44,8 +43,8 @@ def get_MCNews():
             recos.to_sql('media',engine, if_exists='append', index=False)
         except:
             pass
-            
-        print(recos)
+#        print(recos)            
+    return recos
 
 def get_ETNews():
     
@@ -76,7 +75,7 @@ def get_ETNews():
         except:
             pass
             
-        print(recos)
+        print("News download finished\n")
     
 if __name__ == '__main__':
     get_MCNews()        

@@ -6,6 +6,7 @@ Created on Thu May 17 15:13:11 2018
 """
 import csv
 import pandas as pd
+from pandas.compat import StringIO
 from collections import deque
 from sqlalchemy import create_engine
 from dateutil import relativedelta
@@ -13,8 +14,11 @@ import datetime,nsepy, nsetools
 import mrigstatics
 import QuantLib as ql
 from urllib.parse import quote
-import requests
+import requests,socket,time
 from bs4 import BeautifulSoup
+from random import choice
+import string
+import json
 
 def get_last_row(csv_filename,lines=1):
     with open(csv_filename,'r') as f:
@@ -86,14 +90,14 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     #print(df)
     return [df,existing_security]
 
-def sql_engine():
+def sql_engine(dbname='RB_WAREHOUSE'):
     DB_TYPE = 'postgresql'
     DB_DRIVER = 'psycopg2'
     DB_USER = 'postgres'
     DB_PASS = 'xanto007'
     DB_HOST = 'localhost'
     DB_PORT = '5432'
-    DB_NAME = 'RB_WAREHOUSE'
+    DB_NAME = dbname
     POOL_SIZE = 50
     
     SQLALCHEMY_DATABASE_URI = '%s+%s://%s:%s@%s:%s/%s' % (DB_TYPE, DB_DRIVER, DB_USER,
@@ -119,6 +123,52 @@ def get_futures_expiry(startdate,enddate):
             if(startdate <= dt <= enddate):
                 expiryDateList.append(dt)
     return expiryDateList
+
+def get_indexoptions_expiry():
+    """
+    Trading cycle
+    
+    CNX Nifty options contracts have 3 consecutive monthly contracts,
+     additionally 3 quarterly months of the cycle March / June / September / December 
+     and 5 following semi-annual months of the cycle June / December would be available,
+     so that at any point in time there would be options contracts with atleast 3 year
+     tenure available. On expiry of the near month contract, new contracts (monthly/quarterly/ 
+    half yearly contracts as applicable) are introduced at new strike prices for both call and
+     put options, on the trading day following the expiry of the near month contract.    
+    """
+ 
+    today = datetime.date.today()
+    expiryDateList = []
+    enddate = last_thursday_of_month(today + relativedelta.relativedelta(months=2))
+    
+    # 3 consecutive months 
+    dt = today + datetime.timedelta(3 - today.weekday())
+    while dt <= enddate:
+        expiryDateList.append(dt)
+        dt = dt + datetime.timedelta(7)
+        
+    
+    # 3 Quarterly months expiry.
+    anchordate = expiryDateList[-1]
+    while anchordate.month not in [3,6,9,12]:
+        anchordate = anchordate + relativedelta.relativedelta(months=1)
+        anchordate = last_thursday_of_month(anchordate)
+    expiryDateList.append(anchordate)
+    expiryDateList.append(last_thursday_of_month(anchordate + relativedelta.relativedelta(months=3)))
+    expiryDateList.append(last_thursday_of_month(anchordate + relativedelta.relativedelta(months=6)))
+
+    # 3 Quarterly months expiry.
+    anchordate = expiryDateList[-1]
+    while anchordate.month not in [6,12]:
+        anchordate = anchordate + relativedelta.relativedelta(months=1)
+        anchordate = last_thursday_of_month(anchordate)
+    
+    expiryDateList.append(anchordate)
+    for i in [1,2,3,4,5]:
+        expiryDateList.append(last_thursday_of_month(anchordate + relativedelta.relativedelta(months=6*i)))
+
+    return sorted(set(expiryDateList))
+
 
 def test_df():
     nifty_fut = nsepy.get_history(symbol="NIFTY", 
@@ -220,9 +270,127 @@ def getStockData(symbol,start_date,end_date):
     return stock_df
 
 def getStockQuote(symbol):
-    stockQuote  = nsepy.get_quote(quote(symbol,safe=''))
-    
+    stockQuote = None
+    try:
+        timecounter = 0
+        while True:
+            timecounter = timecounter + 1
+            if is_connected():
+                stockQuote  = nsepy.get_quote(quote(symbol,safe=''))
+            if is_connected() or timecounter > 5:
+                break
+            else:
+                time.sleep(60)
+    except:
+        pass
+    momentum = 0
+    for i in range(1,10):
+        try:
+            momentum = (stockQuote['buyPrice'+str(i)]*stockQuote['buyQuantity'+str(i)]) 
+            - (stockQuote['sellPrice'+str(i)]*stockQuote['sellQuantity'+str(i)])
+            stockQuote['momentum'] = momentum
+        except:
+            pass
     return stockQuote
+
+def getStockOptionQuote(symbol,expiry,strike,option_type='CE'):
+    stockOptionQuote  = nsepy.get_quote(symbol=quote(symbol,safe=''),
+                                        expiry=expiry,strike=strike,
+                                        option_type=option_type,
+                                        instrument='OPTSTK')
+    momentum = 0
+    for i in range(1,10):
+        try:
+            momentum = (stockOptionQuote['buyPrice'+str(i)]*stockOptionQuote['buyQuantity'+str(i)]) 
+            - (stockOptionQuote['sellPrice'+str(i)]*stockOptionQuote['sellQuantity'+str(i)])
+        except:
+            pass
+    stockOptionQuote['momentum'] = momentum
+    return stockOptionQuote
+
+def closestmatch(x,arr,diff):
+    pivot = int(len(arr)/2)
+    if abs(arr[pivot] - x) <= diff:
+        return arr[pivot]
+    if x < arr[pivot]:
+        return closestmatch(x,arr[:pivot],diff)
+    if x > arr[pivot]:
+        return closestmatch(x,arr[pivot:],diff)
+
+def max_stock_drawdown(symbol,window_days=29, period_months=12):
+        sql = "select min(period_log_returns) from (select sh.date as date, \
+               sum(sh.daily_log_returns) over (partition by sh.symbol order by sh.date rows between "+str(window_days)+" preceding and current row ) as period_log_returns  \
+               from daily_returns sh where sh.symbol='"+symbol+"' and sh.date > now() - interval '"+str(period_months)+" months' \
+               order by sh.symbol, sh.date desc) as dat"
+        
+        engine = sql_engine()
+        drawdown = engine.execute(sql).fetchall()
+        if len(drawdown) > 0:
+            drawdown = float(drawdown[0][0])
+        return drawdown
+
+def avg_stock_drawdown(symbol,window_days=29, period_months=12):
+        sql = "select avg(period_log_returns) from (select sh.date as date, \
+               sum(sh.daily_log_returns) over (partition by sh.symbol order by sh.date rows between "+str(window_days)+" preceding and current row ) as period_log_returns  \
+               from daily_returns sh where sh.symbol='"+symbol+"' and sh.date > now() - interval '"+str(period_months)+" months' \
+               order by sh.symbol, sh.date desc) as dat where period_log_returns < 0"
+        
+        engine = sql_engine()
+        drawdown = engine.execute(sql).fetchall()
+        if len(drawdown) > 0:
+            drawdown = float(drawdown[0][0])
+        return drawdown
+
+def get_stored_option_strategies(name=None):
+    if name==None:    
+        sql = "select strategy_df from strategies order by date asc limit 1"
+    else:
+        sql = "select strategy_df from strategies where name='"+name+"'"        
+        
+    engine = sql_engine()
+    df = engine.execute(sql).fetchall()
+    if len(df) > 0:
+        df = df[0][0]
+        df = pd.read_csv(StringIO(df), sep='\s+')
+        df['Expiry'] = pd.to_datetime(df['Expiry'],format='%Y-%m-%d').apply(lambda x: x.date())        
+        df = df.set_index('Expiry')
+    else:
+        df = pd.DataFrame()
+    return df
+
+def get_stored_stock_strategies(strategy_type=None):
+    if strategy_type==None:    
+        sql = "select strategy_df from strategies order by date asc limit 1"
+    else:
+        sql = "select strategy_df from strategies where type='"+strategy_type+"' order by date desc limit 1"        
+        
+    engine = sql_engine()
+    df = engine.execute(sql).fetchall()
+    if len(df) > 0:
+        df = df[0][0]
+        df = pd.read_csv(StringIO(df), sep='\s+')
+#        df['Expiry'] = pd.to_datetime(df['Expiry'],format='%Y-%m-%d').apply(lambda x: x.date())        
+        df = df.set_index('symbol')
+    else:
+        df = pd.DataFrame()
+    return df
+
+def get_stored_option_chain(name=None):
+    if name==None:    
+        sql = "select oc from option_chain_history order by date desc limit 1"
+    else:
+        sql = "select oc from option_chain_history where symbol='"+name+"' order by date desc limit 1"        
+        
+    engine = sql_engine()
+    df = engine.execute(sql).fetchall()
+    if len(df) > 0:
+        df = df[0][0]
+        df = pd.read_csv(StringIO(df), sep='\s+')
+        df['Expiry'] = pd.to_datetime(df['Expiry'],format='%Y-%m-%d').apply(lambda x: x.date())
+        df = df.set_index('Expiry')
+    else:
+        df = pd.DataFrame()
+    return df
 
 def getIndexQuote(symbol):
     nse= nsetools.Nse()
@@ -259,5 +427,58 @@ def getTransactionCosts():
             
     return cost
 
+def is_connected(url="www.google.com"):
+    try:
+        # connect to the host -- tells us if the host is actually
+        # reachable
+        socket.create_connection((url, 80))
+        return True
+    except OSError:
+        pass
+    return False
+
+def generatekey(length=20):
+    return ''.join([choice(string.ascii_letters+string.digits) for i in range(length)])+str(datetime.datetime.timestamp(datetime.datetime.now())).replace('.','_')
+
+def mrigsession_write(to_write):
+
+    now_tstamp = datetime.datetime.timestamp(datetime.datetime.now())
+    prior_tstamp = datetime.datetime.timestamp(datetime.datetime.now() - datetime.timedelta(hours=2))
+    engine = sql_engine('MRIGWEB')
+    
+    flushsql = "delete from  mrigsession where sessionexpiry <= "+str(prior_tstamp)
+    
+    engine.execute(flushsql)
+    
+    to_write = json.dumps(to_write)
+    sessionid = generatekey(20)
+    writesql = "insert into mrigsession values ('%s','%s',%s)"
+    
+    engine.execute(writesql%(sessionid,to_write,str(now_tstamp)))                                               
+                                              
+    
+    return sessionid
+    
+def mrigsession_get(to_get):
+    engine = sql_engine('MRIGWEB')
+    
+    getsql = "select sessionobj from  mrigsession where sessionid = '"+to_get+"'"
+    
+    sessionobj = engine.execute(getsql).fetchall()[0][0]
+    sessionobj = json.loads(sessionobj)
+    
+    return sessionobj
+
+def getStrikes(symbol):
+    oc = get_stored_option_chain(symbol)
+    
+    strikes = []
+    if not oc.empty:
+        strikes = sorted(set(list(oc['Strike_Price'])))
+    
+    return strikes
+
+
 if __name__ == '__main__':
     optionChain('ICICIBANK')
+    

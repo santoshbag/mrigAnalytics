@@ -11,6 +11,7 @@ import QuantLib as ql
 import mrigutilities
 import pandas as pd
 import instruments.qlMaps as qlMaps
+import datetime
 
 class TermStructure:
     """
@@ -195,13 +196,18 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
             self.setShift(self.shiftparameter)
 
     def __setDBRates(self):
-        sql = "select curvedate, tenor, yield from yieldcurve where curve = '"+self.currency+"' and curvedate='"+ self.reference_date.strftime('%Y-%m-%d')+"'"
+        sql = "select (curvedate + (tenor::TEXT)::INTERVAL) as date, yield from yieldcurve where curve = '"+self.currency+"' and curvedate='"+ self.reference_date.strftime('%Y-%m-%d')+"'"
         engine = mrigutilities.sql_engine()
         
         rates_df = pd.read_sql(sql,engine)
+        rates_df['date'] = pd.to_datetime(rates_df['date'],format='%Y-%m-%d').apply(lambda x: x.date())
+        rates_df = rates_df.sort_values(by='date')
+#        print(rates_df)
         spot_yields = list(rates_df['yield']/100)
-        spot_dates = mrigutilities.get_date_vector([list(rates_df['curvedate']),list(rates_df['tenor'])])
-        #print(spot_yields)
+        spot_dates = list(rates_df['date'])
+        spot_dates = [ql.Date(dt.day,dt.month,dt.year) for dt in spot_dates]
+#        spot_dates = mrigutilities.get_date_vector([list(rates_df['curvedate']),list(rates_df['tenor'])])
+#        print(spot_dates)
         spot_dates.insert(0,ql.Date(self.reference_date.day,
                                     self.reference_date.month,
                                     self.reference_date.year))
@@ -398,3 +404,12 @@ class CapFloorVolatilitySurface(Volatilty):
                       expiry,
                       strike):
         return self.vol_surface.volatility(expiry,strike)
+    
+    
+
+if __name__ == '__main__':
+    print("santosh---")
+    refdate = datetime.date(2018,12,28)
+    sz = SpotZeroYieldCurve('INR',refdate)
+    print(sz.spot_rates)    
+

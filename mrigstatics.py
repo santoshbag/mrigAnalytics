@@ -185,3 +185,8 @@ TR_CHARGES ={'BROK':0,
              'EXCH':0.0000325,
              'GST':0.18,
              'SEBI':15}
+
+INDEX_MAP_FOR_OC = {'NIFTY 50':'NIFTY',
+                    'NIFTY IT':'NIFTYIT',
+                    'NIFTY BANK':'BANKNIFTY',
+                    'NIFTY MIDCAP 50':'NIFTYMID50'}

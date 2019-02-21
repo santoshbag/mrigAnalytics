@@ -1,0 +1,48 @@
+drop function custom_stock_screener();
+
+create or replace function custom_stock_screener()
+returns table 
+(ratio_date date,symbol text, industry text, basic_eps numeric,close numeric, eps_growth numeric, sales_per_share numeric,earnings_retention_ratio text,
+price_to_bv text,
+price_to_sales text,
+return_on_equity text,
+dividend_per_share text,
+debt_to_equity text,
+return_on_assets text,
+net_profit_margin text,
+operating_profit_margin text,
+current_ratio text,
+quick_ratio text,
+asset_turnover_ratio text,
+inventory_turnover_ratio text)
+as 
+$$
+begin 
+return query
+select r.ratio_date, r.symbol,
+(select sm.industry from security_master sm where sm.symbol=r.symbol) as industry,
+to_number(r.basic_eps,'9999999999.99'),
+(select sh.close from stock_history sh where sh.symbol=r.symbol order by sh.date desc limit 1) as close,
+--(select sh.close from stock_history sh where sh.symbol=r.symbol and sh.date = (select sh1.date from stock_history sh1 where sh1.symbol = r.symbol and sh1.date <= r.ratio_date order by sh1.date desc limit 1)) as close,
+(to_number(r.basic_eps,'9999999.99') / lag(to_number(r.basic_eps,'9999999.99'), 1) OVER (PARTITION BY r.symbol ORDER BY r.ratio_date)-1) AS eps_growth,
+(select to_number(total_revenue,'999999999.99') from income_statement_view isv where isv.symbol=r.symbol and isv.pnl_statement_date = (select isv1.pnl_statement_date from income_statement_view isv1 where isv1.symbol=r.symbol and isv1.pnl_statement_date <= r.ratio_date order by isv1.pnl_statement_date desc limit 1) limit 1)*10000000 /
+(select to_number(outstanding_shares,'9999999999999999999999999999999.99') from security_master sm where sm.symbol = r.symbol)as sales_per_share,
+r.earnings_retention_ratio,
+r.price_to_bv,
+r.price_to_sales,
+r.return_on_equity,
+r.dividend_per_share,
+r.debt_to_equity,
+r.return_on_assets,
+r.net_profit_margin,
+r.operating_profit_margin,
+r.current_ratio,
+r.quick_ratio,
+r.asset_turnover_ratio,
+r.inventory_turnover_ratio
+from ratios r
+where to_number(r.basic_eps,'9999999.99') > 0
+order by r.symbol, r.ratio_date desc;
+END;
+$$
+LANGUAGE PLPGSQL;

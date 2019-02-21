@@ -82,26 +82,32 @@ def get_yieldCurve(currency="INR"):
     s.close()
     return yield_table
 
-yieldCurveHistory_path = "F:\Mrig Analytics\Development\data\yieldCurveHistory.csv"
-yieldCurveHistory = open(yieldCurveHistory_path,"a+")
-
-last_fetched_data = mrigutilities.get_last_row(yieldCurveHistory_path)
-if last_fetched_data is None:
-    headerAbsent = True
-else:
-    headerAbsent = False
-
-engine = mrigutilities.sql_engine()
-timestamp = datetime.datetime.now()
-
-for currency in mrigstatics.CURVE_LIST:
-    yield_table = get_yieldCurve(currency)
-    yield_table.insert(len(yield_table.columns),column='timestamp',value=timestamp)
-    yield_table.to_csv(yieldCurveHistory,index=False,header=headerAbsent)
-    yield_table = yield_table.drop("timestamp",axis=1)
-    yield_table = mrigutilities.clean_df_db_dups(yield_table,'yieldcurve',engine,dup_cols=["curvedate","curve","tenor"])[0]
-    try:
-        yield_table.to_sql('yieldcurve',engine, if_exists='append', index=False)
-    except:
-        pass
-yieldCurveHistory.close()
+def yield_download():
+    print("Yield Curves download started", end =" ")
+    yieldCurveHistory_path = "F:\Mrig Analytics\Development\data\yieldCurveHistory.csv"
+    yieldCurveHistory = open(yieldCurveHistory_path,"a+")
+    
+    last_fetched_data = mrigutilities.get_last_row(yieldCurveHistory_path)
+    if last_fetched_data is None:
+        headerAbsent = True
+    else:
+        headerAbsent = False
+    
+    engine = mrigutilities.sql_engine()
+    timestamp = datetime.datetime.now()
+    
+    for currency in mrigstatics.CURVE_LIST:
+        yield_table = get_yieldCurve(currency)
+        yield_table.insert(len(yield_table.columns),column='timestamp',value=timestamp)
+        yield_table.to_csv(yieldCurveHistory,index=False,header=headerAbsent)
+        yield_table = yield_table.drop("timestamp",axis=1)
+        yield_table = mrigutilities.clean_df_db_dups(yield_table,'yieldcurve',engine,dup_cols=["curvedate","curve","tenor"])[0]
+        try:
+            yield_table.to_sql('yieldcurve',engine, if_exists='append', index=False)
+        except:
+            pass
+    yieldCurveHistory.close()
+    print("Yield Curves download finished\n")
+    
+if __name__ == '__main__':
+    yield_download()

@@ -732,7 +732,7 @@ def bondAnalytics(bondHandle):
     return bond.NPV()
 
 @xw.func
-def mrigxl_ratePlot(objectid,location,pltname=None):
+def mrigxl_ratePlot(objectid,location,sheet=None,pltname=None):
     
     MINI_SIZE = 6
     SMALL_SIZE = 8
@@ -755,10 +755,15 @@ def mrigxl_ratePlot(objectid,location,pltname=None):
 
 
     curve = objectmap[objectid]
+    if sheet == None:
+        sht = xw.Book.caller().sheets.active
+    else:
+        sht = xw.Book.caller().sheets[sheet]
+
     if pltname ==None:
         pltname = "PLOT_"+objectid
     #basecurve = curve.getBaseCurve()
-    sht = xw.Book.caller().sheets.active
+#    sht = xw.Book.caller().sheets.active
     fig = plt.figure(figsize=(5,2), facecolor=bg_color, edgecolor=border)
     fig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
     #fig.patch.set_facecolor('tab:gray')
@@ -821,7 +826,7 @@ def mrigxl_ratePlot(objectid,location,pltname=None):
 
 
 @xw.func
-def mrigxl_volSurface(objectid,location,pltname=None):
+def mrigxl_volSurface(objectid,location,sheet=None,pltname=None):
     
     SMALL_SIZE = 8
     MEDIUM_SIZE = 10
@@ -840,11 +845,14 @@ def mrigxl_volSurface(objectid,location,pltname=None):
     plt.rcParams['savefig.facecolor']=bg_color
     plt.rcParams['savefig.edgecolor']=fg_color
 
+    if sheet == None:
+        sht = xw.Book.caller().sheets.active
+    else:
+        sht = xw.Book.caller().sheets[sheet]
     volsurface = objectmap[objectid]
     if pltname ==None:
         pltname = "PLOT_"+objectid
     #basecurve = curve.getBaseCurve()
-    sht = xw.Book.caller().sheets.active
     volfig = plt.figure(figsize=(4,4), facecolor=bg_color, edgecolor=fg_color)
     volfig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
     

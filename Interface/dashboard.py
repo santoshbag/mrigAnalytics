@@ -18,8 +18,9 @@ import datetime
 import QuantLib as ql
 import mrigutilities as mu
 import strategies.stocks as stocks
-import stockScreener as ss
+
 from pywintypes import Time
+import stockScreener as ss
 
 import mrigplots as mp
 from matplotlib import colors as mcolors
@@ -396,7 +397,7 @@ def mrigxl_bigmoneyzacks(location,tenor='6M',sheet='None'):
     
 
     top_holdings = top_holdings.head(10)
-    
+    #print(top_holdings)
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'BM Returns')
     
@@ -438,7 +439,7 @@ def mrigxl_bigmoneyzacks(location,tenor='6M',sheet='None'):
     return ret_lis
     
 @xw.func
-@xw.ret(expand='table', transpose=True)
+@xw.ret(expand='table', transpose=False)
 def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M',sheet='None'):
     
     today = datetime.date.today()
@@ -446,12 +447,14 @@ def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M',sheet=
     lastmonth = today - relativedelta.relativedelta(months=1)
 
     industry = ss.sector_returns(num_companies_per_sector,tenor)
+    industry1Y = ss.sector_returns(num_companies_per_sector,'18M')
     
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'Industry')
     
     fig,primary,secondary = plt[0],plt[1],plt[2]
     
+    industry_returns = []
     ind_list = ["Industry"]                    
     cum_returns = ["Returns(An)"]
     color = 1
@@ -460,6 +463,7 @@ def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M',sheet=
         cum_return_series = list(industry[industry['industry'] == sym].daily_log_returns.cumsum())
         period = (industry[industry['industry'] == sym].index[-1] - industry[industry['industry'] == sym].index[0]).days/360
         if period <= 1: period = 1
+        industry_returns.append([sym,float(industry[industry['industry'] == sym].daily_log_returns.sum()/period)])
         cum_returns.append(float(industry[industry['industry'] == sym].daily_log_returns.sum()/period))
         ind_list.append(sym)
         primary.plot(dates,cum_return_series,list(colors.keys())[color*2],label=sym)
@@ -474,7 +478,36 @@ def mrigxl_sector_returns(location,num_companies_per_sector=10,tenor='6M',sheet=
                          left=sht.range(location).left,
                          top=sht.range(location).top)
                             
-    return [ind_list,cum_returns]
+#    return [ind_list,cum_returns]
+    if not industry1Y.empty:
+        #for i in range(0,len(stock_df['date'])-1):
+        #    stock_df.iloc[i]['date'] = datetime.datetime.combine(stock_df.iloc[i]['date'],datetime.time())
+        #stock_df.date = pd.DatetimeIndex(stock_df.date)
+        industry1Y.reset_index()
+#        industry1Y.set_index(['retdate','industry'],inplace=True)
+    start = today - relativedelta.relativedelta(months=12)
+    returns = industry1Y.reset_index().pivot('retdate','industry','daily_log_returns')
+    ret12M = returns[start:].sum()
+    ret12M.name = 'Returns 12M'
+    
+    start = today -relativedelta.relativedelta(months=6)
+    returns = industry1Y.reset_index().pivot('retdate','industry','daily_log_returns')
+    ret6M = returns[start:].sum()
+    ret6M.name = 'Returns 6M'
+    
+    start = today - relativedelta.relativedelta(months=3)
+    returns = industry1Y.reset_index().pivot('retdate','industry','daily_log_returns')
+    ret3M = returns[start:].sum()
+    ret3M.name = 'Returns 3M'
+    
+    
+    
+#    stockreturns = stockreturns.sort_values(by='Returns 3M',ascending=0)
+    industry_returns = pd.DataFrame(industry_returns,columns=["industry","Tenor(An)"])
+    industry_returns = industry_returns.set_index('industry')
+    industry_returns = pd.concat([ret3M,ret6M,ret12M,industry_returns],axis=1)
+    industry_returns = industry_returns.sort_values(by='Returns 3M',ascending=0)
+    return industry_returns
     
 @xw.func
 @xw.ret(expand='table', transpose=True)
@@ -568,7 +601,7 @@ def mrigxl_tafa(location,tenor='6M',sheet='None'):
     symlist = list(top_holdings.index)
     symlist.insert(0,"TAFA Holdings")
     eps = list(top_holdings.eps_growth)
-    eps.insert(0,"EPS Growth")
+    eps.insert(0,"EPS Growth")  
     pe = list(top_holdings.pe)
     pe.insert(0,"P/E")
     ps = list(top_holdings.ps)
@@ -650,16 +683,19 @@ def mrigxl_growthincome(location,tenor='6M',sheet='None'):
     cum_returns = ["Returns(An)"]
     color = 0
     for sym in top_holdings.index:
-        stk = stocks.Stock(sym)
-        stk.get_returns(tenor)
-        dates = list(stk.daily_logreturns.index)
-        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
-        period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
-        if period <= 1: period = 1
-        cum_returns.append(float(stk.daily_logreturns.sum()/period))
-        primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
-        primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
-        color = color + 1
+        try:
+            stk = stocks.Stock(sym)
+            stk.get_returns(tenor)
+            dates = list(stk.daily_logreturns.index)
+            cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+            period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+            if period <= 1: period = 1
+            cum_returns.append(float(stk.daily_logreturns.sum()/period))
+            primary.plot(dates,cum_return_series,"C"+str(color),label=sym)
+            primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+            color = color + 1
+        except:
+            pass
     
     if sheet != 'None':
         sht = xw.Book.caller().sheets[sheet] 
@@ -783,8 +819,9 @@ def mrigxl_stock():
     dates = list(stk.pricevol_data.index)
     
     primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
-    primary.plot(dates,list(stk.pricevol_data['50_day_SMA']),"C2",label='50 Day SMA')
-    primary.plot(dates,list(stk.pricevol_data['200_day_SMA']),"C3",label='200 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['20_day_SMA']),"C2",label='20 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['60_day_SMA']),"C3",label='60 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['100_day_SMA']),"C4",label='100 Day SMA')
     primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
     
     sht.pictures.add(fig, 
@@ -810,6 +847,23 @@ def mrigxl_stock():
                      left=sht.range('L35').left,
                      top=sht.range('L35').top)
 
+    labels = ['Dates','Price','MACD']
+    plt = mp.singleScaleLine_plots(labels,'MACD')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    dates = list(stk.pricevol_data.index)
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    secondary.plot(dates,list(stk.pricevol_data['MACD']),"C2",label='MACD')
+    secondary.plot(dates,list(stk.pricevol_data['MACDS']),"C3",label='MACD Signal')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.2, -0.10),fancybox=True, shadow=True, ncol=5)
+    secondary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+    
+    sht.pictures.add(fig, 
+                     name='MACD', 
+                     update=True,
+                     left=sht.range('L52').left,
+                     top=sht.range('L52').top)
 
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'Returns')
@@ -835,10 +889,20 @@ def mrigxl_stock():
                      left=sht.range('L17').left,
                      top=sht.range('L17').top)
     
+    sht.range('D14:J16').clear_contents()
+    risk = stk.get_risk()
+    risklabels,risknumbers = [],[]
+    for key in risk.keys():
+        risklabels.append(key)
+        risknumbers.append(risk[key])
+    
+    sht.range('D14').value = [risklabels,risknumbers]
+             
+             
     stk.get_ratios()
 #    ratios = [list(stk.ratio_data.columns),stk.ratio_data.values.tolist()[0]]
     
-    sht.range('D15:J500').clear_contents()
+    sht.range('D18:J500').clear_contents()
     if not stk.ratio_data.empty:
 #        ratios = [['Ratio Date',stk.ratio_data.index[0]],[" "," "]]
 #        ratioheads = list(stk.ratio_data.columns)
@@ -856,7 +920,59 @@ def mrigxl_stock():
 #        rd.rename(columns=lambda x: x.upper().replace('_'," "),inplace=True)
         rd.replace('',np.nan,inplace=True)
         rd.dropna(how='all',axis=0,inplace=True)
-        sht.range('D15').value = rd
+        sht.range('D19').value = rd
     optionchain = stk.optionChain()
     sht.range('W3:AR500').clear_contents()
     sht.range('W3').value = optionchain
+
+@xw.func
+def mrigxl_covered_call():
+    sheet='Covered Calls'
+    sht = xw.Book.caller().sheets[sheet]
+    sht.range('B3:L500').clear_contents()
+    oc = ss.covered_call()
+    sht.range('B3').value = oc[0]
+    sht.range('AC4').value = oc[1]
+
+@xw.func
+def mrigxl_max_drawdown(symbol,window_days=29, period_months=12):
+
+    drawdown = mu.max_stock_drawdown(symbol,window_days,period_months)
+    return drawdown
+
+@xw.func
+def mrigxl_avg_drawdown(symbol,window_days=29, period_months=12):
+
+    drawdown = mu.avg_stock_drawdown(symbol,window_days,period_months)
+    return drawdown
+
+@xw.func
+@xw.ret(expand='table')
+def mrigxl_stored_strategies(name=None):
+
+    strategy = mu.get_stored_option_strategies(name)
+    return strategy
+
+@xw.func
+def mrigxl_stockquote(symbol):
+    stk = stocks.Stock(symbol)
+    quote = stk.quote['lastPrice']
+    return quote
+
+@xw.func
+def mrigxl_bull_put_spread():
+    sheet='Bull Put Spread'
+    sht = xw.Book.caller().sheets[sheet]
+    sht.range('B3:N500').clear_contents()
+    oc = ss.bull_put_spread()
+    sht.range('B3').value = oc[0]
+    sht.range('AE4').value = oc[1]
+
+@xw.func
+def mrigxl_bear_call_spread():
+    sheet='Bear Call Spread'
+    sht = xw.Book.caller().sheets[sheet]
+    sht.range('B3:N500').clear_contents()
+    oc = ss.bear_call_spread()
+    sht.range('B3').value = oc[0]
+    sht.range('AE4').value = oc[1]

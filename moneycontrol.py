@@ -10,12 +10,22 @@ import requests
 import datetime,pandas,time
 from bs4 import BeautifulSoup
 import mrigstatics,mrigutilities
+from time import sleep
 
 
 def get_MCStockCodes():
+    response = requests.Response()
     url = mrigstatics.MC_URLS['MC_CODES_URL']
-    s = requests.Session()
-    response = s.get(url)
+    timecounter = 0
+    while True:
+        timecounter = timecounter + 1
+        if mrigutilities.is_connected():    
+            s = requests.Session()
+            response = s.get(url)
+        if mrigutilities.is_connected() or timecounter > 5:
+            break
+        else:
+            sleep(60)
     soup = BeautifulSoup(response.text, 'html.parser')
         
     engine = mrigutilities.sql_engine()
@@ -47,10 +57,22 @@ def get_MCRatios(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
+    response = requests.Response()
     for symbol in symbollist:
         url = mrigstatics.MC_URLS['MC_RATIOS_URL'] + symbol.split(":")[-1].strip()+"/ratiosVI/"+symbol.split(":")[-2].strip()
-        s = requests.Session()
-        response = s.get(url)
+        timecounter = 0
+        while True:
+            print(symbol)
+            timecounter = timecounter + 1
+            if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                s = requests.Session()
+                response = s.get(url)
+                print(symbol+" downloaded")
+            if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                break
+            else:
+                sleep(60)
+                    
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -254,9 +276,34 @@ def get_OutShares_NSE(symbol=None):
     #print(ratios_dict_str)
         #engine.execute(sql)
         
+def get_NSELive():
+    
+    quote = {}
+    url = "http://www.moneycontrol.com/indian-indices/cnx-nifty-9.html"
+    #url = mrigstatics.MC_URLS['MC_CODES_URL'] +"finance-general/"+ symbol.split(":")[-1].strip()+"/"+symbol.split(":")[-2].strip()
+    #print(url)
+    s = requests.Session()
+    response = s.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    lastPrice = soup.find("div" , {"class":"FL gr_35"}).text
+    quote['lastPrice'] = lastPrice                         
+    sym = soup.find_all(class_="tbldtldata b_15")[0]
+    sym = sym.find_all("td")
+    quote['open'] = sym[3].text.split(':')[1].strip().replace(',','')
+    quote['dayHigh'] = sym[4].text.split(':')[1].strip().replace(',','')
+    quote['high52'] = sym[5].text.strip().replace(',','')
+    quote['previousClose'] = sym[6].text.split(':')[1].strip().replace(',','')
+    quote['dayLow'] = sym[7].text.split(':')[1].strip().replace(',','')
+    quote['low52'] = sym[8].text.strip().replace(',','')
+    
+    print(quote)
+    
+    return quote
+            
        
 def get_MCQtrly_Results(symbol=None):
     
+    response = requests.Response()
     engine = mrigutilities.sql_engine()
     sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
@@ -268,8 +315,17 @@ def get_MCQtrly_Results(symbol=None):
     successful_download = []
     for symbol in symbollist:
         url = mrigstatics.MC_URLS['MC_QTRLY_RESULTS_URL'] + symbol.split(":")[-1].strip()+"/results/quarterly-results/"+symbol.split(":")[-2].strip()
-        s = requests.Session()
-        response = s.get(url)
+        timecounter = 0
+        while True:
+            timecounter = timecounter + 1
+            if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                s = requests.Session()
+                response = s.get(url)
+            if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                break
+            else:
+                sleep(60)
+                
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -310,6 +366,7 @@ def get_MCQtrly_Results(symbol=None):
 
 def get_BalanceSheet(symbol=None):
     
+    response = requests.Response()
     engine = mrigutilities.sql_engine()
     sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
@@ -319,10 +376,21 @@ def get_BalanceSheet(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
-    for symbol in symbollist:
+    symitercount = 0
+    startlist = 0#+218+94+65+26
+    for symbol in symbollist[startlist:]:
+        symitercount = symitercount +1
         url = mrigstatics.MC_URLS['MC_BALANCE_SHEET_URL'] + symbol.split(":")[-1].strip()+"/balance-sheetVI/"+symbol.split(":")[-2].strip()
-        s = requests.Session()
-        response = s.get(url)
+        timecounter = 0
+        while True:
+            timecounter = timecounter + 1
+            if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                s = requests.Session()
+                response = s.get(url)
+            if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                break
+            else:
+                sleep(60)
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -357,12 +425,13 @@ def get_BalanceSheet(symbol=None):
             except:
                 pass
         
-        print("Downloaded Balance Sheet Results for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
+        print("Downloaded Balance Sheet Results for "+str(len(set(successful_download)))+ " of "+ str(symitercount)+" stocks")
         #print(ratios_dict_str)
         #engine.execute(sql)
 
 def get_ProfitLossStatement(symbol=None):
     
+    response = requests.Response()
     engine = mrigutilities.sql_engine()
     sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
@@ -372,10 +441,19 @@ def get_ProfitLossStatement(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
-    for symbol in symbollist:
+    startlist = 0#+218+94+65+26
+    for symbol in symbollist[startlist:]:
         url = mrigstatics.MC_URLS['MC_PROFIT_LOSS_URL'] + symbol.split(":")[-1].strip()+"/profit-lossVI/"+symbol.split(":")[-2].strip()
-        s = requests.Session()
-        response = s.get(url)
+        timecounter = 0
+        while True:
+            timecounter = timecounter + 1
+            if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                s = requests.Session()
+                response = s.get(url)
+            if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                break
+            else:
+                sleep(60)
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -415,6 +493,7 @@ def get_ProfitLossStatement(symbol=None):
 
 def get_CashFLowStatement(symbol=None):
     
+    response = requests.Response()
     engine = mrigutilities.sql_engine()
     sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
@@ -424,10 +503,19 @@ def get_CashFLowStatement(symbol=None):
     else:
         symbollist = [symbol]
     successful_download = []
-    for symbol in symbollist:
+    startlist = 0+364#+94+65+26
+    for symbol in symbollist[startlist:]:
         url = mrigstatics.MC_URLS['MC_CASHFLOW_STATEMENT_URL'] + symbol.split(":")[-1].strip()+"/cash-flowVI/"+symbol.split(":")[-2].strip()
-        s = requests.Session()
-        response = s.get(url)
+        timecounter = 0
+        while True:
+            timecounter = timecounter + 1
+            if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                s = requests.Session()
+                response = s.get(url)
+            if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                break
+            else:
+                sleep(60)
         soup = BeautifulSoup(response.text, 'html.parser')
             
         timestamp = datetime.datetime.now()
@@ -467,6 +555,7 @@ def get_CashFLowStatement(symbol=None):
 
 def get_CorporateActions(symbol=None):
     
+    response = requests.Response()
     engine = mrigutilities.sql_engine()
     sql = "select code_value, code_date from codes where code_name='MONEY_CONTROL_STOCK_CODES' order by code_date desc limit 1"
     codes = engine.execute(sql).fetchall()
@@ -482,8 +571,9 @@ def get_CorporateActions(symbol=None):
     bonus_sym = []
     rights_sym = []
     
-    pos = symbollist.index('DI:daburindia')
-    for symbol in symbollist[pos+1:]:
+#    pos = symbollist.index('DI:daburindia')
+#    startlist = symbollist.index('AT14:apollotyres')
+    for symbol in symbollist:#[startlist:]:
         print(symbol+"---------")
         meeting_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/board-meetings/"+symbol.split(":")[-2].strip()
         dividend_url = mrigstatics.MC_URLS['MC_CORP_ACTION_URL'] + symbol.split(":")[-1].strip()+"/dividends/"+symbol.split(":")[-2].strip()
@@ -494,7 +584,16 @@ def get_CorporateActions(symbol=None):
         
         # Download Meeting details
         try:
-            response = s.get(meeting_url)
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                    s = requests.Session()
+                    response = s.get(meeting_url)
+                if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                    break
+                else:
+                    sleep(60)
         except ConnectionError as e:
             print("Santosh Error---")
             time.sleep(2*60)
@@ -555,7 +654,16 @@ def get_CorporateActions(symbol=None):
             # Download Dividends
         #response = s.get(dividend_url)
         try:
-            response = s.get(dividend_url)
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                    s = requests.Session()
+                    response = s.get(dividend_url)
+                if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                    break
+                else:
+                    sleep(60)
         except ConnectionError as e:
             print("Santosh Error---")
             time.sleep(2*60)
@@ -620,7 +728,16 @@ def get_CorporateActions(symbol=None):
         # Download Bonus
         response = s.get(bonus_url)
         try:
-            response = s.get(bonus_url)
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                    s = requests.Session()
+                    response = s.get(bonus_url)
+                if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                    break
+                else:
+                    sleep(60)
         except ConnectionError as e:
             print("Santosh Error---")
             time.sleep(2*60)
@@ -683,7 +800,16 @@ def get_CorporateActions(symbol=None):
         # Download Rights
         #response = s.get(rights_url)
         try:
-            response = s.get(rights_url)
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                    s = requests.Session()
+                    response = s.get(rights_url)
+                if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                    break
+                else:
+                    sleep(60)
         except ConnectionError as e:
             print("Santosh Error---")
             time.sleep(2*60)
@@ -755,7 +881,16 @@ def get_CorporateActions(symbol=None):
         # Download Splits
         #response = s.get(splits_url)
         try:
-            response = s.get(splits_url)
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com"):    
+                    s = requests.Session()
+                    response = s.get(splits_url)
+                if (mrigutilities.is_connected() and mrigutilities.is_connected("www.moneycontrol.com")) or timecounter > 5:
+                    break
+                else:
+                    sleep(60)
         except ConnectionError as e:
             print("Santosh Error---")
             time.sleep(2*60)
@@ -826,15 +961,17 @@ def get_CorporateActions(symbol=None):
 
 
 if __name__ == '__main__':
-    get_MCStockCodes()
+#    get_MCStockCodes()
     
 #    get_MCRatios()
 #    populate_ratios_table()
 #    get_MCQtrly_Results()
     #get_MCQtrly_Results("MS24:marutisuzukiindia")
 #    get_BalanceSheet("MS24:marutisuzukiindia")
-#    get_BalanceSheet()   
+
 #    get_ProfitLossStatement()
-    #get_CashFLowStatement()
+#    get_BalanceSheet()       
+#    get_CashFLowStatement()
     #get_OutShares_NSE()
-    get_CorporateActions()
+#    get_CorporateActions()
+    get_NSELive()

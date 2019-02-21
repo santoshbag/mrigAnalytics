@@ -8,6 +8,8 @@ import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import mrigutilities as mu
+import moneycontrol as mc
+import mrigstatics
 import datetime, dateutil.relativedelta
 import pandas as pd
 import numpy as np
@@ -16,6 +18,7 @@ import statsmodels.api as sm
 import research.math as rm
 import stockstats as ss
 import requests
+import instruments.termstructure as rates
 from bs4 import BeautifulSoup
 
 
@@ -26,6 +29,7 @@ class Stock():
         self.symbol = name
         self.quote = mu.getStockQuote(name)
         self.industry = mu.getIndustry(name)
+        self.beta = None
         
     
     def get_price_vol(self,period='1Y'):
@@ -65,9 +69,10 @@ class Stock():
         #Preparing the dataset
 #        dataset['H-L'] = dataset['high'] - dataset['low']
 #        dataset['O-C'] = dataset['close'] - dataset['open']
-        self.pricevol_data['10_day_SMA'] = dataset.get('close_10_sma')
+        self.pricevol_data['20_day_SMA'] = dataset.get('close_20_sma')
         self.pricevol_data['30_day_SMA'] = dataset.get('close_30_sma')
-        self.pricevol_data['50_day_SMA'] = dataset.get('close_50_sma')
+        self.pricevol_data['40_day_SMA'] = dataset.get('close_40_sma')
+        self.pricevol_data['60_day_SMA'] = dataset.get('close_60_sma')
         self.pricevol_data['100_day_SMA'] = dataset.get('close_100_sma')
         self.pricevol_data['200_day_SMA'] = dataset.get('close_200_sma')
         self.pricevol_data['Std_dev']= dataset['close'].rolling(5).std()
@@ -80,6 +85,7 @@ class Stock():
         self.pricevol_data['Bollinger_UBand'] = dataset.get('boll_ub')
         self.pricevol_data['Bollinger_LBand'] = dataset.get('boll_lb')
         self.pricevol_data['MACD'] = dataset.get('macd')
+        self.pricevol_data['MACDS'] = dataset.get('macds')
 
         
     def get_returns(self,period='1Y'):
@@ -131,85 +137,166 @@ class Stock():
         expiries = mu.get_futures_expiry(datetime.date.today(),datetime.date.today())
         
         option_chain = []
-        for dt in expiries:
-            expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
-            page = requests.get(Base_url %(self.symbol,expdt))
-            page.status_code
-            page.content
-            
-            soup = BeautifulSoup(page.content, 'html.parser')
-            #print(soup.prettify())
-            
-            table_it = soup.find_all(class_="opttbldata")
-            table_cls_1 = soup.find_all(id="octable")
-            
-            
-            col_list = []
-            
-            # The code given below will pull the headers of the Option Chain table
-            for mytable in table_cls_1:
-                table_head = mytable.find('thead')
+        try:
+            for dt in expiries:
+                expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
+                page = requests.get(Base_url %(self.symbol,expdt))
+                page.status_code
+                page.content
                 
-                try:
-                    rows = table_head.find_all('tr')
-                    for tr in rows: 
-                        cols = tr.find_all('th')
-                        for th in cols:
-                            er = th.text
-                            ee = er.encode('utf8')   
-                            ee = str(ee, 'utf-8')
-                            col_list.append(ee)
-                            
-                except:
-                    print ("no thead")
+                soup = BeautifulSoup(page.content, 'html.parser')
+                #print(soup.prettify())
                 
-            
-            col_list_fnl = [e for e in col_list if e not in ('CALLS','PUTS','Chart','\xc2\xa0','\xa0')]
-                            
-    #        print (col_list_fnl)          
-            
-            table_cls_2 = soup.find(id="octable")
-            all_trs = table_cls_2.find_all('tr')
-            req_row = table_cls_2.find_all('tr')
-            
-            new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
-            
-            row_marker = 0 
-            
-            for row_number, tr_nos in enumerate(req_row):
-                 
-                 # This ensures that we use only the rows with values    
-                 if row_number <=1 or row_number == len(req_row)-1:   
-                     continue
+                table_it = soup.find_all(class_="opttbldata")
+                table_cls_1 = soup.find_all(id="octable")
+                
+                
+                col_list = []
+                
+                # The code given below will pull the headers of the Option Chain table
+                for mytable in table_cls_1:
+                    table_head = mytable.find('thead')
+                    
+                    try:
+                        rows = table_head.find_all('tr')
+                        for tr in rows: 
+                            cols = tr.find_all('th')
+                            for th in cols:
+                                er = th.text
+                                ee = er.encode('utf8')   
+                                ee = str(ee, 'utf-8')
+                                col_list.append(ee)
+                                
+                    except:
+                        print ("no thead")
+                    
+                
+                col_list_fnl = [e for e in col_list if e not in ('CALLS','PUTS','Chart','\xc2\xa0','\xa0')]
+                if len(col_list_fnl) == 21:
+                    for i in range(0,21):
+                        col_list_fnl[i] = col_list_fnl[i].replace(' ' ,'_')
+                        if i < 10:
+                            col_list_fnl[i] = 'CALL_'+col_list_fnl[i]
+                        if i > 10:
+                            col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
+                                                    
+        #        print (col_list_fnl)          
+                
+                table_cls_2 = soup.find(id="octable")
+                all_trs = table_cls_2.find_all('tr')
+                req_row = table_cls_2.find_all('tr')
+                
+                new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
+                
+                row_marker = 0 
+                
+                for row_number, tr_nos in enumerate(req_row):
+                     
+                     # This ensures that we use only the rows with values    
+                     if row_number <=1 or row_number == len(req_row)-1:   
+                         continue
+                          
+                     td_columns = tr_nos.find_all('td')
+                     
+                     # This removes the graphs columns
+                     select_cols = td_columns[1:22]                  
+                     cols_horizontal = range(0,len(select_cols))
                       
-                 td_columns = tr_nos.find_all('td')
-                 
-                 # This removes the graphs columns
-                 select_cols = td_columns[1:22]                  
-                 cols_horizontal = range(0,len(select_cols))
-                  
-                 for nu, column in enumerate(select_cols):
-                     
-                     utf_string = column.get_text()
-                     utf_string = utf_string.strip('\n\r\t": ')
-                     
-                     tr = utf_string.encode('utf-8')
-                     tr = str(tr, 'utf-8')
-                     tr = tr.replace(',' , '')
-                     new_table.ix[row_marker,[nu]]= tr
-                     
-                 row_marker += 1   
-            new_table['Expiry'] = dt
-            new_table.set_index('Expiry',inplace=True)
-            option_chain.append(new_table)
-        option_chain = pd.concat(option_chain)
+                     for nu, column in enumerate(select_cols):
+                         
+                         utf_string = column.get_text()
+                         utf_string = utf_string.strip('\n\r\t": ')
+                         
+                         tr = utf_string.encode('utf-8')
+                         tr = str(tr, 'utf-8')
+                         tr = tr.replace(',' , '')
+                         new_table.ix[row_marker,[nu]]= tr
+                         
+                     row_marker += 1   
+                new_table['Expiry'] = dt
+                new_table.set_index('Expiry',inplace=True)
+                option_chain.append(new_table)
+        except:
+            pass
+        if len(option_chain) > 0:
+            option_chain = pd.concat(option_chain)
+        else:
+            option_chain = pd.DataFrame()
     #    print (optionchain)
         return option_chain
+
+    def max_drawdown(self,window_days=29, period_months=12):
+
+        drawdown = mu.max_stock_drawdown(self.symbol,window_days,period_months)
+        return drawdown
+
+    def avg_drawdown(self,window_days=29, period_months=12):
+
+        drawdown = mu.avg_stock_drawdown(self.symbol,window_days,period_months)
+        return drawdown
+        
+    def get_risk(self,sym=None):
+        beta, SD, VaR,sharpe,sortino = None,None,None,None,None
+        if sym == None:
+            sym = self.symbol
+        return_sql = "select * from daily_returns dr where symbol in ('"+sym+"','NIFTY 50') and dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
+        engine = mu.sql_engine()
+        
+        returns = pd.read_sql(return_sql,engine)
+    
+        datesql = "select curvedate from yieldcurve where curve='INR' order by curvedate desc limit 1"
+        reference_date = engine.execute(datesql).fetchall()[0][0]
+        riskfree_1y = rates.SpotZeroYieldCurve('INR',reference_date)
+        riskfree_1y = riskfree_1y.getZeroRate(reference_date+datetime.timedelta(days=360))
+
+        if not returns.empty:
+            returns.set_index('symbol',inplace=True)
+            A = list(returns[returns['date'].isin(set(returns['date'].loc['NIFTY 50']) & set(returns['date'].loc[sym]))]['daily_log_returns'].loc['NIFTY 50'])
+            B = list(returns[returns['date'].isin(set(returns['date'].loc['NIFTY 50']) & set(returns['date'].loc[sym]))]['daily_log_returns'].loc[sym])
+            try:
+                beta = np.cov(A,B)[0][1]/np.var(A)
+                self.risk = {'Beta':beta}
+            except:
+                pass
+            try:
+                SD = np.std(B)*np.sqrt(250)
+                self.risk.update({'SD':SD})
+            except:
+                pass
+            try:
+                VaR = self.quote['securityVar']
+                VaR95 = 1.65*np.std(B)
+                self.risk.update({'VaR(95)':VaR95})
+            except:
+                pass
+            try:
+                return_1Y = sum(B)
+                sharpe = (return_1Y - riskfree_1y)/SD
+                self.risk.update({'Sharpe':sharpe})
+            except:
+                pass
+            try:
+                return_1Y = sum(B)
+                B_Down = [a if a < 0 else 0 for a in B]
+                sortino = (return_1Y - riskfree_1y)/np.std(B_Down)
+                self.risk.update({'Sortino':sortino})
+            except:
+                pass
+
+            try:
+                return_1Y = sum(B)
+                treynor = (return_1Y - riskfree_1y)/beta
+                self.risk.update({'Treynor':treynor})
+            except:
+                pass
+            
+        return self.risk
+
 
 class Index():
     def __init__(self,name):
         self.symbol = name
-        self.quote = mu.getIndexQuote(name)
+        self.quote = mc.get_NSELive()
         
     
     def get_price_vol(self,period='1Y'):
@@ -249,9 +336,10 @@ class Index():
         #Preparing the dataset
 #        dataset['H-L'] = dataset['high'] - dataset['low']
 #        dataset['O-C'] = dataset['close'] - dataset['open']
-        self.pricevol_data['10_day_SMA'] = dataset.get('close_10_sma')
+        self.pricevol_data['20_day_SMA'] = dataset.get('close_20_sma')
         self.pricevol_data['30_day_SMA'] = dataset.get('close_30_sma')
-        self.pricevol_data['50_day_SMA'] = dataset.get('close_50_sma')
+        self.pricevol_data['40_day_SMA'] = dataset.get('close_40_sma')
+        self.pricevol_data['60_day_SMA'] = dataset.get('close_60_sma')
         self.pricevol_data['100_day_SMA'] = dataset.get('close_100_sma')
         self.pricevol_data['200_day_SMA'] = dataset.get('close_200_sma')
         self.pricevol_data['Std_dev']= dataset['close'].rolling(5).std()
@@ -264,6 +352,7 @@ class Index():
         self.pricevol_data['Bollinger_UBand'] = dataset.get('boll_ub')
         self.pricevol_data['Bollinger_LBand'] = dataset.get('boll_lb')
         self.pricevol_data['MACD'] = dataset.get('macd')
+        self.pricevol_data['MACDS'] = dataset.get('macds')
 
         
     def get_returns(self,period='1Y'):
@@ -293,6 +382,106 @@ class Index():
         self.daily_logreturns = pd.read_sql(sql,engine)
         if not self.daily_logreturns.empty:
             self.daily_logreturns.set_index('date',inplace=True)
+
+    def optionChain(self):
+        Base_url =("https://www.nseindia.com/live_market/dynaContent/"+
+                   "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+
+                   "symbol=UBL&instrument=OPTSTK&date=-&segmentLink=17&segmentLink=17")
+        Base_url = ("https://www.nseindia.com/live_market/dynaContent/"+
+                    "live_watch/option_chain/optionKeys.jsp?segmentLink=17&instrument=OPTIDX"+
+                    "&symbol=%s&date=%s")
+        
+        expiries = mu.get_indexoptions_expiry()
+        
+        
+        option_chain = []
+        try:
+            for dt in expiries:
+                expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
+                page = requests.get(Base_url %(mrigstatics.INDEX_MAP_FOR_OC[self.symbol],expdt))
+                page.status_code
+                page.content
+                
+                soup = BeautifulSoup(page.content, 'html.parser')
+#                print(soup.prettify())
+                
+                table_it = soup.find_all(class_="opttbldata")
+                table_cls_1 = soup.find_all(id="octable")
+                
+                
+                col_list = []
+                
+                # The code given below will pull the headers of the Option Chain table
+                for mytable in table_cls_1:
+                    table_head = mytable.find('thead')
+                    
+                    try:
+                        rows = table_head.find_all('tr')
+                        for tr in rows: 
+                            cols = tr.find_all('th')
+                            for th in cols:
+                                er = th.text
+                                ee = er.encode('utf8')   
+                                ee = str(ee, 'utf-8')
+                                col_list.append(ee)
+                                
+                    except:
+                        print ("no thead")
+                    
+                
+                col_list_fnl = [e for e in col_list if e not in ('CALLS','PUTS','Chart','\xc2\xa0','\xa0')]
+                if len(col_list_fnl) == 21:
+                    for i in range(0,21):
+                        col_list_fnl[i] = col_list_fnl[i].replace(' ' ,'_')
+                        if i < 10:
+                            col_list_fnl[i] = 'CALL_'+col_list_fnl[i]
+                        if i > 10:
+                            col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
+                                                    
+        #        print (col_list_fnl)          
+                
+                table_cls_2 = soup.find(id="octable")
+                all_trs = table_cls_2.find_all('tr')
+                req_row = table_cls_2.find_all('tr')
+                
+                new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
+                
+                row_marker = 0 
+                
+                for row_number, tr_nos in enumerate(req_row):
+                     
+                     # This ensures that we use only the rows with values    
+                     if row_number <=1 or row_number == len(req_row)-1:   
+                         continue
+                          
+                     td_columns = tr_nos.find_all('td')
+                     
+                     # This removes the graphs columns
+                     select_cols = td_columns[1:22]                  
+                     cols_horizontal = range(0,len(select_cols))
+                      
+                     for nu, column in enumerate(select_cols):
+                         
+                         utf_string = column.get_text()
+                         utf_string = utf_string.strip('\n\r\t": ')
+                         
+                         tr = utf_string.encode('utf-8')
+                         tr = str(tr, 'utf-8')
+                         tr = tr.replace(',' , '')
+                         new_table.ix[row_marker,[nu]]= tr
+                         
+                     row_marker += 1   
+                new_table['Expiry'] = dt
+                new_table.set_index('Expiry',inplace=True)
+                option_chain.append(new_table)
+        except:
+            pass
+        if len(option_chain) > 0:
+            option_chain = pd.concat(option_chain)
+        else:
+            option_chain = pd.DataFrame()
+    #    print (optionchain)
+        return option_chain
 
         
 def stock_adjust():
@@ -327,4 +516,7 @@ def stock_adjust():
     engine.execute(enable_sql)
 
 if __name__ == '__main__':
-    stock_adjust()
+    nifty = Index('NIFTY 50')
+    print(nifty.quote)
+    niftyoc = nifty.optionChain()
+    print(niftyoc)

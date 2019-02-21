@@ -83,6 +83,9 @@ def qlDates(date):
                    date.month,
                    date.year)
 
-                     
+def quote(quote):
+    return ql.QuoteHandle(ql.SimpleQuote(quote))
+    
+    
 
-                                 
+                                

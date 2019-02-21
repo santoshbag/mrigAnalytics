@@ -8,7 +8,7 @@ Created on Fri Apr  8 05:02:07 2016
 
 
 """
-from datetime import *
+import datetime
 import csv 
 
 class Portfolio:
@@ -28,7 +28,7 @@ class Portfolio:
     #Class begins here-----------------
     def __init__(self,name="Portfolio1",currency="USD"):
         self.portfolio_name = name
-        self.position_date = datetime.today()
+        self.position_date = datetime.date.today()
         self.portfolio_currency = currency
         self.position_list = []
         
@@ -129,7 +129,7 @@ class Position:
         """ Gets the Result set
 
         Argument : none
-        Return Type : Dictionary
+        Return Type : Dictionary of Dictionaries
         
         The results returned are 
 
@@ -201,14 +201,15 @@ class Product:
 
     #Super class Member Data variables
 
-    def __init__(self,type):
-        self.productType = type
+    def __init__(self,productType):
+        self.productType = productType
         self.productMetadataSet = {}
-        self.value = {}
-        self.yields = {}
-        self.sensitivities = {}
-        self.spreads = {}
-        self.durations = {}
+        self.value = None
+#        self.yields = {}
+#        self.sensitivities = {}
+#        self.spreads = {}
+#        self.durations = {}
+        self.resultSet = {}
         
     #interface functions for the Product class which needs to be implemented properly in the subclasses
     def getProductMetadata(self):
@@ -217,18 +218,8 @@ class Product:
     def getValue(self):
         return self.value
     
-    def getYields(self):
-        return self.yields
-
-    def getSpreads(self):
-        return self.spreads
-
-    def getDurations(self):
-        return self.durations
-
-    def getSensitivities(self):
-        return self.sensitivities   
-   
+    def getResultSet(self):
+        return self.resultSet   
 
 # Code below is for testing 
 if __name__ == '__main__':

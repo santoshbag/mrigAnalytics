@@ -33,6 +33,7 @@ class Swap(Product):
         self.swapobject = None
         self.valuation_params = {}
         self.is_valued = False
+        super(Swap).productMetadataSet = setupparams
     
     def getAnalytics(self):
         if self.is_valued:
@@ -58,6 +59,8 @@ class Swap(Product):
                               'Floating Leg BPS' : floatinglegBPS,
                               'Fixed Leg Cashflows' : fixedlegCashflow,
                               'Floating Leg Cashflows' : floatinglegCashflow}
+            super(Swap).resultSet = swap_analytics
+            super(Swap).value = npv
         else:
             swap_analytics = {'Swap Status':'Swap not evaluated'}
         return swap_analytics#self.valuation_params.update({"class" : "Convertible"})
@@ -91,7 +94,9 @@ class VanillaFixedFLoatSwap(Swap):
         self.floatleg_index = floatleg_params['coupon_index']
         self.floatleg_coupon_spread = floatleg_params['coupon_spread']
         self.floatleg_indexfixing = floatleg_params['fixing']
-        
+        super(Swap).productMetadataSet = {'fixedleg_params' : fixedleg_params,
+                                          'floatleg_params' : floatleg_params}
+             
         if self.floatleg_indexfixing != None:
             fixingdate = [self.floatleg_index.fixingDate(ql.Settings.instance().evaluationDate)]
             ql.IndexManager.instance().clearHistory(self.floatleg_index.name())

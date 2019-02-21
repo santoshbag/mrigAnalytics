@@ -1,0 +1,61 @@
+drop function industry_symbol_ratios();
+
+create or replace function industry_symbol_ratios()
+returns table 
+(ratio_date date,symbol text, industry text, basic_eps numeric,close numeric, eps_growth numeric, 
+sales_per_share numeric,earnings_retention_ratio numeric,
+price_to_bv numeric,
+price_to_sales numeric,
+price_to_earnings numeric,
+price_to_earningsgrowth numeric,
+return_on_equity numeric,
+dividend_per_share numeric,
+dividend_yield numeric,
+debt_to_equity numeric,
+return_on_assets numeric,
+net_profit_margin numeric,
+operating_profit_margin numeric,
+current_ratio numeric,
+quick_ratio numeric,
+asset_turnover_ratio numeric,
+inventory_turnover_ratio numeric,
+ratiorank bigint)
+as 
+$$
+begin 
+return query
+select r.ratio_date, r.symbol,
+(select sm.industry from security_master sm where sm.symbol=r.symbol) as industry,
+convert_to_numeric(r.basic_eps),
+(select avg(sh.close) from stock_history sh where sh.symbol=r.symbol and sh.date >= (r.ratio_date - interval '1 week') and sh.date <= (r.ratio_date + interval '1 week') ) as close,
+--(select sh.close from stock_history sh where sh.symbol=r.symbol and sh.date = (select sh1.date from stock_history sh1 where sh1.symbol = r.symbol and sh1.date <= r.ratio_date order by sh1.date desc limit 1)) as close,
+(convert_to_numeric(r.basic_eps) / nullif(lag(convert_to_numeric(r.basic_eps), 1) OVER (PARTITION BY r.symbol ORDER BY r.ratio_date),0)-1) AS eps_growth,
+(select convert_to_numeric(total_revenue) from income_statement_view isv where isv.symbol=r.symbol and isv.pnl_statement_date = (select isv1.pnl_statement_date from income_statement_view isv1 where isv1.symbol=r.symbol and isv1.pnl_statement_date <= r.ratio_date order by isv1.pnl_statement_date desc limit 1) limit 1)*10000000 /
+(select convert_to_numeric(outstanding_shares) from security_master sm where sm.symbol = r.symbol)as sales_per_share,
+convert_to_numeric(r.earnings_retention_ratio),
+convert_to_numeric(r.price_to_bv),
+convert_to_numeric(r.price_to_sales),
+(select avg(sh.close) from stock_history sh where sh.symbol=r.symbol and sh.date >= (r.ratio_date - interval '1 week') 
+ and sh.date <= (r.ratio_date + interval '1 week') )/nullif((convert_to_numeric(r.basic_eps)),0) as price_to_earnings,
+((select avg(sh.close) from stock_history sh where sh.symbol=r.symbol and sh.date >= (r.ratio_date - interval '1 week') 
+  and sh.date <= (r.ratio_date + interval '1 week') )/nullif((convert_to_numeric(r.basic_eps)),0))/
+nullif((convert_to_numeric(r.basic_eps) / nullif(lag(convert_to_numeric(r.basic_eps), 1) OVER (PARTITION BY r.symbol ORDER BY r.ratio_date),0)-1),0)
+as price_to_earningsgrowth,
+convert_to_numeric(r.return_on_equity),
+convert_to_numeric(r.dividend_per_share),
+(convert_to_numeric(r.dividend_per_share)/nullif((select sh.close from stock_history sh where sh.symbol=r.symbol order by sh.date desc limit 1),0)) as dividend_yield,
+convert_to_numeric(r.debt_to_equity),
+convert_to_numeric(r.return_on_assets),
+convert_to_numeric(r.net_profit_margin),
+convert_to_numeric(r.operating_profit_margin),
+convert_to_numeric(r.current_ratio),
+convert_to_numeric(r.quick_ratio),
+convert_to_numeric(r.asset_turnover_ratio),
+convert_to_numeric(r.inventory_turnover_ratio),
+rank() over (partition by r.symbol order by r.ratio_date desc) as ratiorank
+from ratios r
+--where to_number(r.basic_eps,'9999999.99') > 0
+order by r.symbol, r.ratio_date desc;
+END;
+$$
+LANGUAGE PLPGSQL;

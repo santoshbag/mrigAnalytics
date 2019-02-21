@@ -6,10 +6,12 @@ for /f "usebackq" %%i in (`PowerShell $date ^= Get-Date^; $date ^= $date.AddDays
 
 set startdate=%1
 set enddate=%2
+set alldata=%3
 
 
 if [%1] == [] set startdate=%YESTERDAY%
 if [%2] == [] set enddate=%TODAY%
+if [%3] == [] set alldata="0"
 
 echo Welcome to Mrig Data Run!
 @echo -------------Mrig Data Run----------- >> dailyBatchRunLog.txt
@@ -17,38 +19,7 @@ echo Welcome to Mrig Data Run!
 cd /D F:\Mrig Analytics\Development\mrigAnalytics\
 
 
-rem python.exe test.py %startdate% %enddate%
-echo Mutual Funds NAV download started
-python.exe navAllFetcher.py
-echo Mutual Funds NAV downloaded
-echo Yield Curves download started
-python.exe yieldcurve.py
-echo Yield Curves downloaded
-echo Gold Prices download started
-python.exe goldprice.py
-echo Gold Prices downloaded
-echo Crude Oil Prices download started
-python.exe crudeoilprices.py
-echo Crude Oil Prices downloaded
-echo Exchange Rates download started 
-python.exe exchangeratesHistory.py %startdate% %enddate%
-echo Exchange Rates downloaded
-echo Stock History download started
-python.exe stockHistory.py %startdate% %enddate%
-echo Stock History downloaded 
-echo NSE Index History download started
-python.exe nseIndexHistory.py %startdate% %enddate%
-echo NSE Index History downloaded
-echo Total Return History download started
-python.exe totalreturnindicesHistory.py %startdate% %enddate%
-echo Total Return History downloaded
-echo -----Weekly and Monthly data downloads-----
-python.exe datarun.py
-echo Populating daily returns
-python.exe sql_stored_procs.py
-rem echo Futures History download started
-rem python.exe futuresHistory.py %startdate% %enddate%
-rem echo Futures History downloaded
+python.exe datarun.py %startdate% %enddate% %alldata%
 exit /B 1
 
 :usage
