@@ -269,6 +269,7 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
         self.compounding = setupparams['compounding']
         self.compounding_frequency = setupparams['compounding_frequency']
         self.shiftparameter = setupparams['shiftparameter']
+        print(setupparams)
         self.flat_ts = ql.FlatForward(qlMaps.qlDates(self.reference_date),
                                               self.flat_rate,
                                               self.day_count,

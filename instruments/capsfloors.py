@@ -13,6 +13,7 @@ import mrigutilities as mu
 import instruments.qlMaps as qlMaps
 
 from instruments.options import Option
+from instruments.portfolio import Product
 
 class CapsFloors(Option):
     def __init__(self,setupparams,name='Bond1'):
@@ -33,6 +34,7 @@ class CapsFloors(Option):
         self.fixing = setupparams['fixing']
         if self.fixing != None:
             fixingdate = [self.coupon_index.fixingDate(ql.Settings.instance().evaluationDate)]
+#            print(fixingdate)
             ql.IndexManager.instance().clearHistory(self.coupon_index.name())
             self.coupon_index.addFixings(fixingdate,[self.fixing])
         
@@ -69,8 +71,8 @@ class CapsFloors(Option):
             capfloor_analytics = {'NPV':npv,
                                   #'ATM Rate':atmrate,
                               'cashflows' : cashflow}
-            super(Option).resultSet = capfloor_analytics
-            super(Option).value = npv     
+            Product.resultSet = capfloor_analytics
+            Product.value = npv     
         else:
             capfloor_analytics = {'CapFloor Status':'CapFloor not evaluated'}
         return capfloor_analytics#self.valuation_params.update({"class" : "Convertible"})

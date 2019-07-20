@@ -1,48 +1,95 @@
 {% load static %}
 <!DOCTYPE html>
 <html >
+  <link rel="stylesheet" href="{% static 'assets/web/assets/mobirise-icons/mobirise-icons.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/web/assets/mobirise-icons-bold/mobirise-icons-bold.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/tether/tether.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-grid.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-reboot.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/theme/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/mobirise/css/mbr-additional.css' %}" type="text/css">
+  <link rel="stylesheet" href="{% static 'assets/mrigcss/font-awesome.min.css' %}" type="text/css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
 
 <body>
+  <section class="cid-rfI3i2lFgM mbr-parallax-background" id="table1-3">
+    <div class="mbr-overlay" style="opacity: 0.9; background-color: rgb(15, 118, 153);">
+    </div>
 
-<table id="myTable">
-  <tr>
-   <!--When a header is clicked, run the sortTable function, with a parameter, 0 for sorting by names, 1 for sorting by country:-->  
-    <th onclick="sortTable(0)">Name</th>
-    <th onclick="sortTable(1)">Country</th>
-  </tr>
-  <tr>
-    <td>Berglunds snabbkop</td>
-    <td>Sweden</td>
-  </tr>
-  <tr>
-    <td>North/South</td>
-    <td>UK</td>
-  </tr>
-  <tr>
-    <td>Alfreds Futterkiste</td>
-    <td>Germany</td>
-  </tr>
-  <tr>
-    <td>Koniglich Essen</td>
-    <td>Germany</td>
-  </tr>
-  <tr>
-    <td>Magazzini Alimentari Riuniti</td>
-    <td>Italy</td>
-  </tr>
-  <tr>
-    <td>Paris specialites</td>
-    <td>France</td>
-  </tr>
-  <tr>
-    <td>Island Trading</td>
-    <td>UK</td>
-  </tr>
-  <tr>
-    <td>Laughing Bacchus Winecellars</td>
-    <td>Canada</td>
-  </tr>
-</table>
+  <div class="container container-table " style="margin-left:150px";>
+      <h2 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-2">
+      <strong>Interest Rate Analysis</strong>
+      </h2>
+    <br>
+      <div class="table-wrapper">
+        <br>
+        {% if customscreen  %}  
+        <div class="container scroll" id="screenedstocks">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+          Screened Stocks </h5>
+          <table class="table" cellspacing="0" id="myTable">
+          <thead>
+          {{customscreen|safe}}
+          </table>
+        </div>
+        {% endif  %}  
+        <br>
+        <div class="container scroll" id="customscreener">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+          Custom Stock Screener</h5>
+          <table table-layout="auto" cellspacing="0">
+          <thead>
+          <tr class="table-heads">
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="2">Currency</font>
+          </th>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="2">
+<!--	       <input list="priceaggf" name="price_aggf"> -->
+           <select name="currency">
+           <option value="INR">INR</option>
+           <option value="USD">USD</option>
+           <option value="GBP">GBP</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Currency</font>
+          </th>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input list="priceaggf" name="price_aggf"> -->
+           <select name="currency">
+           <option value="INR">INR</option>
+           <option value="USD">USD</option>
+           <option value="GBP">GBP</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Currency</font>
+          </th>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input list="priceaggf" name="price_aggf"> -->
+           <select name="currency">
+           <option value="INR">INR</option>
+           <option value="USD">USD</option>
+           <option value="GBP">GBP</option>          
+           </select>
+          </font>
+          </td>
+          </tr>          
+          </thead>
+          <tbody>
+
+          </tbody>
+          </table>
 
   <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
 

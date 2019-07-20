@@ -4,29 +4,40 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.http import request
 import nsepy
 from mrigwebapp.myhtml import myhtml
 import mrigwebapp.forms as fm
 import interface.web.webdashboard as wdb
 import pandas as pd
 import mrigutilities as mu
+import mrigstatics
 import datetime
 import json
+import strategies.stocks as stocks
 
 # Create your views here.
 
 def home(request):
-    return render(request, "index.html", {})
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    return render(request, "index.html", {'GOOGLE_ADS': GOOGLE_ADS})
 
 def stock(request,symbol='NIFTY 50'):
-    engine = mu.sql_engine()
-    stocklist = engine.execute("select symbol, stock_name from security_master").fetchall()
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    sql = "select * from stock_page where symbol='"+symbol+"'"
+    stock_page = pd.read_sql(sql,engine)
 #    stocklist = list(stocklist)
     price_list,return_list,risk_list,ratios,oc= "","","","",""
     price_graph,return_graph,macd_graph,boll_graph = "","","",""
     stock_desc = ""
     news = ""
-
+    engine = mu.sql_engine()
+    stocklist = engine.execute("select distinct sm.symbol, sm.stock_name from security_master sm inner join stock_history sh on sm.symbol=sh.symbol where sh.series='EQ'").fetchall()
     slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
     for stk in stocklist:
         if stk[0] != 'symbol':
@@ -45,40 +56,91 @@ def stock(request,symbol='NIFTY 50'):
          symbol = symbol.split(":")[0].strip()
          print(symbol)
          
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     
     if (symbol and symbol != ""): 
-        if symbol == 'NIFTY 50':
-            stkanalytics = wdb.mrigweb_index(symbol)
-        else:
-            stkanalytics = wdb.mrigweb_stock(symbol)
-        price_list,return_list,risk_list,ratios,oc = stkanalytics[0], stkanalytics[1], stkanalytics[2], stkanalytics[3], stkanalytics[4]
-        price_graph,return_graph,macd_graph,boll_graph = stkanalytics[5], stkanalytics[6], stkanalytics[7], stkanalytics[8]
-        stock_desc = stkanalytics[9]
-        news = stkanalytics[10]
-        #         fd,oc = fd.to_html(), oc.to_html()
-         
-        price_list = myhtml.list_to_html(price_list)
-        return_list = myhtml.list_to_html(return_list)
-        risk_list = myhtml.list_to_html(risk_list)
-         
-        if not ratios.empty:
-            ratios = ratios.reset_index()
-            ratios_head = list(ratios)
-            ratios_head.remove("index")
-            ratios_head.insert(0,"")
-            ratios = [ratios_head] + ratios.values.tolist()
-            ratios = myhtml.list_to_html(ratios)
+        sql = "select * from stock_page where symbol='"+symbol+"'"
+        stock_page = pd.read_sql(sql,engine)
         
-        oc = oc.reset_index()
-        oc['Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+symbol+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y')) +":"+ oc['Strike_Price'].apply(lambda x:str(x))+":CE\">"+oc['Expiry'].apply(lambda x:x.strftime('%d-%b-%Y'))+"</a>"
-        oc['PUT_Expiry'] = oc['Expiry'].apply(lambda x:x.replace("CE","PE"))
-        oc_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ") for x in list(oc)]
-        oc = [oc_head] + oc.values.tolist()
-        oc = myhtml.list_to_html(oc,"small")
-         
-#         quote = nsepy.get_quote(symbol)
-#         quote = myhtml.dict_to_html(quote)
-       
+        if not stock_page.empty:
+            price_list = stock_page['price_list'][0]
+            return_list = stock_page['return_list'][0]
+            risk_list = stock_page['risk_list'][0]
+            ratios = stock_page['ratios'][0]
+            oc = stock_page['oc'][0]
+            price_graph = stock_page['price_graph'][0]
+            price_graph = bytes(price_graph)
+            price_graph = price_graph.decode('utf-8')
+            return_graph = stock_page['return_graph'][0]
+            return_graph = bytes(return_graph)
+            return_graph = return_graph.decode('utf-8')
+            macd_graph = stock_page['macd_graph'][0]
+            macd_graph = bytes(macd_graph)
+            macd_graph = macd_graph.decode('utf-8')
+            boll_graph = stock_page['boll_graph'][0]
+            boll_graph = bytes(boll_graph)
+            boll_graph = boll_graph.decode('utf-8')
+            stock_desc = stock_page['stock_description'][0]
+            news = stock_page['news'][0]
+            news = json.loads(news)
+        else:
+            if symbol == 'NIFTY 50':
+                stkanalytics = wdb.mrigweb_index(symbol)
+            else:
+                stkanalytics = wdb.mrigweb_stock(symbol)
+            price_list,return_list,risk_list,ratios,oc = stkanalytics[0], stkanalytics[1], stkanalytics[2], stkanalytics[3], stkanalytics[4]
+            price_graph,return_graph,macd_graph,boll_graph = stkanalytics[5], stkanalytics[6], stkanalytics[7], stkanalytics[8]
+            stock_desc = stkanalytics[9]
+            news = stkanalytics[10]
+            #         fd,oc = fd.to_html(), oc.to_html()
+             
+            return_list = myhtml.list_to_html(return_list)
+            risk_list = myhtml.list_to_html(risk_list)
+              
+            if not ratios.empty:
+                ratios = ratios.reset_index()
+                ratios_head = list(ratios)
+                ratios_head.remove("index")
+                ratios_head.insert(0,"")
+                ratios = [ratios_head] + ratios.values.tolist()
+                ratios = myhtml.list_to_html(ratios)
+            
+            if not oc.empty:
+                oc = oc.reset_index()
+                oc['PUT_Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+symbol+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y')) +":"+ oc['Strike_Price'].apply(lambda x:str(x))+":"+ oc['PUT_LTP'].apply(lambda x:str(x))+":PE\">"+oc['Expiry'].apply(lambda x:x.strftime('%d-%b-%Y'))+"</a>"
+                oc['Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+symbol+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y')) +":"+ oc['Strike_Price'].apply(lambda x:str(x))+":"+ oc['CALL_LTP'].apply(lambda x:str(x))+":CE\">"+oc['Expiry'].apply(lambda x:x.strftime('%d-%b-%Y'))+"</a>"
+#                oc['PUT_Expiry'] = oc['Expiry'].apply(lambda x:x.replace("CE","PE"))
+                oc_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ") for x in list(oc)]
+                oc = [oc_head] + oc.values.tolist()
+                oc = myhtml.list_to_html(oc,"small")
+
+    price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
+    quotes = []
+
+    if symbol == 'NIFTY 50':
+        stk = stocks.Index('NIFTY 50')
+    else:
+        stk = stocks.Stock(symbol)
+    quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+#    if len(stk.quote) > 0:
+#        quotes = [stk.quote['lastPrice'],
+#                  stk.quote['open'],
+#                  stk.quote['previousclose'],
+#                  stk.quote['dayhigh'],
+#                  stk.quote['daylow'],
+#                  stk.quote['high52'],
+#                  stk.quote['low52']]
+#    else:
+#        quotes = []
+    price_list = [price_labels,quotes]
+    price_list = myhtml.list_to_html(price_list)
+            
     return render(request, "stock.html", {"slist":slist,"symbol":symbol,
                                           "stock_desc" : stock_desc,
                                           "price_list":price_list,
@@ -90,10 +152,15 @@ def stock(request,symbol='NIFTY 50'):
                                           "return_graph":return_graph,
                                           "macd_graph":macd_graph,
                                           "boll_graph":boll_graph,
-                                          "news":news})
+                                          "news":news,
+                                          'GOOGLE_ADS': GOOGLE_ADS})
 
 
 def os(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])    
     os_list = ["Covered Call","Bull Put Spread", "Bear Call Spread"]
     strategy_desc = ""
     strategy = None
@@ -111,89 +178,22 @@ def os(request):
          strategy = strategyform.cleaned_data['strategy']
          
     
-    if (strategy == "Covered Call"): 
-        oc = wdb.mrigweb_covered_call()
-#        price_list,return_list,risk_list,ratios,oc = stkanalytics[0], stkanalytics[1], stkanalytics[2], stkanalytics[3], stkanalytics[4]
-#        price_graph,return_graph,macd_graph,boll_graph = stkanalytics[5], stkanalytics[6], stkanalytics[7], stkanalytics[8]
-        strategy_desc = "Covered Call Strategy for NSE Stock Options"
-        #         fd,oc = fd.to_html(), oc.to_html()
-        oc = oc.reset_index()
-        oc['ExpiryDUP'] = oc['Expiry']
-        oc['Expiry'] = oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))
-        oc['Id'] = ""
-        for i in range(len(oc)):
-            rowdict = oc.iloc[i].to_dict()
-            rowdict['strategyname'] = 'coveredcall'
-            for key in rowdict.keys():
-                rowdict[key] = str(rowdict[key])
-            sessionid = mu.mrigsession_write(rowdict)
-            oc['Id'].iloc[i] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/osa/"+sessionid+"\">CC_"+str(i)+"</a>"
-        oc['Expiry'] = oc['ExpiryDUP']
-        oc.drop(['CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty','ExpiryDUP'],axis=1,inplace=True)
-        oc['Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+oc['Symbol']+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))+":"+ oc['Strike_Price'].apply(lambda x:str(x))+":CE\">"+oc['Expiry'].apply(lambda x:x.strftime('%d-%b-%Y'))+"</a>"
-        oc['Symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+oc['Symbol']+"\">"+oc['Symbol']+"</a>"
-        oc = oc.reindex(columns=['Id'] + list(oc.columns[:-1]))
-        oc_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ") for x in list(oc)]
-        oc = [oc_head] + oc.values.tolist() 
-        oc = myhtml.list_to_html(oc)
-
-    if (strategy == "Bull Put Spread"): 
-        oc = wdb.mrigweb_bull_put_spread()
-
-        strategy_desc = "Bull Put Spread Strategy for NSE Stock Options"
-        oc = oc.reset_index()
-        oc['ExpiryDUP'] = oc['Expiry']
-        oc['Expiry'] = oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))
-        oc['Id'] = ""
-        for i in range(len(oc)):
-            rowdict = oc.iloc[i].to_dict()
-            rowdict['strategyname'] = 'bullputspread'
-            for key in rowdict.keys():
-                rowdict[key] = str(rowdict[key])
-            sessionid = mu.mrigsession_write(rowdict)
-            oc['Id'].iloc[i] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/osa/"+sessionid+"\">BPS_"+str(i)+"</a>"
-
-        oc['Expiry'] = oc['ExpiryDUP']
-        oc.drop(['PUT_OI','PUT_BidQty','PUT_BidPrice','PUT_AskPrice','PUT_AskQty','ExpiryDUP'],axis=1,inplace=True)
-        oc['Higher_Strike'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+oc['Symbol']+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))+":"+ oc['Higher_Strike'].apply(lambda x:str(x))+":PE\">"+oc['Higher_Strike'].apply(lambda x:str(x))+"</a>"
-        oc['Strike_Price'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+oc['Symbol']+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))+":"+ oc['Strike_Price'].apply(lambda x:str(x))+":PE\">"+oc['Strike_Price'].apply(lambda x:str(x))+"</a>"
-        oc['Symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+oc['Symbol']+"\">"+oc['Symbol']+"</a>"
-        oc = oc.reindex(columns=['Id'] + list(oc.columns[:-1]))
-        oc_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ") for x in list(oc)]
-        oc = [oc_head] + oc.values.tolist() 
-        oc = myhtml.list_to_html(oc)
-
-    if (strategy == "Bear Call Spread"): 
-        oc = wdb.mrigweb_bear_call_spread()
-
-        strategy_desc = "Bear Call Spread Strategy for NSE Stock Options"
-        oc = oc.reset_index()
-        oc['ExpiryDUP'] = oc['Expiry']
-        oc['Expiry'] = oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))
-        oc['Id'] = ""
-        for i in range(len(oc)):
-            rowdict = oc.iloc[i].to_dict()
-            rowdict['strategyname'] = 'bearcallspread'
-            for key in rowdict.keys():
-                rowdict[key] = str(rowdict[key])
-            sessionid = mu.mrigsession_write(rowdict)
-            oc['Id'].iloc[i] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/osa/"+sessionid+"\">BCS_"+str(i)+"</a>"
+         sql = "select * from os_page where strategy='"+strategy+"' limit 1"
+         os_page = pd.read_sql(sql,engine)
         
-        oc['Expiry'] = oc['ExpiryDUP']
-        oc.drop(['CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty','ExpiryDUP'],axis=1,inplace=True)
-        oc['Lower_Strike'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+oc['Symbol']+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))+":"+ oc['Lower_Strike'].apply(lambda x:str(x))+":CE\">"+oc['Lower_Strike'].apply(lambda x:str(x))+"</a>"
-        oc['Strike_Price'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+oc['Symbol']+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y'))+":"+ oc['Strike_Price'].apply(lambda x:str(x))+":CE\">"+oc['Strike_Price'].apply(lambda x:str(x))+"</a>"
-        oc['Symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+oc['Symbol']+"\">"+oc['Symbol']+"</a>"
-        oc = oc.reindex(columns=['Id'] + list(oc.columns[:-1]))
-        oc_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ") for x in list(oc)]
-        oc = [oc_head] + oc.values.tolist() 
-        oc = myhtml.list_to_html(oc)
-       
+         if not os_page.empty:
+             strategy_desc = os_page['strategy_name'][0]
+             oc = os_page['strategy_table'][0]
+           
     return render(request, "os.html", {"slist":slist,
                                        "strategy":strategy,
                                        "strategy_desc" : strategy_desc,
-                                       "oc":oc})
+                                       "oc":oc,
+                                       'GOOGLE_ADS': GOOGLE_ADS})
 def osa(request,strategyid):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
     
     strategy = mu.mrigsession_get(strategyid)
     
@@ -236,13 +236,79 @@ def osa(request,strategyid):
                                        "delta_graph" : delta_graph,
                                        "gamma_graph" : gamma_graph,
                                        "theta_graph" : theta_graph,
-                                       "results" : results
+                                       "results" : results,
+                                       'GOOGLE_ADS': GOOGLE_ADS
                                        })
 
 
 def ss(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
 
     criteria = {}
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    customscreen = ""
+    strategyform = ""
+    if request.method == "POST":
+      #Get the posted form
+      print("method is post")
+      strategyform = fm.StockStrategyForm(request.POST)
+
+    sql = "select * from ss_page "
+    ss_page = pd.read_sql(sql,engine)
+    
+    if not ss_page.empty:
+        bm_desc = 'Big Money Momentum Strategy'
+        bm_table = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_table'].values[0]
+        bm_graph = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_graph'].values[0]
+        bm_graph = bytes(bm_graph)
+        bm_graph = bm_graph.decode('utf-8')
+        scg_desc = 'Small Cap Growth Stocks'
+        scg_table = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_table'].values[0]
+        scg_graph = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_graph'].values[0]
+        scg_graph = bytes(scg_graph)
+        scg_graph = scg_graph.decode('utf-8')
+        nh_desc = 'New Highs making Stocks'
+        nh_table = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_table'].values[0]
+        nh_graph = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_graph'].values[0]
+        nh_graph = bytes(nh_graph)
+        nh_graph = nh_graph.decode('utf-8')
+        gi_desc = 'Growth and Income Stocks'
+        gi_table = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_table'].values[0]
+        gi_graph = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_graph'].values[0]
+        gi_graph = bytes(gi_graph)
+        gi_graph = gi_graph.decode('utf-8')
+
+    
+    return render(request, "ss.html", {
+                                       "bm_table":bm_table,
+                                       "bm_graph":bm_graph,
+                                       "bm_desc":bm_desc,
+                                       "scg_table":scg_table,
+                                       "scg_graph":scg_graph,
+                                       "scg_desc":scg_desc,
+#                                       "tafa_table":tafa_table,
+#                                       "tafa_graph":tafa_graph,
+#                                       "tafa_desc":tafa_desc,
+                                       "nh_table":nh_table,
+                                       "nh_graph":nh_graph,
+                                       "nh_desc":nh_desc,
+                                       "gi_table":gi_table,
+                                       "gi_graph":gi_graph,
+                                       "gi_desc":gi_desc,
+                                       'GOOGLE_ADS': GOOGLE_ADS
+#                                       "customscreen":customscreen,
+#                                       "strategyform":strategyform
+                                       })
+
+
+def screener(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    criteria = {}
+#    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     customscreen = ""
     strategyform = ""
     if request.method == "POST":
@@ -401,90 +467,60 @@ def ss(request):
               customscreen = myhtml.list_to_html(customscreen)
       else:
           print(strategyform.errors)
-    
-    bm = wdb.mrigweb_bigmoneyzacks()
-    bm_table = bm[0]
-    bm_table = bm_table.reset_index()
-    try:
-        bm_table['symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+bm_table['symbol']+"\">"+bm_table['symbol']+"</a>"
-    except:
-        pass
-    bm_table = [list(bm_table)] + bm_table.values.tolist()
-    bm_table = myhtml.list_to_html(bm_table)
-    bm_graph = bm[1]
-    bm_desc = "Big Money Momentum Strategy"
-    
-    scg = wdb.mrigweb_smallcapgrowth()    
-    scg_table = scg[0]
-    scg_table = scg_table.reset_index()
-    try:
-        scg_table['symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+scg_table['symbol']+"\">"+scg_table['symbol']+"</a>"
-    except:
-        pass
 
-    scg_table = [list(scg_table)] + scg_table.values.tolist()
-    scg_table = myhtml.list_to_html(scg_table)
-    scg_graph = scg[1]
-    scg_desc = "Small Cap Growth Stocks"
-
-#    tafa = wdb.mrigweb_tafa()
-#    tafa_table = tafa[0]
-#    tafa_table = tafa_table.reset_index()
-#    tafa_table = [list(tafa_table)] + tafa_table.values.tolist()
-#    tafa_table = myhtml.list_to_html(tafa_table)
-#    tafa_graph = tafa[1]
-#    tafa_desc = "Technical Analysis Fundamental Analysis Stocks"
-
-    nh = wdb.mrigweb_newhighs()
-    nh_table = nh[0]
-    nh_table = nh_table.reset_index()
-    try:
-        nh_table['symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+nh_table['symbol']+"\">"+nh_table['symbol']+"</a>"
-    except:
-        pass
-    nh_table = [list(nh_table)] + nh_table.values.tolist()
-    nh_table = myhtml.list_to_html(nh_table)
-    nh_graph = nh[1]
-    nh_desc = "New Highs making Stocks"
-
-    gi = wdb.mrigweb_growthincome()
-    gi_table = gi[0]
-    gi_table = gi_table.reset_index()
-    try:
-        gi_table['symbol'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+gi_table['symbol']+"\">"+gi_table['symbol']+"</a>"
-    except:
-        pass
-    gi_table = [list(gi_table)] + gi_table.values.tolist()
-    gi_table = myhtml.list_to_html(gi_table)
-    gi_graph = gi[1]
-    gi_desc = "Growth and Income Stocks"
+#    sql = "select * from ss_page "
+#    ss_page = pd.read_sql(sql,engine)
+#    
+#    if not ss_page.empty:
+#        bm_desc = ss_page['strategy_name'][0]
+#        bm_table = ss_page['strategy_table'][0]
+#        bm_graph = ss_page['strategy_graph'][0]
+#        bm_graph = bytes(bm_graph)
+#        bm_graph = bm_graph.decode('utf-8')
+#        scg_desc = ss_page['strategy_name'][1]
+#        scg_table = ss_page['strategy_table'][1]
+#        scg_graph = ss_page['strategy_graph'][1]
+#        scg_graph = bytes(scg_graph)
+#        scg_graph = scg_graph.decode('utf-8')
+#        nh_desc = ss_page['strategy_name'][2]
+#        nh_table = ss_page['strategy_table'][2]
+#        nh_graph = ss_page['strategy_graph'][2]
+#        nh_graph = bytes(nh_graph)
+#        nh_graph = nh_graph.decode('utf-8')
+#        gi_desc = ss_page['strategy_name'][3]
+#        gi_table = ss_page['strategy_table'][3]
+#        gi_graph = ss_page['strategy_graph'][3]
+#        gi_graph = bytes(gi_graph)
+#        gi_graph = gi_graph.decode('utf-8')
+#
     
-    
-    return render(request, "ss.html", {
-                                       "bm_table":bm_table,
-                                       "bm_graph":bm_graph,
-                                       "bm_desc":bm_desc,
-                                       "scg_table":scg_table,
-                                       "scg_graph":scg_graph,
-                                       "scg_desc":scg_desc,
-#                                       "tafa_table":tafa_table,
-#                                       "tafa_graph":tafa_graph,
-#                                       "tafa_desc":tafa_desc,
-                                       "nh_table":nh_table,
-                                       "nh_graph":nh_graph,
-                                       "nh_desc":nh_desc,
-                                       "gi_table":gi_table,
-                                       "gi_graph":gi_graph,
-                                       "gi_desc":gi_desc,
+    return render(request, "screener.html", {
+#                                       "bm_table":bm_table,
+#                                       "bm_graph":bm_graph,
+#                                       "bm_desc":bm_desc,
+#                                       "scg_table":scg_table,
+#                                       "scg_graph":scg_graph,
+#                                       "scg_desc":scg_desc,
+##                                       "tafa_table":tafa_table,
+##                                       "tafa_graph":tafa_graph,
+##                                       "tafa_desc":tafa_desc,
+#                                       "nh_table":nh_table,
+#                                       "nh_graph":nh_graph,
+#                                       "nh_desc":nh_desc,
+#                                       "gi_table":gi_table,
+#                                       "gi_graph":gi_graph,
+#                                       "gi_desc":gi_desc,
                                        "customscreen":customscreen,
-                                       "strategyform":strategyform
+                                       "strategyform":strategyform,
+                                       'GOOGLE_ADS': GOOGLE_ADS
                                        })
-
-
-
+    
 
 def option(request,opid):
     
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
     """
 
     engine = mu.sql_engine()
@@ -524,8 +560,13 @@ def option(request,opid):
         params['symbol']= keyval[0]
         params['expiry']= datetime.datetime.strptime(keyval[1],'%d%m%Y').date()
         params['strike']= float(keyval[2])
-        params['option_type']= keyval[3]
-        option_desc = params['symbol']+" "+params['expiry'].strftime('%b')+ " "+keyval[2] + " "+ keyval[3]
+        params['ltp'] = -1
+        try:
+            params['ltp']= float(keyval[3])
+        except:
+            pass
+        params['option_type']= keyval[4]
+        option_desc = params['symbol']+" "+params['expiry'].strftime('%b')+ " "+keyval[2] + " "+ keyval[4]
         
         op = wdb.mrigweb_options(params)
         contract_specs = op[0]
@@ -554,11 +595,15 @@ def option(request,opid):
                                            "delta_graph":delta_graph,
                                            "gamma_graph":gamma_graph,
                                            "theta_graph":theta_graph,
-                                           "oi_graph":oi_graph})
+                                           "oi_graph":oi_graph,
+                                           'GOOGLE_ADS': GOOGLE_ADS})
 
 
 def news(request):
     
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
     news = wdb.mrigweb_news()
     
 #    news_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ").capitalize() for x in list(news)]
@@ -571,9 +616,588 @@ def news(request):
 #    newsdesc = news[3]
 
 
-    return render(request, "news.html", {"news":news})    
+    return render(request, "news.html", {"news":news,'GOOGLE_ADS': GOOGLE_ADS})    
+
+def ia(request):
+    return render(request, "ia.html")
+
+def ra(request):
+    return render(request, "ra.html")
+
+def softs(request):
+    return render(request, "softs.html")
+
+def ds(request):
+    return render(request, "ds.html")
+
+def about(request):
+    return render(request, "about.html")
+
+def rates(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+
+    sz_params = {}
+    ff_params = {}
+    
+    SZYC_INR = wdb.mrigweb_szc_rates()
+    SZYC_USD = wdb.mrigweb_szc_rates('USD')
+    SZYC_GBP = wdb.mrigweb_szc_rates('GBP')
+    LIBOR_3M_INR = wdb.mrigweb_Libor('LIBOR_3M_INR', yieldcurvehandle=SZYC_INR[0])
+    LIBOR_6M_INR = wdb.mrigweb_Libor('LIBOR_6M_INR', tenor='6M', yieldcurvehandle=SZYC_INR[0])
+    LIBOR_3M_USD = wdb.mrigweb_Libor('LIBOR_3M_USD', curve_currency='USD', yieldcurvehandle=SZYC_USD[0])
+    LIBOR_6M_USD = wdb.mrigweb_Libor('LIBOR_6M_USD', curve_currency='USD', tenor='6M', yieldcurvehandle=SZYC_USD[0])
+    LIBOR_3M_GBP = wdb.mrigweb_Libor('LIBOR_3M_GBP', curve_currency='GBP', tenor='3M', yieldcurvehandle=SZYC_GBP[0])
+    LIBOR_6M_GBP = wdb.mrigweb_Libor('LIBOR_6M_GBP', curve_currency='GBP', tenor='6M', yieldcurvehandle=SZYC_GBP[0])
+
+    szyc = wdb.mrigweb_szc_rates()
+    ffyc = wdb.mrigweb_ff_rates()
+#    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    ffyc_graph = wdb.mrigweb_ratePlot(ffyc,['Flat','Flat_shifted'])
+    szyc_graph = wdb.mrigweb_ratePlot(szyc,['INR','INR_shifted'])
+    
+    if request.method == "POST":
+      #Get the posted form
+      reference_date = datetime.date.today()
+      print("method is post")
+      if 'szc_form' in request.POST:
+#          print("szc clicked ------")
+          rateform = fm.SZC_InterestRateForm(request.POST)
+          if rateform.is_valid():
+              print("----szc form valid----")
+              sz_params['curve_currency'] = rateform.cleaned_data['szc_currency']
+              sz_params['day_count'] = rateform.cleaned_data['szc_daycount']
+              sz_params['calendar'] = rateform.cleaned_data['szc_calendar']
+              sz_params['compounding'] = rateform.cleaned_data['szc_compounding']
+              sz_params['compounding_frequency'] = rateform.cleaned_data['szc_frequency']    
+              sz_params['interpolation'] = rateform.cleaned_data['szc_interpolation']    
+              sz_params['shiftparameter'] = rateform.cleaned_data['szc_parallelshift']   
+              print(sz_params)
+              szyc = wdb.mrigweb_szc_rates(sz_params['curve_currency'],reference_date,sz_params)
+#              szyc_graph = szyc[0]
+              szyc_graph = wdb.mrigweb_ratePlot(szyc,['INR','INR_shifted'])
+          
+      if 'ff_form' in request.POST:
+          rateform = fm.FF_InterestRateForm(request.POST)
+          if rateform.is_valid():
+              print("----ff form valid----")
+              ff_params['curvename'] = rateform.cleaned_data['ff_curvename']
+              ff_params['currency'] = rateform.cleaned_data['ff_currency']
+              ff_params['day_count'] = rateform.cleaned_data['ff_daycount']
+              ff_params['calendar'] = rateform.cleaned_data['ff_calendar']
+              ff_params['compounding'] = rateform.cleaned_data['ff_compounding']
+              ff_params['compounding_frequency'] = rateform.cleaned_data['ff_frequency']    
+              ff_params['flat_rate'] = rateform.cleaned_data['ff_flatrate']    
+              ff_params['shiftparameter'] = rateform.cleaned_data['ff_parallelshift']   
+              print(ff_params)
+          
+              ffyc = wdb.mrigweb_ff_rates(reference_date,ff_params)
+              ffyc_graph = wdb.mrigweb_ratePlot(ffyc,['Flat','Flat_shifted'])
+    
+    return render(request, "ra_rates.html" , {'ffyc_graph':ffyc_graph,
+                                              'szyc_graph':szyc_graph,
+                                              'GOOGLE_ADS': GOOGLE_ADS
+                                                })
+
+def bonds(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+
+    objectmap = {}
+    objectmap['None'] = None
+    objectmap['SZYC_INR'] = wdb.mrigweb_szc_rates()
+    objectmap['SZYC_USD'] = wdb.mrigweb_szc_rates('USD')
+    objectmap['SZYC_GBP'] = wdb.mrigweb_szc_rates('GBP')
+    objectmap['LIBOR_3M_INR'] = wdb.mrigweb_Libor('LIBOR_3M_INR', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_6M_INR'] = wdb.mrigweb_Libor('LIBOR_6M_INR', tenor='6M', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_3M_USD'] = wdb.mrigweb_Libor('LIBOR_3M_USD', curve_currency='USD', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_6M_USD'] = wdb.mrigweb_Libor('LIBOR_6M_USD', curve_currency='USD', tenor='6M', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_3M_GBP'] = wdb.mrigweb_Libor('LIBOR_3M_GBP', curve_currency='GBP', tenor='3M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+    objectmap['LIBOR_6M_GBP'] = wdb.mrigweb_Libor('LIBOR_6M_GBP', curve_currency='GBP', tenor='6M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+    
+    resultset = "" 
+    face_value=100
+    day_count='30-360'
+    calendar='India'
+    business_convention='Following'
+    month_end='True'
+    settlement_days=3
+    date_generation='Backward'
+    coupon_frequency='Semiannual'
+    fixed_coupon_rate=None
+    floating_coupon_index=None
+    floating_coupon_spread=0
+    inArrears=True
+    cap=None
+    floor=None
+    fixing=None
+    conversionRatio=None
+    conversionPrice=None
+    credit_spread=None
+    call_date_1 = None
+    call_date_2 = None
+    call_date_3 = None
+    call_date_4 = None
+    call_date_5 = None
+    put_date_1 = None
+    put_date_2 = None
+    put_date_3 = None
+    put_date_4 = None
+    put_date_5 = None
+    
+    call_schedule=None
+    call_schedule_date = []
+    call_schedule_price = []
+    put_schedule=None
+    put_schedule_date = []
+    put_schedule_price = []
+    dividend_schedule=None    
+
+    if request.method == "POST":
+      #Get the posted form
+      reference_date = datetime.date.today()
+      print("bond method is post")
+      if 'bond_form' in request.POST:
+          bondform = fm.BondForm(request.POST)
+          if bondform.is_valid():
+              print("----bond form valid----")
+              issue_name = bondform.cleaned_data['bondsname']             
+              issue_date = bondform.cleaned_data['issue_date']
+              issue_date = datetime.datetime.strptime(issue_date,'%Y-%m-%d').date()
+              maturity_date = bondform.cleaned_data['maturity_date']
+              maturity_date = datetime.datetime.strptime(maturity_date,'%Y-%m-%d').date()
+              face_value = float(bondform.cleaned_data['facevalue'])
+              day_count= bondform.cleaned_data['daycount']
+              calendar = bondform.cleaned_data['calendar']
+              currency = bondform.cleaned_data['currency']
+              business_convention = bondform.cleaned_data['business_convention']
+              month_end = bool(bondform.cleaned_data['month_end'])
+              settlement_days  = float(bondform.cleaned_data['settlement_days'])
+              date_generation  = bondform.cleaned_data['date_generation']
+              coupon_frequency  = bondform.cleaned_data['coupon_frequency']
+              fixed_coupon_rate  = float(bondform.cleaned_data['fixed_coupon_rate'])
+              floating_coupon_index  = bondform.cleaned_data['floating_coupon_index']
+              floating_coupon_index = objectmap[floating_coupon_index]
+              try:
+                  floating_coupon_spread  = float(bondform.cleaned_data['floating_coupon_spread'])
+              except:
+                  pass
+              inArrears  = bool(bondform.cleaned_data['inarrears'])
+              try:
+                  cap  = float(bondform.cleaned_data['cap'])
+              except:
+                  pass
+              try:
+                  floor  = float(bondform.cleaned_data['floor'])
+              except:
+                  pass
+              try:
+                  fixing  = float(bondform.cleaned_data['last_libor'])
+              except:
+                  pass
+              try:
+                  conversionRatio  = float(bondform.cleaned_data['conversion_ratio'])
+              except:
+                  pass
+              try:
+                  conversionPrice  = float(bondform.cleaned_data['conversion_price'])
+              except:
+                  pass
+              try:
+                  credit_spread  = float(bondform.cleaned_data['credit_spread'])
+              except:
+                  pass
+              call_date_1 =  bondform.cleaned_data['call_date_1']
+              call_price_1 =  bondform.cleaned_data['call_price_1']
+              try:
+                  call_date_1 = datetime.datetime.strptime(call_date_1,'%Y-%m-%d').date()
+                  call_schedule_date.append(call_date_1)
+                  call_schedule_price.append(float(call_price_1))
+              except:
+                  pass
+              call_date_2 =  bondform.cleaned_data['call_date_2']
+              call_price_2 =  bondform.cleaned_data['call_price_2']
+              try:
+                  call_date_2 = datetime.datetime.strptime(call_date_2,'%Y-%m-%d').date()
+                  call_schedule_date.append(call_date_2)
+                  call_schedule_price.append(float(call_price_2))
+              except:
+                  pass
+              call_date_3 =  bondform.cleaned_data['call_date_3']
+              call_price_3 =  bondform.cleaned_data['call_price_3']
+              try:
+                  call_date_3 = datetime.datetime.strptime(call_date_3,'%Y-%m-%d').date()
+                  call_schedule_date.append(call_date_3)
+                  call_schedule_price.append(float(call_price_3))
+              except:
+                  pass
+              call_date_4 =  bondform.cleaned_data['call_date_4']
+              call_price_4 =  bondform.cleaned_data['call_price_4']
+              try:
+                  call_date_4 = datetime.datetime.strptime(call_date_4,'%Y-%m-%d').date()
+                  call_schedule_date.append(call_date_4)
+                  call_schedule_price.append(float(call_price_4))
+              except:
+                  pass
+              call_date_5 =  bondform.cleaned_data['call_date_5']
+              call_price_5 =  bondform.cleaned_data['call_price_5']
+              try:
+                  call_date_5 = datetime.datetime.strptime(call_date_5,'%Y-%m-%d').date()
+                  call_schedule_date.append(call_date_5)
+                  call_schedule_price.append(float(call_price_5))
+              except:
+                  pass
+              
+              if len(call_schedule_date) > 0:
+                  call_schedule = [call_schedule_date,call_schedule_price]
+
+              put_date_1 =  bondform.cleaned_data['put_date_1']
+              put_price_1 =  bondform.cleaned_data['put_price_1']
+              try:
+                  put_date_1 = datetime.datetime.strptime(put_date_1,'%Y-%m-%d').date()
+                  put_schedule_date.append(put_date_1)
+                  put_schedule_price.append(float(put_price_1))
+              except:
+                  pass
+              put_date_2 =  bondform.cleaned_data['put_date_2']
+              put_price_2 =  bondform.cleaned_data['put_price_2']
+              try:
+                  put_date_2 = datetime.datetime.strptime(put_date_2,'%Y-%m-%d').date()
+                  put_schedule_date.append(put_date_2)
+                  put_schedule_price.append(float(put_price_2))
+              except:
+                  pass
+              put_date_3 =  bondform.cleaned_data['put_date_3']
+              put_price_3 =  bondform.cleaned_data['put_price_3']
+              try:
+                  put_date_3 = datetime.datetime.strptime(put_date_3,'%Y-%m-%d').date()
+                  put_schedule_date.append(put_date_3)
+                  put_schedule_price.append(float(put_price_3))
+              except:
+                  pass
+              put_date_4 =  bondform.cleaned_data['put_date_4']
+              put_price_4 =  bondform.cleaned_data['put_price_4']
+              try:
+                  put_date_4 = datetime.datetime.strptime(put_date_4,'%Y-%m-%d').date()
+                  put_schedule_date.append(put_date_4)
+                  put_schedule_price.append(float(put_price_4))
+              except:
+                  pass
+              put_date_5 =  bondform.cleaned_data['put_date_5']
+              put_price_5 =  bondform.cleaned_data['put_price_5']
+              try:
+                  put_date_5 = datetime.datetime.strptime(put_date_5,'%Y-%m-%d').date()
+                  put_schedule_date.append(put_date_5)
+                  put_schedule_price.append(float(put_price_5))
+              except:
+                  pass
+              
+              if len(put_schedule_date) > 0:
+                  put_schedule = [put_schedule_date,put_schedule_price]
+
+
+#Valuation Parameters
+              discount_curve  = bondform.cleaned_data['discount_curve']
+              discount_curve = objectmap[discount_curve][0]
+              volatility_curve  = float(bondform.cleaned_data['volatility_curve'])
+              volatility_curve = wdb.mrigweb_ConstantVolatilityCurve(volatility_curve)
+              dividend_curve  = float(bondform.cleaned_data['dividend_curve'])
+              dividend_curve = wdb.mrigweb_FlatDividendYieldCurve(reference_date,flat_rate=dividend_curve)
+              underlying_spot  = float(bondform.cleaned_data['underlying_spot'])
+              mean_reversion  = float(bondform.cleaned_data['mean_reversion'])
+              shortrate_vol  = float(bondform.cleaned_data['shortrate_vol'])
+              hwgrid_pts  = float(bondform.cleaned_data['hwgrid_pts'])
+
+              print(issue_date)
+              print(call_schedule)
+              print(put_schedule)
+              print(conversionRatio)
+          else:
+              print(bondform.errors)
+                      
+      bond = wdb.mrigweb_Bond(issue_name,issue_date,maturity_date,
+                 face_value,day_count,calendar,business_convention,
+                 month_end,settlement_days,date_generation,coupon_frequency,
+                 fixed_coupon_rate,floating_coupon_index,floating_coupon_spread,
+                 inArrears,cap,floor,fixing,conversionRatio,conversionPrice,
+                 credit_spread,call_schedule,put_schedule,dividend_schedule) 
+      
+      valuation_args = {'Underlying Spot' : underlying_spot,
+                        'Discount Curve' : discount_curve,
+                        'Volatility Curve' : volatility_curve,
+                        'Dividend Curve' : dividend_curve,
+                        'Mean Reversion' : mean_reversion,
+                        'Short Rate Vol' : shortrate_vol,
+                        'Hull White Grid Pts' : hwgrid_pts}
+      
+      resultset = wdb.mrigweb_Analytics(bond,valuation_args)
+      resultset = myhtml.dict_to_html(resultset)
+    return render(request, "ra_bonds.html",{'resultset' : resultset,'GOOGLE_ADS': GOOGLE_ADS})
+
+def options(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+
+    objectmap = {}
+    objectmap['None'] = None
+    objectmap['SZYC_INR'] = wdb.mrigweb_szc_rates()
+    objectmap['SZYC_USD'] = wdb.mrigweb_szc_rates('USD')
+    objectmap['SZYC_GBP'] = wdb.mrigweb_szc_rates('GBP')
+    objectmap['LIBOR_3M_INR'] = wdb.mrigweb_Libor('LIBOR_3M_INR', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_6M_INR'] = wdb.mrigweb_Libor('LIBOR_6M_INR', tenor='6M', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_3M_USD'] = wdb.mrigweb_Libor('LIBOR_3M_USD', curve_currency='USD', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_6M_USD'] = wdb.mrigweb_Libor('LIBOR_6M_USD', curve_currency='USD', tenor='6M', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_3M_GBP'] = wdb.mrigweb_Libor('LIBOR_3M_GBP', curve_currency='GBP', tenor='3M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+    objectmap['LIBOR_6M_GBP'] = wdb.mrigweb_Libor('LIBOR_6M_GBP', curve_currency='GBP', tenor='6M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+
+    resultset = ""
+    if request.method == "POST":
+      #Get the posted form
+      reference_date = datetime.date.today()
+      print("option method is post")
+      if 'option_form' in request.POST:
+          optionform = fm.OptionForm(request.POST)
+          if optionform.is_valid():
+              print("----swap form valid----")
+              option_name = optionform.cleaned_data['optionname']
+              underlying_name = optionform.cleaned_data['underlyingname']
+              maturity_date = optionform.cleaned_data['maturity_date']
+              maturity_date = datetime.datetime.strptime(maturity_date,'%Y-%m-%d').date()
+              strike = float(optionform.cleaned_data['strike'])
+              option_type = optionform.cleaned_data['option_type']
+              exercise_type = optionform.cleaned_data['exercise_type']
+              currency = optionform.cleaned_data['currency']
+              day_count= optionform.cleaned_data['daycount']
+              calendar = optionform.cleaned_data['calendar']
+#Valuation Parameters
+              discount_curve  = optionform.cleaned_data['discount_curve']
+              discount_curve = objectmap[discount_curve][0]
+              volatility_curve  = float(optionform.cleaned_data['volatility_curve'])
+              volatility_curve = wdb.mrigweb_FlatVolatilityCurve(reference_date,spot_vols=volatility_curve)
+              dividend_curve  = float(optionform.cleaned_data['dividend_curve'])
+              dividend_curve = wdb.mrigweb_FlatDividendYieldCurve(reference_date,flat_rate=dividend_curve)
+              underlying_spot  = float(optionform.cleaned_data['underlying_spot'])
+              valuation_method  = optionform.cleaned_data['valuation_method']
+          else:
+              print(optionform.errors)
+
+      option = wdb.mrigweb_Option(option_name,underlying_name,maturity_date,
+                 option_type,strike,exercise_type,day_count,calendar)
+      
+      valuation_args = {'Discount Curve' : discount_curve,
+                        'Volatility Curve' : volatility_curve,
+                        'Underlying Spot' : underlying_spot,
+                        'Dividend Curve' : dividend_curve,
+                        'Valuation Method' : valuation_method}
+
+      resultset = wdb.mrigweb_Analytics(option,valuation_args)
+      resultset = myhtml.dict_to_html(resultset)
+
+    return render(request, "ra_options.html",{'resultset' : resultset,'GOOGLE_ADS': GOOGLE_ADS})
+
+def swaps(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+
+    objectmap = {}
+    objectmap['None'] = None
+    objectmap['SZYC_INR'] = wdb.mrigweb_szc_rates()
+    objectmap['SZYC_USD'] = wdb.mrigweb_szc_rates('USD')
+    objectmap['SZYC_GBP'] = wdb.mrigweb_szc_rates('GBP')
+    objectmap['LIBOR_3M_INR'] = wdb.mrigweb_Libor('LIBOR_3M_INR', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_6M_INR'] = wdb.mrigweb_Libor('LIBOR_6M_INR', tenor='6M', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_3M_USD'] = wdb.mrigweb_Libor('LIBOR_3M_USD', curve_currency='USD', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_6M_USD'] = wdb.mrigweb_Libor('LIBOR_6M_USD', curve_currency='USD', tenor='6M', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_3M_GBP'] = wdb.mrigweb_Libor('LIBOR_3M_GBP', curve_currency='GBP', tenor='3M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+    objectmap['LIBOR_6M_GBP'] = wdb.mrigweb_Libor('LIBOR_6M_GBP', curve_currency='GBP', tenor='6M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+
+    fixedleg_day_count='30-360',
+    fixedleg_calendar='India',
+    fixedleg_business_convention='Following',
+    fixedleg_month_end='True',
+    fixedleg_date_generation='Backward',
+    fixedleg_coupon_frequency='Semiannual',
+    fixedleg_coupon_rate=None,
+    floatleg_day_count='30-360',
+    floatleg_calendar='India',
+    floatleg_business_convention='Following',
+    floatleg_month_end='True',
+    floatleg_date_generation='Backward',
+    floatleg_coupon_frequency='Semiannual',
+    floatleg_index=None,
+    floatleg_coupon_spread=0,
+    floatleg_fixing=None
+    
+    resultset = ""
+    if request.method == "POST":
+      #Get the posted form
+      reference_date = datetime.date.today()
+      print("swap method is post")
+      if 'swap_form' in request.POST:
+          swapform = fm.SwapForm(request.POST)
+          if swapform.is_valid():
+              print("----swap form valid----")
+              fixed_pay = swapform.cleaned_data['fixed_pay_recieve']
+              maturity_date = swapform.cleaned_data['fixed_maturity_date']
+              maturity_date = datetime.datetime.strptime(maturity_date,'%Y-%m-%d').date()
+              face_value = float(swapform.cleaned_data['fixed_facevalue'])
+              fixedleg_day_count= swapform.cleaned_data['fixed_daycount']
+              fixedleg_calendar = swapform.cleaned_data['fixed_calendar']
+              fixedleg_business_convention = swapform.cleaned_data['fixed_business_convention']
+              fixedleg_month_end = bool(swapform.cleaned_data['fixed_month_end'])
+              fixedleg_date_generation  = swapform.cleaned_data['fixed_date_generation']
+              fixedleg_coupon_frequency  = swapform.cleaned_data['fixed_coupon_frequency']
+              fixedleg_coupon_rate  = float(swapform.cleaned_data['fixed_coupon_rate'])
+              floatleg_day_count= swapform.cleaned_data['float_daycount']
+              floatleg_calendar = swapform.cleaned_data['float_calendar']
+              floatleg_business_convention = swapform.cleaned_data['float_business_convention']
+              floatleg_month_end = bool(swapform.cleaned_data['float_month_end'])
+              floatleg_date_generation  = swapform.cleaned_data['float_date_generation']
+              floatleg_coupon_frequency  = swapform.cleaned_data['float_coupon_frequency']
+              floatleg_index  = swapform.cleaned_data['floating_coupon_index']
+              floatleg_index = objectmap[floatleg_index]
+              try:
+                  floatleg_coupon_spread  = float(swapform.cleaned_data['floating_coupon_spread'])
+              except:
+                  pass
+              try:
+                  floatleg_fixing  = float(swapform.cleaned_data['last_libor'])
+              except:
+                  pass
+
+#Valuation Parameters
+              discount_curve  = swapform.cleaned_data['discount_curve']
+              discount_curve = objectmap[discount_curve][0]
+
+          else:
+              print(swapform.errors)
+                      
+      swap = wdb.mrigweb_Swap(fixed_pay, maturity_date,
+                 face_value,fixedleg_day_count, fixedleg_calendar,
+                 fixedleg_business_convention,fixedleg_month_end,fixedleg_date_generation,
+                 fixedleg_coupon_frequency,fixedleg_coupon_rate,floatleg_day_count,
+                 floatleg_calendar,floatleg_business_convention,floatleg_month_end,
+                 floatleg_date_generation,floatleg_coupon_frequency,floatleg_index,
+                 floatleg_coupon_spread,floatleg_fixing)
+      
+      valuation_args = {'Discount Curve' : discount_curve}
+      
+      resultset = wdb.mrigweb_Analytics(swap,valuation_args)
+      resultset = myhtml.dict_to_html(resultset)
+    return render(request, "ra_swaps.html",{'resultset' : resultset,'GOOGLE_ADS': GOOGLE_ADS})
+
+def capsfloors(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+
+    objectmap = {}
+    objectmap['None'] = None
+    objectmap['SZYC_INR'] = wdb.mrigweb_szc_rates()
+    objectmap['SZYC_USD'] = wdb.mrigweb_szc_rates('USD')
+    objectmap['SZYC_GBP'] = wdb.mrigweb_szc_rates('GBP')
+    objectmap['LIBOR_3M_INR'] = wdb.mrigweb_Libor('LIBOR_3M_INR', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_6M_INR'] = wdb.mrigweb_Libor('LIBOR_6M_INR', tenor='6M', yieldcurvehandle=objectmap['SZYC_INR'][0])
+    objectmap['LIBOR_3M_USD'] = wdb.mrigweb_Libor('LIBOR_3M_USD', curve_currency='USD', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_6M_USD'] = wdb.mrigweb_Libor('LIBOR_6M_USD', curve_currency='USD', tenor='6M', yieldcurvehandle=objectmap['SZYC_USD'][0])
+    objectmap['LIBOR_3M_GBP'] = wdb.mrigweb_Libor('LIBOR_3M_GBP', curve_currency='GBP', tenor='3M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+    objectmap['LIBOR_6M_GBP'] = wdb.mrigweb_Libor('LIBOR_6M_GBP', curve_currency='GBP', tenor='6M', yieldcurvehandle=objectmap['SZYC_GBP'][0])
+
+    face_value=1000000,
+    day_count='30-360',
+    calendar='India',
+    business_convention='Following',
+    month_end='True',
+    settlement_days=3,
+    date_generation='Forward',
+    coupon_frequency='Quarterly',
+    floating_coupon_index=None,
+    floating_coupon_spread=0,
+    fixing=None
+
+    resultset = ""
+    if request.method == "POST":
+      #Get the posted form
+      reference_date = datetime.date.today()
+      print("swap method is post")
+      if 'capsfloors_form' in request.POST:
+          capfloorform = fm.CapFloorForm(request.POST)
+          if capfloorform.is_valid():
+              print("----swap form valid----")
+              option_name = capfloorform.cleaned_data['capfloorname']
+              start_date = capfloorform.cleaned_data['start_date']
+              start_date = datetime.datetime.strptime(start_date,'%Y-%m-%d').date()
+              maturity_date = capfloorform.cleaned_data['maturity_date']
+              maturity_date = datetime.datetime.strptime(maturity_date,'%Y-%m-%d').date()
+              cap_or_floor = capfloorform.cleaned_data['option_type']
+              face_value = float(capfloorform.cleaned_data['facevalue'])
+              strike = float(capfloorform.cleaned_data['strike'])
+              currency = capfloorform.cleaned_data['currency']
+              day_count= capfloorform.cleaned_data['daycount']
+              calendar = capfloorform.cleaned_data['calendar']
+              business_convention = capfloorform.cleaned_data['business_convention']
+              month_end = bool(capfloorform.cleaned_data['month_end'])
+              settlement_days  = float(capfloorform.cleaned_data['settlement_days'])
+              date_generation  = capfloorform.cleaned_data['date_generation']
+              coupon_frequency  = capfloorform.cleaned_data['coupon_frequency']
+              floating_coupon_index  = capfloorform.cleaned_data['floating_coupon_index']
+              floating_coupon_index = objectmap[floating_coupon_index]
+              try:
+                  floating_coupon_spread  = float(capfloorform.cleaned_data['floating_coupon_spread'])
+              except:
+                  pass
+              try:
+                  fixing  = float(capfloorform.cleaned_data['last_libor'])
+              except:
+                  pass
+#Valuation Parameters
+              discount_curve  = capfloorform.cleaned_data['discount_curve']
+              discount_curve = objectmap[discount_curve][0]
+              volatility_curve  = float(capfloorform.cleaned_data['volatility_curve'])
+              volatility_curve = wdb.mrigweb_ConstantVolatilityCurve(volatility_curve)
+          else:
+              print(capfloorform.errors)
+
+      capfloor = wdb.mrigweb_CapFloor(option_name,start_date,maturity_date,
+                 cap_or_floor,strike,face_value,day_count,calendar,
+                 business_convention,month_end,settlement_days,
+                 date_generation,coupon_frequency,floating_coupon_index,
+                 floating_coupon_spread,fixing)
+      
+      valuation_args = {'Discount Curve' : discount_curve,
+                        'Volatility Curve' : volatility_curve}
+      
+      resultset = wdb.mrigweb_Analytics(capfloor,valuation_args)
+      resultset = myhtml.dict_to_html(resultset)
+
+    return render(request, "ra_capsfloors.html",{'resultset' : resultset,'GOOGLE_ADS': GOOGLE_ADS})
+
+def portfolio(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    return render(request, "ra_portfolio.html")
+
+def mf(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    
+    topmfs = wdb.mrigweb_top_mfs()
+    topmfs = topmfs.reset_index()
+    topmfs_table = [list(topmfs)] + topmfs.values.tolist()
+    topmfs_table = myhtml.list_to_html(topmfs_table)
+
+    return render(request, "mf.html",{'topmfs_table' : topmfs_table,'GOOGLE_ADS': GOOGLE_ADS})
     
 def stock1(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
     
 #    oc = mu.test_df()
 #    oc = oc[['Symbol','Open','Last']]
@@ -581,7 +1205,11 @@ def stock1(request):
 #    oc = [oc_head] + oc.values.tolist()
 #    oc = myhtml.list_to_html(oc)
 #    oc = "<img border=\"0\" src=\"{% static 'assets/images/pnl_icon.png' %}\" width=\"10\" height=\"10\"/>"
-
+    sql = "select image from images limit 1"
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    image = engine.execute(sql).fetchall()
+    image = bytes(image[0][0])
+    image = image.decode("utf-8")
     oc = ['a',3]
-    return render(request, "stock1.html", {"oc":oc})
+    return render(request, "stock1.html", {"oc":image,'GOOGLE_ADS': GOOGLE_ADS})
     

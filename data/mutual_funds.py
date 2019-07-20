@@ -9,6 +9,8 @@ Functions are present for getting mutual fund information
 like Portfolio Holdings, NAV, Ratings, AUM, Category, Launch-Date, Expense Ratio
 
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import urllib,csv,requests
 import datetime,pandas

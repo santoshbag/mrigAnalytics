@@ -1,0 +1,22 @@
+select mfs.*,mfc.*,( '%' || substr(mfs.fund,0, "position"(mfs.fund,'-')) || '%') as pattern,
+case when ("position"(mfs.fund,'-') > 0) then
+(select mnh."Net Asset Value" from mf_nav_history mnh where
+ mnh."Scheme Name" like ( '%' || substr(mfs.fund,0, "position"(mfs.fund,'-')-1) || '%') limit 1) 
+else
+(select mnh."Net Asset Value" from mf_nav_history mnh where
+ mnh."Scheme Name" like ( '%' || mfs.fund || '%') limit 1) 
+end
+from mf_snapshot mfs
+inner join mf_categories mfc on
+mfs.category = mfc.mf_category_code 
+where
+convert_to_int(mfs.rating) > 3 and
+convert_to_int(substr(mfs."1_yr_rank",0, "position"(mfs."1_yr_rank",'/'))) < 3 and
+mfs.snapshot_date = (select mfs1.snapshot_date from mf_snapshot mfs1 where mfs1.fund = mfs.fund order by mfs1.snapshot_date desc limit 1)
+order by mfs.category, convert_to_int(substr(mfs."1_yr_rank",0, "position"(mfs."1_yr_rank",'/'))) asc ,mfs.fund
+
+
+select convert_to_int(substr("1_yr_rank",0, "position"("1_yr_rank",'/'))) from mf_snapshot
+
+select * from mf_nav_history mnh 
+where mnh."Scheme Name" = 'Axis Banking & PSU Debt Fund'

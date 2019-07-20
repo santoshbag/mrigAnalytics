@@ -190,3 +190,13 @@ INDEX_MAP_FOR_OC = {'NIFTY 50':'NIFTY',
                     'NIFTY IT':'NIFTYIT',
                     'NIFTY BANK':'BANKNIFTY',
                     'NIFTY MIDCAP 50':'NIFTYMID50'}
+
+MRIGWEB = {'development' : 'MRIGWEB',
+           'production' : 'mrigweb'}
+
+RB_WAREHOUSE = {'development' : 'RB_WAREHOUSE',
+                'production' : 'rb_warehouse'}
+
+ENVIRONMENT = 'development'
+#ENVIRONMENT = 'production'
+

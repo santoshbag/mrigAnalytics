@@ -4,6 +4,8 @@ Created on Tue Aug 15 05:35:56 2017
 
 @author: Santosh Bag
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime
 import urllib.request
 from pandas import DataFrame
@@ -13,7 +15,9 @@ import mrigutilities
 def navall_download():
     print("Mutual Fund NAVS download started", end =" ")
     NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt?t=09082017092931"
-    mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVAllHistory.csv"
+#    mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVAllHistory.csv"
+    datadir = os.path.dirname(__file__)
+    mfNavHistory_path = os.path.join(datadir,'..','..','data','mfNAVAllHistory.csv')
     mfNavHistory = open(mfNavHistory_path,"a+")
     
     engine = mrigutilities.sql_engine()

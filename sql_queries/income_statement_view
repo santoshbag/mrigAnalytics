@@ -1,0 +1,32 @@
+ SELECT pnl_statement.symbol,
+    pnl_statement.pnl_statement_date,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Total Revenue:'::text) + 14, "position"(pnl_statement.pnl_statement_dictionary, 'EXPENSES:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Total Revenue:'::text) - 16) AS total_revenue,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenses:'::text) + 16, "position"(pnl_statement.pnl_statement_dictionary, 'Profit/Loss Before Exceptional ExtraOrdinary Items And Tax:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenses:'::text) - 18) AS total_expenses,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Profit/Loss For The Period:'::text) + 28, "position"(pnl_statement.pnl_statement_dictionary, ' OTHER ADDITIONAL INFORMATION:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Profit/Loss For The Period:'::text) - 29) AS profit_loss,
+    'annual'::text AS stmt_type
+   FROM pnl_statement
+  WHERE "position"(pnl_statement.pnl_statement_dictionary, 'Total Revenue:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'EXPENSES:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenses:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Profit/Loss Before Exceptional ExtraOrdinary Items And Tax:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Profit/Loss For The Period:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, ' OTHER ADDITIONAL INFORMATION:'::text) > 1
+UNION
+ SELECT pnl_statement.symbol,
+    pnl_statement.pnl_statement_date,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Total Income:'::text) + 13, "position"(pnl_statement.pnl_statement_dictionary, 'EXPENDITURE:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Total Income:'::text) - 15) AS total_revenue,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenditure:'::text) + 19, "position"(pnl_statement.pnl_statement_dictionary, 'Net Profit / Loss for The Year:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenditure:'::text) - 21) AS total_expenses,
+    substr(pnl_statement.pnl_statement_dictionary, "position"(pnl_statement.pnl_statement_dictionary, 'Total Appropriations:'::text) + 21, "position"(pnl_statement.pnl_statement_dictionary, ' OTHER INFORMATION:'::text) - "position"(pnl_statement.pnl_statement_dictionary, 'Total Appropriations:'::text) - 22) AS profit_loss,
+    'annual'::text AS stmt_type
+   FROM pnl_statement
+  WHERE "position"(pnl_statement.pnl_statement_dictionary, 'Total Income:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'EXPENDITURE:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Total Expenditure:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Net Profit / Loss for The Year:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'Total Appropriations:'::text) > 1 AND "position"(pnl_statement.pnl_statement_dictionary, 'OTHER INFORMATION:'::text) > 1
+UNION
+ SELECT qtrly.symbol,
+    qtrly.qtrly_results_date AS pnl_statement_date,
+    qtrly.total_revenue,
+    to_char(to_number(qtrly.total_revenue, '999999999.99'::text) - to_number(qtrly.pnl, '999999999.99'::text), '9999999999.99'::text) AS total_expenses,
+    qtrly.net_profit AS profit_loss,
+    'qtrly'::text AS stmt_type
+   FROM ( SELECT qtrly_results.symbol,
+            qtrly_results.qtrly_results_date,
+            substr(qtrly_results.qtrly_results_dictionary, "position"(qtrly_results.qtrly_results_dictionary, 'Total Income From Operations:'::text) + 29, "position"(qtrly_results.qtrly_results_dictionary, 'EXPENDITURE:'::text) - "position"(qtrly_results.qtrly_results_dictionary, 'Total Income From Operations:'::text) - 31) AS total_revenue,
+            substr(qtrly_results.qtrly_results_dictionary, "position"(qtrly_results.qtrly_results_dictionary, 'Net Profit/(Loss) For the Period:'::text) + 33, "position"(qtrly_results.qtrly_results_dictionary, 'Equity Share Capital:'::text) - "position"(qtrly_results.qtrly_results_dictionary, 'Net Profit/(Loss) For the Period:'::text) - 35) AS net_profit,
+            substr(qtrly_results.qtrly_results_dictionary, "position"(qtrly_results.qtrly_results_dictionary, 'P/L Before Other Inc.  Int. Excpt. Items & Tax:'::text) + 47, "position"(qtrly_results.qtrly_results_dictionary, 'Other Income:'::text) - "position"(qtrly_results.qtrly_results_dictionary, 'P/L Before Other Inc.  Int. Excpt. Items & Tax:'::text) - 49) AS pnl
+           FROM qtrly_results
+          WHERE "position"(qtrly_results.qtrly_results_dictionary, 'Total Income From Operations:'::text) > 1 AND "position"(qtrly_results.qtrly_results_dictionary, 'EXPENDITURE:'::text) > 1 AND "position"(qtrly_results.qtrly_results_dictionary, 'Net Profit/(Loss) For the Period:'::text) > 1 AND "position"(qtrly_results.qtrly_results_dictionary, 'Equity Share Capital:'::text) > 1 AND "position"(qtrly_results.qtrly_results_dictionary, 'P/L Before Other Inc.  Int. Excpt. Items & Tax:'::text) > 1 AND "position"(qtrly_results.qtrly_results_dictionary, 'Other Income:'::text) > 1) qtrly
+  WHERE qtrly.total_revenue <> ' --'::text AND qtrly.pnl <> ' --'::text AND qtrly.total_revenue <> ' -'::text AND qtrly.pnl <> ' -'::text;

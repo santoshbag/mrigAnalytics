@@ -6,6 +6,8 @@ Created on Thu May 24 14:41:11 2018
 
 This module downloads yield curves for different currencies.
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import requests
 import datetime,pandas
@@ -19,17 +21,17 @@ def get_yieldCurve(currency="INR"):
     
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    yield_table_num = {'INR':3,
-                       'USD':3,
-                       'GBP':3}
+    yield_table_num = {'INR':4,
+                       'USD':4,
+                       'GBP':4}
     
-    price_table_num = {'INR':5,
-                       'USD':5,
-                       'GBP':5}
+    price_table_num = {'INR':6,
+                       'USD':6,
+                       'GBP':6}
     
     curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
     curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
-    curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y' )
+    curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
     tables = soup.find_all("table")
     
     yield_table = []
@@ -38,6 +40,7 @@ def get_yieldCurve(currency="INR"):
     yield_heads = tables[yield_table_num[currency]].find_all('th')
     yield_table_cols = [col.text for col in yield_heads]
     yield_table_cols = ['ResidualMaturity','Yield','Chg 1M','Chg 6M']
+    print(yield_table_cols)
             
     for row in tables[yield_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
@@ -47,7 +50,7 @@ def get_yieldCurve(currency="INR"):
     price_heads = tables[price_table_num[currency]].find_all('th')
     price_table_cols = [col.text for col in price_heads]
     price_table_cols.pop(3)
-#    print(yield_table_cols)
+    print(price_table_cols)
     
     for row in tables[price_table_num[currency]].find_all('tr'):
         cells = row.find_all('td')
@@ -84,7 +87,9 @@ def get_yieldCurve(currency="INR"):
 
 def yield_download():
     print("Yield Curves download started", end =" ")
-    yieldCurveHistory_path = "F:\Mrig Analytics\Development\data\yieldCurveHistory.csv"
+    datadir = os.path.dirname(__file__)
+    yieldCurveHistory_path = os.path.join(datadir,'..','..','data','yieldCurveHistory.csv')
+#    yieldCurveHistory_path = "F:\Mrig Analytics\Development\data\yieldCurveHistory.csv"
     yieldCurveHistory = open(yieldCurveHistory_path,"a+")
     
     last_fetched_data = mrigutilities.get_last_row(yieldCurveHistory_path)

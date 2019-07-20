@@ -9,7 +9,6 @@ import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
-import xlwings as xw
 import pandas as pd
 import numpy as np
 from dateutil import relativedelta
@@ -18,16 +17,24 @@ import mrigutilities as mu
 import strategies.stocks as stocks
 import io,base64
 import stockScreener as ss
+import mfScreener as ms
 import media.news as n
 import nsepy
 import instruments.options as options
 import instruments.termstructure as ts
+import instruments.index as index
 import instruments.qlMaps as qlMaps
+import instruments.bonds as bonds
+import instruments.swaps as swaps
+import instruments.options as options
+import instruments.capsfloors as capsfloors
+import strategies.marketoptions as mo
 
 from fuzzywuzzy import fuzz
 import mrigplots as mp
 from matplotlib import colors as mcolors
-
+import matplotlib.pyplot as plot
+import matplotlib
 
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 
@@ -330,6 +337,19 @@ def mrigweb_top_mf_holdings(location,tenor='6M',sheet='None'):
     ret_lis = [lis,cum_returns]
     return ret_lis
         
+def mrigweb_top_mfs():
+    topmfs = ms.top_mfs()
+
+    column_map = {'fund':'Fund Name','rating':'Rating','launch_date':'Launch Date',
+              'expense_ratio_in_per':'Expense Ratio','1_yr_ret':'Return (1Yr)',
+              '1_yr_rank':'Rank','net_assets_in_cr':'Net Assets (Cr)',
+              'mf_category_name':'Category Name','Net Asset Value':'NAV'}
+
+    topmfs = topmfs[list(column_map.keys())]
+    topmfs.rename(columns=column_map,inplace=True)
+    topmfs.set_index("Category Name",inplace=True)
+    
+    return topmfs
 
 def mrigweb_nifty_sectors(location,tenor='6M',sheet='None'):
     
@@ -426,6 +446,11 @@ def mrigweb_bigmoneyzacks(tenor='6M'):
     list4W = list(top_holdings.ret4W)
     list4W.insert(0,"4 Week Return")
     ret_lis = [symlist,list24W,list12W,list4W]
+
+    index_maps = {'symbol':'Company'}
+    column_maps = {'ret24W':'24 Week Return','ret12W':'12 Week Return','ret4W':'4 Week Return'}
+    top_holdings.rename(index=index_maps,columns=column_maps,inplace=True)
+
     return [top_holdings,bigM_graph]
     
 
@@ -507,6 +532,17 @@ def mrigweb_smallcapgrowth(tenor='6M'):
     lastmonth = today - relativedelta.relativedelta(months=1)
 
     top_holdings = ss.small_cap_growth() #mu.get_stored_stock_strategies('scg')
+
+    index_maps = {'symbol':'Company'}
+    column_maps = {'symbol' : 'Company','industry' : 'Industry','close' : 'Price',
+                   'eps_growth' : 'EPS Growth','price_to_bv' : 'P/BV','pe' : 'P/E',
+                   'price_to_earningsgrowth' : 'PEG','return_on_equity' : 'ROE',
+                   'ps' : 'P/S','net_profit_margin' : 'Profit Margin',
+                   'current_ratio' : 'Current Ratio','eps_growth_median' : 'Industry EPS Growth',
+                   'pemedian' : 'Industry PE','psmedian' : 'Industry PS'}
+    columns = ['industry','close','eps_growth','price_to_bv','pe','price_to_earningsgrowth',
+               'return_on_equity','ps','net_profit_margin','current_ratio','eps_growth_median',
+               'pemedian','psmedian']
     
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'SCG Returns')
@@ -543,6 +579,9 @@ def mrigweb_smallcapgrowth(tenor='6M'):
     ps = list(top_holdings.ps)
     ps.insert(0,"P/Sales")
     ret_lis = [symlist,cum_returns,eps,pe,ps]
+    
+    top_holdings = top_holdings[columns]        
+    top_holdings.rename(columns=column_maps,inplace=True)
     return [top_holdings,scg_graph]
 
 
@@ -599,7 +638,8 @@ def mrigweb_newhighs(tenor='6M'):
     lastmonth = today - relativedelta.relativedelta(months=1)
 
     top_holdings = ss.newhighs()#mu.get_stored_stock_strategies('nh')
-        
+    top_holdings = top_holdings.head(10)
+    
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'NewHighs Returns')
     
@@ -650,6 +690,17 @@ def mrigweb_growthincome(tenor='6M'):
 
 #    top_holdings = mu.get_stored_stock_strategies('gi')
     top_holdings = ss.growth_income()
+    index_maps = {'symbol':'Company'}
+    column_maps = {'symbol' : 'Company','industry' : 'Industry','close' : 'Price',
+                   'eps_growth' : 'EPS Growth','price_to_bv' : 'P/BV','pe' : 'P/E',
+                   'beta' : 'BETA','return_on_equity' : 'ROE','divyld' : 'Div Yld',
+                   'net_profit_margin' : 'Profit Margin','niftydivyld' : 'Nifty Div Yld',
+                   'niftype' : 'Nifty PE','niftypb' : 'Nifty PB','niftyroe' : 'Nifty ROE'}
+
+
+    columns = ['industry','close','eps_growth','price_to_bv','pe','beta',
+               'return_on_equity','divyld','net_profit_margin','niftydivyld','niftype',
+               'niftypb','niftyroe']
     
     labels = ['Dates','Returns']
     plt = mp.singleScaleLine_plots(labels,'GrowthIncome Returns')
@@ -693,6 +744,8 @@ def mrigweb_growthincome(tenor='6M'):
 #    list4W.insert(0,"4 Week Return")
     
     ret_lis = [symlist,cum_returns,roe,pe,beta]
+    top_holdings = top_holdings[columns]        
+    top_holdings.rename(columns=column_maps,inplace=True)
     return [top_holdings,gi_graph]
 
 def mrigweb_custom_screener(criteria):
@@ -708,7 +761,11 @@ def mrigweb_custom_screener(criteria):
     
 def mrigweb_news():
     
-    n.get_MCNews()
+    try:
+        n.get_MCNews()
+    except:
+        pass
+    
     sql = "select distinct type, date, title, description from media \
            where date > ((select max(date) from media) - interval '2 days') \
            order by type ,date desc"
@@ -735,7 +792,6 @@ def mrigweb_news():
     return news
 
 
-@xw.ret(expand='table', transpose=False)
 def mrigweb_quote(symbol):
     
 #    symbol = symbol.replace('&','\&')
@@ -753,7 +809,6 @@ def mrigweb_quote(symbol):
     return ret_lis
 
 
-@xw.ret(expand='table', transpose=True)
 def mrigweb_stocklist():
     sql = "select distinct symbol from security_master"
            
@@ -774,14 +829,18 @@ def mrigweb_index(symbol='NIFTY 50',tenor='1Y'):
     index = stocks.Index(symbol)
     stock_desc = 'NIFTY 50 Index' #index.quote['companyName'] + " | "+index.industry+" | ISIN: "+ index.quote['isinCode']
     nifty = stocks.Index('NIFTY 50')
-    price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
-    quotes = [index.quote['lastPrice'],
-              index.quote['open'],
-              index.quote['previousClose'],
-              index.quote['dayHigh'],
-              index.quote['dayLow'],
-              index.quote['high52'],
-              index.quote['low52']]
+    price_labels,quotes = [], []
+    try:
+        price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
+        quotes = [index.quote['lastPrice'],
+                  index.quote['open'],
+                  index.quote['previousclose'],
+                  index.quote['dayhigh'],
+                  index.quote['daylow'],
+                  index.quote['high52'],
+                  index.quote['low52']]
+    except:
+        pass
     price_list = [price_labels,quotes]
 #    sht.range('D3:J3').clear_contents()
 #    sht.range('D2').value = price_list
@@ -884,7 +943,8 @@ def mrigweb_index(symbol='NIFTY 50',tenor='1Y'):
     nifty_dates = list(nifty.daily_logreturns.index)
     nifty_cum_return_series = list(nifty.daily_logreturns.daily_log_returns.cumsum())
     primary.plot(dates,cum_return_series,"C3",label=symbol)
-    primary.plot(nifty_dates,nifty_cum_return_series,"C4",label='NIFTY')
+    if symbol != 'NIFTY 50':
+        primary.plot(nifty_dates,nifty_cum_return_series,"C4",label='NIFTY')
 #    if(index.industry != ""):
 #        industry_ret = ss.sector_returns("10",tenor)
 #        industry_ret_dates = list(industry_ret[industry_ret['industry'] == index.industry].index)
@@ -904,21 +964,22 @@ def mrigweb_index(symbol='NIFTY 50',tenor='1Y'):
 #                     top=sht.range('L17').top)
     
 #    sht.range('D14:J16').clear_contents()
-#    risk = index.get_risk()
-#    risklabels,risknumbers = [],[]
-#    for key in risk.keys():
-#        risklabels.append(key)
-#        risknumbers.append(risk[key])
-#    
-#    risk_list = [risklabels,risknumbers]
+    risk = index.get_risk()
+    risklabels,risknumbers = [],[]
+    for key in risk.keys():
+        risklabels.append(key)
+        risknumbers.append(risk[key])
+    
+    risk_list = [risklabels,risknumbers]
 ##    sht.range('D14').value = [risklabels,risknumbers]
 #             
 #             
-#    index.get_ratios()
+    index.get_ratios()
 ##    ratios = [list(index.ratio_data.columns),index.ratio_data.values.tolist()[0]]
 #    
 ##    sht.range('D18:J500').clear_contents()
-#    if not index.ratio_data.empty:
+    rd = pd.DataFrame()
+    if not index.ratio_data.empty:
 ##        ratios = [['Ratio Date',index.ratio_data.index[0]],[" "," "]]
 ##        ratioheads = list(index.ratio_data.columns)
 ##        ratiovals = index.ratio_data.values.tolist()[0]
@@ -928,10 +989,10 @@ def mrigweb_index(symbol='NIFTY 50',tenor='1Y'):
 ##                    ratios.append([ratioheads[i].replace('_',' ').upper()+' (lacs)',float(ratiovals[i])/100000])
 ##                else:
 ##                    ratios.append([ratioheads[i].replace('_',' ').upper(),ratiovals[i]])
-#        rd = index.ratio_data.transpose()
+        rd = index.ratio_data.transpose()
 #        to_drop = ['symbol','download_date','rank','business_per_branch','business_per_employ', 'interest_income_per_branch','interest_income_per_employee', 'net_profit_per_branch','net_profit_per_employee']
 #        rd.drop(to_drop,axis=0,inplace=True)
-#        rd.rename(index=lambda x: x.upper().replace('_'," "),inplace=True)
+        rd.rename(index={'pe':'Price Earnings','pb':'Price Book','div_yield':'Dividend Yield'},inplace=True)
 ##        rd.rename(columns=lambda x: x.upper().replace('_'," "),inplace=True)
 #        rd.replace('',np.nan,inplace=True)
 #        rd.dropna(how='all',axis=0,inplace=True)
@@ -946,12 +1007,13 @@ def mrigweb_index(symbol='NIFTY 50',tenor='1Y'):
     
     news = engine.execute(sql).fetchall()
     
-    news = [item for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
+#    news = [item for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
+    news = [(item[0].strftime('%d-%b-%Y'),item[1],item[2]) for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
               
     optionchain = index.optionChain()
 #    sht.range('W3:AR500').clear_contents()
 #    sht.range('W3').value = optionchain
-    return [price_list,return_list,None,pd.DataFrame(),optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news]
+    return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news]
 
     
 def mrigweb_stock(symbol,tenor='1Y'):
@@ -961,16 +1023,27 @@ def mrigweb_stock(symbol,tenor='1Y'):
 #    symbol = sht.range('B2').value
 #    tenor = sht.range('M2').value
     stk = stocks.Stock(symbol)
-    stock_desc = stk.quote['companyName'] + " | "+stk.industry+" | ISIN: "+ stk.quote['isinCode']
+    stock_desc = stk.stock_name + " | "+stk.industry+" | ISIN: "+ stk.isin
     nifty = stocks.Index('NIFTY 50')
     price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
-    quotes = [stk.quote['lastPrice'],
-              stk.quote['open'],
-              stk.quote['previousClose'],
-              stk.quote['dayHigh'],
-              stk.quote['dayLow'],
-              stk.quote['high52'],
-              stk.quote['low52']]
+    quotes = []
+    quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+#    if len(stk.quote) > 0:
+#        quotes = [stk.quote['lastPrice'],
+#                  stk.quote['open'],
+#                  stk.quote['previousclose'],
+#                  stk.quote['dayhigh'],
+#                  stk.quote['daylow'],
+#                  stk.quote['high52'],
+#                  stk.quote['low52']]
+#    else:
+#        quotes = []
     price_list = [price_labels,quotes]
 #    sht.range('D3:J3').clear_contents()
 #    sht.range('D2').value = price_list
@@ -1010,6 +1083,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
     fig.savefig(buffer,format="PNG")
     price_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
     buffer.close()
+    plot.close(fig)
     
     
 #    sht.pictures.add(fig, 
@@ -1033,6 +1107,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
     fig.savefig(buffer,format="PNG")
     boll_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
     buffer.close()
+    plot.close(fig)
     
 #    sht.pictures.add(fig, 
 #                     name='Bands', 
@@ -1056,6 +1131,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
     fig.savefig(buffer,format="PNG")
     macd_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
     buffer.close()
+    plot.close(fig)
     
 #    sht.pictures.add(fig, 
 #                     name='MACD', 
@@ -1085,6 +1161,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
     fig.savefig(buffer,format="PNG")
     return_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
     buffer.close()
+    plot.close(fig)
 
 #    sht.pictures.add(fig, 
 #                     name='Returns', 
@@ -1107,6 +1184,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
 #    ratios = [list(stk.ratio_data.columns),stk.ratio_data.values.tolist()[0]]
     
 #    sht.range('D18:J500').clear_contents()
+    rd = pd.DataFrame()
     if not stk.ratio_data.empty:
 #        ratios = [['Ratio Date',stk.ratio_data.index[0]],[" "," "]]
 #        ratioheads = list(stk.ratio_data.columns)
@@ -1135,13 +1213,228 @@ def mrigweb_stock(symbol,tenor='1Y'):
     
     news = engine.execute(sql).fetchall()
     
-    news = [item for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
+    news = [(item[0].strftime('%d-%b-%Y'),item[1],item[2]) for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
               
     optionchain = stk.optionChain()
 #    sht.range('W3:AR500').clear_contents()
 #    sht.range('W3').value = optionchain
     return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news]
 
+def mrigweb_funds(symbol,tenor='1Y'):
+    
+#    sheet='Stock'
+#    sht = xw.Book.caller().sheets[sheet]
+#    symbol = sht.range('B2').value
+#    tenor = sht.range('M2').value
+    # Get Specs
+    
+    sql = "select mfg.mf_category_name as \"Category Name\", mfs.fund as \"Fund Name\", mfs.launch_date as \"Launch Date\", \
+           mfs.expense_ratio_in_per as \"Expense Ratio\", mfs.rating as Rating, mfs.\"1_yr_rank\" as Rank, \
+           mfs.\"1_yr_ret\" as \"Return(1Yr)\", mfs.net_assets_in_cr as \"Net Assets(Cr)\" from mf_snapshot mfs inner join mf_categories mfg on mfs.category=mfg.mf_category_code \
+           where mfs.fund='%s' order by mfs.snapshot_date desc limit 1"
+
+    engine =  mu.sql_engine()
+    mf_spec = pd.read_sql(sql%(symbol),engine)           
+    
+    """
+    NAV History--------------------------
+    """
+    
+    sql =  "select mnh.\"Date\", mnh.\"Scheme Name\", mnh.\"Net Asset Value\" from mf_nav_history mnh where \
+           mnh.\"Scheme Name\" = (select \"Scheme Name\" from mf_nav_history where \"Scheme Name\" like ( '%%' || '"+symbol+"' || '%%') limit 1) \
+           and mnh.\"Date\" > now() - interval '1 year'"
+    mf_navs = pd.read_sql(sql,engine)
+    if not mf_navs.empty:
+        mf_navs = mf_navs[['Date','Net Asset Value']]           
+        scheme_desc = mf_navs['Scheme Name'].iloc[0]
+    nifty = stocks.Index('NIFTY 50')
+
+    """
+    Holdings History--------------------------
+    """
+    
+    sql =  "select mfp.company as Company, mfp.sector as Sector, mfp.holding_current as \"Holding(Current)\",\
+            mfp.holding_3yhigh as \"Holding(3Y High)\", mfp.holding_3ylow as \"Holding(3Y Low)\" from mf_portfolios mfp where \
+            mfp.fund = (select fund from mf_portfolios where fund like ( '%%' || '"+symbol+"' || '%%') limit 1) \
+            and mfp.download_date = (select max(download_date) from mf_portfolios where fund = (select fund from mf_portfolios \
+            where fund like ( '%%' || '"+symbol+"' || '%%') limit 1) )"
+
+    mf_navs = pd.read_sql(sql,engine)
+    if not mf_navs.empty:
+        mf_navs = mf_navs[['Date','Net Asset Value']]           
+        scheme_desc = mf_navs['Scheme Name'].iloc[0]
+    
+    cum_returns = []
+    return_labels = ['1W','4W','12W','24W', '1Y','3Y']
+    for i in range(0,len(return_labels)):
+        stk.get_returns(return_labels[i])
+        cum_returns.append('NA')
+#        dates = list(stk.daily_logreturns.index)
+#        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+        try:
+            period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
+            if period <= 1: period = 1
+            cum_returns[i] = (float(stk.daily_logreturns.sum()/period))
+        except:
+            pass
+    return_list = [return_labels,cum_returns]
+#    sht.range('D9:J9').clear_contents()
+#    sht.range('D8').value = return_list
+             
+    stk.get_price_vol(tenor)
+    
+    labels = ['Dates','Price']
+    plt = mp.singleScaleLine_plots(labels,'Price')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    dates = list(stk.pricevol_data.index)
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    primary.plot(dates,list(stk.pricevol_data['20_day_SMA']),"C2",label='20 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['60_day_SMA']),"C3",label='60 Day SMA')
+    primary.plot(dates,list(stk.pricevol_data['100_day_SMA']),"C4",label='100 Day SMA')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+    
+    buffer = io.BytesIO()
+    fig.savefig(buffer,format="PNG")
+    price_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+    buffer.close()
+    plot.close(fig)
+    
+    
+#    sht.pictures.add(fig, 
+#                     name='Price', 
+#                     update=True,
+#                     left=sht.range('L3').left,
+#                     top=sht.range('L3').top)
+    
+    labels = ['Dates','Price']
+    plt = mp.singleScaleLine_plots(labels,'Bands')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_Band']),"C2",label='Bollinger')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_UBand']),"C3",label='Boll Upper')
+    primary.plot(dates,list(stk.pricevol_data['Bollinger_LBand']),"C4",label='Boll Lower')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer,format="PNG")
+    boll_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+    buffer.close()
+    plot.close(fig)
+    
+#    sht.pictures.add(fig, 
+#                     name='Bands', 
+#                     update=True,
+#                     left=sht.range('L35').left,
+#                     top=sht.range('L35').top)
+
+    labels = ['Dates','Price','MACD']
+    plt = mp.singleScaleLine_plots(labels,'MACD')
+    
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    dates = list(stk.pricevol_data.index)
+    
+    primary.plot(dates,list(stk.pricevol_data.close_adj),"C1",label='Close')
+    secondary.plot(dates,list(stk.pricevol_data['MACD']),"C2",label='MACD')
+    secondary.plot(dates,list(stk.pricevol_data['MACDS']),"C3",label='MACD Signal')
+    primary.legend(loc='upper center', bbox_to_anchor=(0.2, -0.10),fancybox=True, shadow=True, ncol=5)
+    secondary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer,format="PNG")
+    macd_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+    buffer.close()
+    plot.close(fig)
+    
+#    sht.pictures.add(fig, 
+#                     name='MACD', 
+#                     update=True,
+#                     left=sht.range('L52').left,
+#                     top=sht.range('L52').top)
+
+    labels = ['Dates','Returns']
+    plt = mp.singleScaleLine_plots(labels,'Returns')
+    fig,primary,secondary = plt[0],plt[1],plt[2]
+    stk.get_returns(tenor)
+    nifty.get_returns(tenor)
+    dates = list(stk.daily_logreturns.index)
+    cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
+    nifty_dates = list(nifty.daily_logreturns.index)
+    nifty_cum_return_series = list(nifty.daily_logreturns.daily_log_returns.cumsum())
+    primary.plot(dates,cum_return_series,"C3",label=symbol)
+    primary.plot(nifty_dates,nifty_cum_return_series,"C4",label='NIFTY')
+    if(stk.industry != ""):
+        industry_ret = ss.sector_returns("10",tenor)
+        industry_ret_dates = list(industry_ret[industry_ret['industry'] == stk.industry].index)
+        industry_ret_cum_return_series = list(industry_ret[industry_ret['industry'] == stk.industry].daily_log_returns.cumsum())
+        primary.plot(industry_ret_dates,industry_ret_cum_return_series,"C2",label=stk.industry)
+    primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=True, ncol=5)
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer,format="PNG")
+    return_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+    buffer.close()
+    plot.close(fig)
+
+#    sht.pictures.add(fig, 
+#                     name='Returns', 
+#                     update=True,
+#                     left=sht.range('L17').left,
+#                     top=sht.range('L17').top)
+    
+#    sht.range('D14:J16').clear_contents()
+    risk = stk.get_risk()
+    risklabels,risknumbers = [],[]
+    for key in risk.keys():
+        risklabels.append(key)
+        risknumbers.append(risk[key])
+    
+    risk_list = [risklabels,risknumbers]
+#    sht.range('D14').value = [risklabels,risknumbers]
+             
+             
+    stk.get_ratios()
+#    ratios = [list(stk.ratio_data.columns),stk.ratio_data.values.tolist()[0]]
+    
+#    sht.range('D18:J500').clear_contents()
+    rd = pd.DataFrame()
+    if not stk.ratio_data.empty:
+#        ratios = [['Ratio Date',stk.ratio_data.index[0]],[" "," "]]
+#        ratioheads = list(stk.ratio_data.columns)
+#        ratiovals = stk.ratio_data.values.tolist()[0]
+#        for i in range(2,len(stk.ratio_data.columns)):
+#            if ratiovals[i] != '':
+#                if abs(float(ratiovals[i])) > 100000.00:
+#                    ratios.append([ratioheads[i].replace('_',' ').upper()+' (lacs)',float(ratiovals[i])/100000])
+#                else:
+#                    ratios.append([ratioheads[i].replace('_',' ').upper(),ratiovals[i]])
+        rd = stk.ratio_data.transpose()
+        to_drop = ['symbol','download_date','rank','business_per_branch','business_per_employ', 'interest_income_per_branch','interest_income_per_employee', 'net_profit_per_branch','net_profit_per_employee']
+        rd.drop(to_drop,axis=0,inplace=True)
+        rd.rename(index=lambda x: x.upper().replace('_'," "),inplace=True)
+#        rd.rename(columns=lambda x: x.upper().replace('_'," "),inplace=True)
+        rd.replace('',np.nan,inplace=True)
+        rd.dropna(how='all',axis=0,inplace=True)
+#        sht.range('D19').value = rd
+    
+    sql = "select distinct date, title, description from media \
+           where date > ((select max(date) from media) - interval '2 days') \
+           order by date desc"
+           
+    
+    engine =  mu.sql_engine()
+    
+    news = engine.execute(sql).fetchall()
+    
+    news = [(item[0].strftime('%d-%b-%Y'),item[1],item[2]) for item in news if fuzz.token_set_ratio(symbol,item[1]) > 97]
+              
+    optionchain = stk.optionChain()
+#    sht.range('W3:AR500').clear_contents()
+#    sht.range('W3').value = optionchain
+    return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news]
 
 def mrigweb_max_drawdown(symbol,window_days=29, period_months=12):
 
@@ -1167,11 +1460,11 @@ def mrigweb_stockquote(symbol):
     quote = stk.quote['lastPrice']
     return quote
 
-def mrigweb_covered_call():
+def mrigweb_covered_call(live=False):
 #    sheet='Covered Calls'
 #    sht = xw.Book.caller().sheets[sheet]
 #    sht.range('B3:L500').clear_contents()
-    oc = ss.covered_call()
+    oc = ss.covered_call(live=live)
     oc = oc[0]
 #    oc_analytic = pd.DataFrame()
     if not oc.empty:
@@ -1185,8 +1478,8 @@ def mrigweb_covered_call():
     return oc
 
 
-def mrigweb_bull_put_spread():
-    oc = ss.bull_put_spread()
+def mrigweb_bull_put_spread(live=False):
+    oc = ss.bull_put_spread(live=live)
     oc = oc[0]
 #    oc_analytic = pd.DataFrame()
 
@@ -1198,8 +1491,8 @@ def mrigweb_bull_put_spread():
         
     return oc
 
-def mrigweb_bear_call_spread():
-    oc = ss.bear_call_spread()
+def mrigweb_bear_call_spread(live=False):
+    oc = ss.bear_call_spread(live=live)
     oc = oc[0]
 #    oc_analytic = pd.DataFrame()
     
@@ -1228,38 +1521,52 @@ def mrigweb_options(opid):
     symbol = opid['symbol']
     expiry = opid['expiry']
     strike = opid['strike']
+    ltp = opid['ltp']
     option_type = opid['option_type']
     
-    quote = mu.getStockOptionQuote(symbol,expiry,strike,option_type)
+    option = mo.MarketOptions(symbol,strike,expiry,option_type)    
+    underlying_spot = option.underlying['lastPrice']
     moneyness = "ATM"
     if option_type[0] == 'C':
-        if (strike - quote['underlyingValue']) < 0:
+        if (strike - underlying_spot) < 0:
             moneyness = "ITM"
-        if (strike - quote['underlyingValue']) > 0:
+        if (strike - underlying_spot) > 0:
             moneyness = "OTM"
     if option_type[0] == 'P':
-        if (strike - quote['underlyingValue']) > 0:
+        if (strike - underlying_spot) > 0:
             moneyness = "ITM"
-        if (strike - quote['underlyingValue']) < 0:
+        if (strike - underlying_spot) < 0:
             moneyness = "OTM"
-        
+    
+    sql = "select lot from futures_option_lots where symbol='%s'"
+    engine = mu.sql_engine()
+    lot = "NA"
+    try:
+        lot = engine.execute(sql%('NIFTY' if symbol=='NIFTY 50' else symbol)).fetchall()
+        lot = lot[0][0]
+    except:
+        pass
     contract_specs = [['Underlying','Option Type','Strike','Expiry',
-                       'Lot','LTP','Open Interest','Underlying','Moneyness'],
+                       'Lot','LTP','Underlying','Moneyness'],
                       [symbol,option_type_map[option_type],strike,expiry,
-                       quote['marketLot'],quote['lastPrice'],quote['openInterest'],
-                       quote['underlyingValue'],moneyness]]
+                       lot,ltp,underlying_spot,moneyness]]
     
     """
     Option History----------------------------------------------------------------------
     """
-    
-    oh = nsepy.get_history(symbol,startdate,enddate,option_type=option_type,strike_price=strike,expiry_date=expiry)
-    oh = oh[['Close','Open','High','Low','Open Interest','Underlying']]
-    dates = list(oh.index)
-    close = list(oh['Close'])
-    OI = list(oh['Open Interest'])
-    oh = oh.loc[[d for d in list(oh.index) if (enddate-d)% datetime.timedelta(days=3) == datetime.timedelta(0) ]]
-    oh = oh.sort_index(ascending=0)
+    oh = option.get_price_vol()
+    OI,dates,close = [],[],[]
+    if not oh.empty:
+        print(oh)
+        dates = list(oh.index)
+#        print(dates)
+        close = list(oh['Price'])
+#        print(close)
+        OI = list(oh['Open Interest'])
+#        print(OI)
+#        oh = oh.loc[[d for d in list(oh.index) if (enddate-d)% datetime.timedelta(days=3) == datetime.timedelta(0) ]]
+        oh = oh.sort_index(ascending=0)
+#        print(oh)
     
     """
     Price and OI Graph-------------------------------------------------------------------
@@ -1293,141 +1600,8 @@ def mrigweb_options(opid):
     """
     Option Greeks and Graphs--------------------------------------------------------------
     """
-    args = {'option_name':symbol+"_"+expiry.strftime('%d%b')+"_"+str(strike)+"_"+option_type,
-            'underlying_name':symbol,
-            'maturity_date':expiry,
-            'option_type':option_type_map[option_type].split(' ')[0],
-            'strike': strike,                               
-            'exercise_type':option_type_map[option_type].split(' ')[1],
-            'day_count':'30-360',
-            'calendar':'India'}
-    
-    if mu.args_inspector(args)[0]:
-        for arg_name in args:
-            try:
-                args[arg_name] = qlMaps.QL[args[arg_name]]
-            except:
-                pass
-        option = options.VanillaEuropeanOption(args)
 
-    """
-    Set Interest Rate Curve
-    """    
-
-    args = {'day_count':'30-360',
-            'calendar': 'India',
-            'compounding' : 'Compounded',
-            'compounding_frequency' :'Annual',
-            'interpolation' : 'Linear',
-            'shiftparameter' : None}
-
-    if mu.args_inspector(args)[0]:
-        for arg_name in args:
-            try:
-                args[arg_name] = qlMaps.QL[args[arg_name]]
-            except:
-                pass
-
-    
-    today = datetime.date.today()
-    
-    engine = mu.sql_engine()
-    try:
-        today = engine.execute("select curvedate from yieldcurve where curve='INR' order by curvedate desc limit 1").fetchall()[0][0]
-    except:
-        pass
-    discount_curve = ts.SpotZeroYieldCurve('INR',today)
-    discount_curve.setupCurve(args)
-
-    """
-    Set Flat Volatility Curve
-    """    
-    spotVol = 0.10
-    args = {'day_count':'30-360',
-            'calendar': 'India',
-            'spot_vols':spotVol,
-            'compounding' : 'Compounded',
-            'compounding_frequency' :'Annual',
-            'interpolation' : 'Linear'}
-
-    if mu.args_inspector(args)[0]:
-        for arg_name in args:
-            try:
-                args[arg_name] = qlMaps.QL[args[arg_name]]
-            except:
-                pass
-
-    
-    volatility_curve = ts.FlatVolatilityCurve(today,spotVol)
-    volatility_curve.setupCurve(args)
-    
-    """
-    Set Flat Dividend Curve
-    """    
-    args = {'day_count':'30-360',
-            'calendar': 'India',
-            'flat_rate':0.01,
-            'compounding' : 'Compounded',
-            'compounding_frequency' :'Annual',
-            'interpolation' : 'Linear'}
-
-    if mu.args_inspector(args)[0]:
-        for arg_name in args:
-            try:
-                args[arg_name] = qlMaps.QL[args[arg_name]]
-            except:
-                pass
-
-    
-    dividend_curve = ts.FlatDividendYieldCurve(today,args['flat_rate'])
-    dividend_curve.setupCurve(args)
-    
-    """
-    Set Option Valuation and get Results
-    """    
-    valuation_method = 'Black Scholes'
-    underlying_spot = quote['underlyingValue']  
-    
-    option.valuation(underlying_spot,
-                     discount_curve,
-                     volatility_curve,
-                     dividend_curve,
-                     valuation_method)
-    
-    if str(quote['lastPrice']).lstrip('-').replace('.','',1).isdigit():
-        price = float(str(quote['lastPrice']))
-        spotVol = option.getImpliedVol(price)
-    elif str(close[0]).lstrip('-').replace('.','',1).isdigit():
-        price = float(str(close[0]))
-        spotVol = option.getImpliedVol(price)
-
-        
-        
-        
-    args = {'day_count':'30-360',
-            'calendar': 'India',
-            'spot_vols':spotVol,
-            'compounding' : 'Compounded',
-            'compounding_frequency' :'Annual',
-            'interpolation' : 'Linear'}
-
-    if mu.args_inspector(args)[0]:
-        for arg_name in args:
-            try:
-                args[arg_name] = qlMaps.QL[args[arg_name]]
-            except:
-                pass
-    
-    volatility_curve = ts.FlatVolatilityCurve(today,args['spot_vols'])
-    volatility_curve.setupCurve(args)
-
-    option.valuation(underlying_spot,
-                     discount_curve,
-                     volatility_curve,
-                     dividend_curve,
-                     valuation_method)
-
-    results = option.getAnalytics()
+    results = option.valuation(ltp)
     
     """
     Risk Profile and Greeks
@@ -1441,12 +1615,8 @@ def mrigweb_options(opid):
     theta = []
     
     for spot in underlying_spot_range:
-        option.valuation(spot,discount_curve,
-                     volatility_curve,dividend_curve,
-                     valuation_method)
-        
-        result = option.getAnalytics()
-        NPV.append(result['NPV']- price)
+        result = option.scenario_analysis({'spot':spot})
+        NPV.append(result['NPV']- option.ltp)
         delta.append(result['delta'])
         gamma.append(result['gamma'])
         theta.append(result['theta'])
@@ -2635,3 +2805,682 @@ def bear_call_spread_analysis(strategy):
     """
     
     return [strategy_desc,strategy_specs,strategy_risk,NPV_graph,delta_graph,gamma_graph,theta_graph,greeks]
+
+def mrigweb_ff_rates(reference_date=None,params=None):
+
+#   Default Flat Forward Rate 
+    reference_date = datetime.date.today()
+    curvename = 'Flat_Forward_1'
+    day_count = 'Actual-360'
+    calendar = 'India'
+    flat_rate = '0.02'
+    compounding = 'Compounded'
+    compounding_frequency = 'Quarterly'
+    shiftparameter = '0'
+    curves = []
+
+    if params:
+        curvename = params['curvename']
+        day_count = params['day_count']
+        calendar = params['calendar']
+        flat_rate = params['flat_rate']
+        compounding = params['compounding']
+        compounding_frequency = params['compounding_frequency']
+        shiftparameter = params['shiftparameter']
+    
+    objid = curvename
+    
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'flat_rate' : float(flat_rate.strip()),
+            'compounding' : compounding.strip(),
+            'compounding_frequency' :compounding_frequency.strip()}
+    
+    if mu.args_inspector(args)[0]:
+        for key in args:
+            objid = objid + "|" + str(args[key]) 
+
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+#        print(args)
+        ffyc = ts.FlatForwardYieldCurve(reference_date,float(flat_rate))
+        args.update({'shiftparameter' : [[0]]})
+        ffyc.setupCurve(args)
+        curves.append(ffyc)
+#    start = ffyc.getReferenceDate()
+#    forwardstart = start + datetime.timedelta(days=180)
+#    dates = [start+datetime.timedelta(days=180*i) for i in range(0,80)]
+#    tenors = [datetime.timedelta(days=180*i)/datetime.timedelta(days=360) for i in range(0,80)] 
+#    discounts = ffyc.getDiscountFactor(dates)
+#    #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+#    forwards = [ffyc.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#    zeroes = [ffyc.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#
+#    labels = ['Years','Rates','Discount Factors']
+#    plt = mp.singleScaleLine_plots(labels,curvename)
+#
+#    fig,primary,secondary = plt[0],plt[1],plt[2]
+#    
+#    fig.subplots_adjust(left=0.125,top=0.85)
+#
+#    primary.plot(tenors[1:],zeroes[1:],"C2",linestyle='--',label="Spot")
+#    primary.plot(tenors[1:],forwards[1:],"C3",linestyle='--',label="6M Forward")
+#    primary.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))    
+#    secondary.plot(tenors[1:],discounts[1:],"C1",label='Discount Factors')
+        if shiftparameter != '0':
+            ffyc_shifted = ts.FlatForwardYieldCurve(reference_date,float(flat_rate))
+            args.update({'shiftparameter' : [[float(shiftparameter)]]})
+            ffyc_shifted.setupCurve(args)
+            curves.append(ffyc_shifted)
+#        discounts_shifted = ffyc_shifted.getDiscountFactor(dates)
+#        zeroes_shifted = [ffyc_shifted.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#        primary.plot(tenors[1:],zeroes_shifted[1:],"C4",linestyle='--',label="Spot_shifted")
+#        secondary.plot(tenors[1:],discounts_shifted[1:],"C5",label='DF Shifted')
+#    primary.legend(loc='upper center', bbox_to_anchor=(0.2, -0.10),fancybox=True, shadow=True, ncol=5)
+#    secondary.legend(loc='upper center', bbox_to_anchor=(0.7, -0.10),fancybox=True, shadow=True, ncol=5)
+#
+#    
+#    buffer = io.BytesIO()
+#    fig.savefig(buffer,format="PNG")
+#    ffyc_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+#    buffer.close()
+        
+    return curves
+
+def mrigweb_szc_rates(curve_currency='INR',reference_date=None,params=None):
+
+    engine = mu.sql_engine()
+    reference_date = datetime.date.today()
+    try:
+        reference_date = engine.execute("select curvedate from yieldcurve where curve='"+curve_currency+"' order by curvedate desc limit 1").fetchall()
+        reference_date = reference_date[0][0]
+#        print(reference_date)
+    except:
+        pass
+#    print(reference_date)
+    day_count = 'Actual-360'
+    calendar = 'India'
+    interpolation = 'Linear'
+    compounding = 'Compounded'
+    compounding_frequency = 'Quarterly'
+    shiftparameter = '0'
+    curves = []
+    if params:
+        day_count = params['day_count']
+        calendar = params['calendar']
+        interpolation = params['interpolation']
+        compounding = params['compounding']
+        compounding_frequency = params['compounding_frequency']
+        shiftparameter = params['shiftparameter']
+    
+    objid = curve_currency
+    
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'compounding' : compounding.strip(),
+            'compounding_frequency' :compounding_frequency.strip(),
+            'interpolation' : interpolation.strip()}
+    
+    if mu.args_inspector(args)[0]:
+        for key in args:
+            objid = objid + "|" + str(args[key]) 
+        
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        szyc = ts.SpotZeroYieldCurve(curve_currency,reference_date)
+        args.update({'shiftparameter' : [[0]]})
+        szyc.setupCurve(args)
+        curves.append(szyc)
+#    start = szyc.getReferenceDate()
+#    forwardstart = start + datetime.timedelta(days=180)
+#    dates = [start+datetime.timedelta(days=180*i) for i in range(0,80)]
+#    tenors = [datetime.timedelta(days=180*i)/datetime.timedelta(days=360) for i in range(0,80)] 
+#    discounts = szyc.getDiscountFactor(dates)
+#    #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+#    forwards = [szyc.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#    zeroes = [szyc.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#
+#    labels = ['Years','Rates','Discount Factors']
+#    plt = mp.singleScaleLine_plots(labels,curve_currency+" Curve "+reference_date.strftime('%d-%b-%Y'))
+#
+#    fig,primary,secondary = plt[0],plt[1],plt[2]
+#    fig.subplots_adjust(left=0.125,top=0.85)
+#    
+#    primary.plot(tenors[1:],zeroes[1:],"C2",linestyle='--',label="Spot")
+#    primary.plot(tenors[1:],forwards[1:],"C3",linestyle='--',label="6M Forward")
+#    primary.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))    
+#    secondary.plot(tenors[1:],discounts[1:],"C1",label='Discount Factors')
+        if shiftparameter != '0':
+            szyc_shifted = ts.SpotZeroYieldCurve(curve_currency,reference_date)
+            args.update({'shiftparameter' : [[float(shiftparameter)]]})
+            szyc_shifted.setupCurve(args)
+            curves.append(szyc_shifted)
+#            discounts_shifted = szyc_shifted.getDiscountFactor(dates)
+#            zeroes_shifted = [szyc_shifted.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#            primary.plot(tenors[1:],zeroes_shifted[1:],"C4",linestyle='--',label="Spot_shifted")
+#            secondary.plot(tenors[1:],discounts_shifted[1:],"C5",label='Discount Factors Shifted')
+#        primary.legend(loc='upper center', bbox_to_anchor=(0.2, -0.10),fancybox=True, shadow=True, ncol=5)
+#        secondary.legend(loc='upper center', bbox_to_anchor=(0.7, -0.10),fancybox=True, shadow=True, ncol=5)
+
+
+#    buffer = io.BytesIO()
+#    fig.savefig(buffer,format="PNG")
+#    szyc_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+#    buffer.close()
+        
+    return curves
+
+def mrigweb_ratePlot(curves=[],desc=[]):
+    labels = ['Years','Rates','Discount Factors']
+    if len(curves) > 0:
+        start = curves[0].getReferenceDate()
+        plt = mp.singleScaleLine_plots(labels,"Rate Curve "+ start.strftime('%d-%b-%Y'))
+    
+        fig,primary,secondary = plt[0],plt[1],plt[2]
+        fig.subplots_adjust(left=0.125,top=0.85)
+        colorcount = 0
+        curvecount = 0
+        for curve in curves:
+            start = curve.getReferenceDate()
+            forwardstart = start + datetime.timedelta(days=180)
+            dates = [start+datetime.timedelta(days=180*i) for i in range(0,80)]
+            tenors = [datetime.timedelta(days=180*i)/datetime.timedelta(days=360) for i in range(0,80)] 
+            discounts = curve.getDiscountFactor(dates)
+    #        print(discounts)
+            #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+            forwards = [curve.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
+            zeroes = [curve.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]    
+            colorcount = colorcount + 1
+            primary.plot(tenors[1:],zeroes[1:],"C"+str(colorcount),linestyle='--',label="Spot_"+desc[curvecount])
+            colorcount = colorcount + 1
+            primary.plot(tenors[1:],forwards[1:],"C"+str(colorcount),linestyle='--',label="6M Forward_"+desc[curvecount])
+            primary.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))    
+            colorcount = colorcount + 1
+            secondary.plot(tenors[1:],discounts[1:],"C"+str(colorcount),label="Discount Factors_"+desc[curvecount])
+            primary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),fancybox=True, shadow=False, ncol=10,fontsize=5)
+            secondary.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20),fancybox=True, shadow=False, ncol=5,fontsize=5)
+#            fig.suptitle("Rate Curve "+ start.strftime('%d-%b-%Y'))
+            curvecount = curvecount + 1
+    
+        buffer = io.BytesIO()
+        fig.savefig(buffer,format="PNG")
+        curve_graph = base64.b64encode(buffer.getvalue()).decode('utf-8').replace('\n', '')
+        buffer.close()
+        
+    return curve_graph
+    
+
+def mrigweb_Libor(index_name,
+                 curve_currency='INR',
+                 tenor='3M',
+                 day_count='30-360',
+                 calendar='India',
+                 settlement_days=3,
+                 yieldcurvehandle=None):
+    
+    args = {'index_name':index_name.strip(),
+            'curve_currency' : curve_currency.strip(),
+            'tenor' : tenor.strip(),
+            'day_count':day_count.strip(),                                     
+            'calendar': calendar.strip(),
+            'settlement_days' : int(settlement_days)}
+    
+    if mu.args_inspector(args)[0]:
+        ych = yieldcurvehandle.getCurveHandle()
+        libor = index.Libor(args['index_name'],
+                            args['tenor'],
+                            args['settlement_days'],
+                            args['curve_currency'],
+                            args['calendar'],
+                            args['day_count'],
+                            ych)
+        return libor
+    else:
+        return None
+    
+
+def mrigweb_Bond(issue_name,
+                 issue_date,
+                 maturity_date,
+                 face_value=100,
+                 day_count='30-360',
+                 calendar='India',
+                 business_convention='Following',
+                 month_end='True',
+                 settlement_days=3,
+                 date_generation='Backward',
+                 coupon_frequency='Semiannual',
+                 fixed_coupon_rate=None,
+                 floating_coupon_index=None,
+                 floating_coupon_spread=0,
+                 inArrears=True,
+                 cap=None,
+                 floor=None,
+                 fixing=None,
+                 conversionRatio=None,
+                 conversionPrice=None,
+                 credit_spread=None,
+                 call_schedule=None,
+                 put_schedule=None,
+                 dividend_schedule=None):
+    
+    
+    bondType,bond = None, None
+    # Check for fixed rate bond
+    if floating_coupon_index != None:
+#    if floating_coupon_index.strip() in objectmap.keys():
+        bondType = 'floatingratebond'
+    if fixed_coupon_rate != None:
+        bondType = 'fixedratebond'
+    if conversionRatio != None:
+        bondType = 'convertiblebond'
+    if ((conversionRatio == None) and not(None in [call_schedule,put_schedule])):
+        bondType = 'callablebond'
+
+    print(bondType)
+    if bondType != None:    
+    
+        args = {'issue_name':issue_name.strip(),
+                'issue_date':issue_date,
+                'maturity_date':maturity_date,
+                'facevalue':face_value,                      
+                'day_count':day_count.strip(),
+                'calendar': calendar.strip(),
+                'business_convention' : business_convention.strip(),
+                'month_end': month_end,
+                'settlement_days':int(settlement_days),
+                'date_generation' :date_generation.strip(),
+                'coupon_frequency' :coupon_frequency.strip(),
+                'inArrears' : inArrears}
+        
+        if mu.args_inspector(args)[0]:
+            for arg_name in args:
+                try:
+                    args[arg_name] = qlMaps.QL[args[arg_name]]
+                except:
+                    pass
+                
+            if bondType == 'fixedratebond':
+                args['coupon_rates'] = fixed_coupon_rate
+                bond = bonds.FixedRateBond(args)
+    
+            if bondType == 'floatingratebond':
+                args['coupon_index'] = floating_coupon_index.getIndex()
+                args['coupon_spread'] = floating_coupon_spread
+                if cap != None :
+                    args['cap'] = [cap]
+                else:
+                    args['cap'] = []
+                if floor != None :
+                    args['floor'] = [floor]
+                else:
+                    args['floor'] = []
+                args['fixing'] = fixing
+                bond = bonds.FloatingRateBond(args)
+                bond.setBlackPricer()
+            
+            if bondType == 'convertiblebond':
+                args['coupon_rates'] = fixed_coupon_rate
+                args['conversion_ratio'] = conversionRatio
+                args['conversion_price'] = conversionPrice
+                args['credit_spread'] = credit_spread
+                args['call_schedule'] = call_schedule
+                args['put_schedule'] = put_schedule
+                args['dividend_schedule'] = dividend_schedule
+                bond = bonds.FixedRateConvertibleBond(args)
+
+            if bondType == 'callablebond':
+                args['coupon_rates'] = fixed_coupon_rate
+                args['call_schedule'] = call_schedule
+                args['put_schedule'] = put_schedule
+                bond = bonds.FixedRateCallableBond(args)
+    return bond
+    
+def mrigweb_Analytics(assetobject,args):
+    resultset = {'Heads' : 'Values'}
+    assettype = str(type(assetobject))[8:-2].split(".")[-1]
+    #resultset = assettype
+    cashflow = {}
+    #Asset is Bond
+    if assettype in ["FixedRateBond", "FloatingRateBond", "Bond"]:
+        discount_curve = args['Discount Curve']
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        bond = assetobject
+        bond.valuation(discount_curve)
+        resultset.update(bond.getAnalytics())
+        
+    if assettype in ["FixedRateConvertibleBond"]:
+        underlying_spot = args['Underlying Spot']
+        discount_curve = args['Discount Curve']
+        volatility_curve = args['Volatility Curve']
+        dividend_curve = args['Dividend Curve']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        bond = assetobject
+        bond.valuation(underlying_spot,
+                         discount_curve,
+                         volatility_curve,
+                         dividend_curve)
+
+        resultset.update(bond.getAnalytics())
+    
+    if assettype in ["FixedRateCallableBond"]:
+        discount_curve = args['Discount Curve']
+        mean_reversion = args['Mean Reversion']
+        rate_vol = args['Short Rate Vol']
+        grid_points = args['Hull White Grid Pts']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        bond = assetobject
+        bond.valuation(discount_curve,
+                       mean_reversion,
+                       rate_vol,
+                       int(grid_points))
+
+        resultset.update(bond.getAnalytics())
+
+    if assettype in ["VanillaFixedFLoatSwap"]:
+        discount_curve = args['Discount Curve']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        swap = assetobject
+        swap.valuation(discount_curve)
+
+        resultset.update(swap.getAnalytics())
+
+    if assettype in ["CapsFloors"]:
+        discount_curve= args['Discount Curve']
+        volatility_curve = args['Volatility Curve']
+        #print(underlying_spot)
+#        discount_curve_handle = objectmap[discount_curve_id].getCurveHandle()
+        capfloor = assetobject
+        capfloor.valuation(discount_curve,
+                           volatility_curve)
+
+        resultset.update(capfloor.getAnalytics())
+
+#Cashflow Formatting for Display
+    if 'cashflows' in resultset.keys():
+        offset=1
+        for tup in resultset['cashflows']:
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+        resultset['-----------------'] = '-----------------'
+        resultset['Cashflow Date'] = 'Cashflow Amount'
+        resultset.update(cashflow)
+        resultset.pop('cashflows')
+
+    if 'Fixed Leg Cashflows' in resultset.keys():
+        offset=2
+        for tup in resultset['Fixed Leg Cashflows']:
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+        resultset['-----------------'] = '-----------------'
+        resultset['Fixed Leg Cashflow Date'] = 'Fixed Leg Cashflow Amount'
+        resultset.update(cashflow)
+        resultset.pop('Fixed Leg Cashflows')
+    if 'Floating Leg Cashflows' in resultset.keys():
+        offset=3
+        for tup in resultset['Floating Leg Cashflows']:
+            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+        resultset['-----------------'] = '-----------------'
+        resultset['Floating Leg Cashflow Date'] = 'Floating Leg Cashflow Amount'
+        resultset.update(cashflow)
+        resultset.pop('Floating Leg Cashflows')
+    
+    
+    
+    #Asset is Option
+    if assettype in ["Option", "VanillaEuropeanOption", "VanillaAmericanOption"]:
+        underlying_spot = args['Underlying Spot']
+        discount_curve = args['Discount Curve']
+        volatility_curve = args['Volatility Curve']
+        dividend_curve = args['Dividend Curve']
+        valuation_method = args['Valuation Method']
+        
+        option = assetobject
+        option.valuation(underlying_spot,
+                         discount_curve,
+                         volatility_curve,
+                         dividend_curve,
+                         valuation_method)
+        resultset.update(assetobject.getAnalytics())
+    return resultset
+
+
+def mrigweb_FlatDividendYieldCurve(reference_date,
+                                 day_count='30-360',
+                                 calendar='India',
+                                 flat_rate=0,
+                                 compounding='Compounded',
+                                 compounding_frequency='Annual'):
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'flat_rate' : flat_rate,
+            'compounding' : compounding.strip(),
+            'compounding_frequency' :compounding_frequency.strip()}
+    fdyc = None
+    if mu.args_inspector(args)[0]:
+
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        fdyc = ts.FlatDividendYieldCurve(reference_date,flat_rate)
+        fdyc.setupCurve(args)
+    return fdyc
+
+def mrigweb_FlatVolatilityCurve(reference_date,
+                                 day_count='30-360',
+                                 calendar='India',
+                                 spot_vols=0,
+                                 compounding='Compounded',
+                                 compounding_frequency='Annual'):
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'spot_vols' : spot_vols,
+            'compounding' : compounding.strip(),
+            'compounding_frequency' :compounding_frequency.strip()}
+
+    fvyc = None
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        fvyc = ts.FlatVolatilityCurve(reference_date,spot_vols)
+        fvyc.setupCurve(args)
+    return fvyc
+
+def mrigweb_ConstantVolatilityCurve(spot_vols):
+    args = {'spot_vols' : spot_vols}
+    
+    cvc = None
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        cvc = ts.ConstantVolatilityCurve(spot_vols)
+    return cvc
+    
+def mrigweb_CapFloorVolatilitySurface(day_count='30-360',
+                                 calendar='India',
+                                 business_convention='Following',
+                                 settlement_days=3,
+                                 strikes=None,
+                                 expiries=None,
+                                 vols=None):
+    cfvs = None
+    args = {'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'business_convention' : business_convention.strip(),
+            'settlement_days':int(settlement_days)}
+    
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+        args['strikes'] = strikes
+        args['expiries'] = expiries
+        args['vols'] = vols        
+        cfvs = ts.CapFloorVolatilitySurface(args)
+    return cfvs
+
+def mrigweb_Swap(fixed_pay,
+                 maturity_date,
+                 face_value,
+                 fixedleg_day_count='30-360',
+                 fixedleg_calendar='India',
+                 fixedleg_business_convention='Following',
+                 fixedleg_month_end='True',
+                 fixedleg_date_generation='Backward',
+                 fixedleg_coupon_frequency='Semiannual',
+                 fixedleg_coupon_rate=None,
+                 floatleg_day_count='30-360',
+                 floatleg_calendar='India',
+                 floatleg_business_convention='Following',
+                 floatleg_month_end='True',
+                 floatleg_date_generation='Backward',
+                 floatleg_coupon_frequency='Semiannual',
+                 floatleg_index=None,
+                 floatleg_coupon_spread=0,
+                 floatleg_fixing=None):
+    
+    
+    swapType,swap = None, None
+    # Check for fixed rate bond
+    if fixedleg_coupon_rate != None:
+        swapType = 'fixedfloatswap'
+    
+    if swapType != None:    
+    
+        fixedleg_args = {'pay_recieve_flag':fixed_pay.strip(),
+                'maturity_date':maturity_date,
+                'facevalue':face_value,                      
+                'day_count':fixedleg_day_count.strip(),
+                'calendar': fixedleg_calendar.strip(),
+                'business_convention' : fixedleg_business_convention.strip(),
+                'month_end': fixedleg_month_end,
+                'date_generation' :fixedleg_date_generation.strip(),
+                'coupon_frequency' :fixedleg_coupon_frequency.strip()}
+
+        floatleg_args = {'day_count':floatleg_day_count.strip(),
+                'calendar': floatleg_calendar.strip(),
+                'business_convention' : floatleg_business_convention.strip(),
+                'month_end': floatleg_month_end,
+                'date_generation' :floatleg_date_generation.strip(),
+                'coupon_frequency' :floatleg_coupon_frequency.strip()}  
+        
+        if (mu.args_inspector(fixedleg_args)[0] and mu.args_inspector(floatleg_args)[0]):
+            for arg_name in fixedleg_args:
+                try:
+                    fixedleg_args[arg_name] = qlMaps.QL[fixedleg_args[arg_name]]
+                except:
+                    pass
+
+            for arg_name in floatleg_args:
+                try:
+                    floatleg_args[arg_name] = qlMaps.QL[floatleg_args[arg_name]]
+                except:
+                    pass
+                
+                
+            if swapType == 'fixedfloatswap':
+                fixedleg_args['coupon_rates'] = fixedleg_coupon_rate
+                floatleg_args['coupon_index'] = floatleg_index.getIndex()
+                floatleg_args['coupon_spread'] = floatleg_coupon_spread
+                floatleg_args['fixing'] = floatleg_fixing             
+                swap = swaps.VanillaFixedFLoatSwap(fixedleg_args,floatleg_args)
+    return swap
+
+def mrigweb_CapFloor(option_name,
+                 start_date,
+                 maturity_date,
+                 cap_or_floor,
+                 strike,
+                 face_value=1000000,
+                 day_count='30-360',
+                 calendar='India',
+                 business_convention='Following',
+                 month_end='True',
+                 settlement_days=3,
+                 date_generation='Forward',
+                 coupon_frequency='Quarterly',
+                 floating_coupon_index=None,
+                 floating_coupon_spread=0,
+                 fixing=None):
+    
+    capfloor = None
+    args = {'option_name':option_name.strip(),
+            'start_date':start_date,
+            'maturity_date':maturity_date,
+            'cap_or_floor': cap_or_floor.strip(),
+            'strike':strike,
+            'facevalue':face_value,                      
+            'day_count':day_count.strip(),
+            'calendar': calendar.strip(),
+            'business_convention' : business_convention.strip(),
+            'month_end': month_end,
+            'settlement_days':int(settlement_days),
+            'date_generation' :date_generation.strip(),
+            'coupon_frequency' :coupon_frequency.strip()}
+    
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+    
+        args['coupon_index'] = floating_coupon_index.getIndex()
+        args['coupon_spread'] = floating_coupon_spread
+        args['fixing'] = fixing
+        capfloor = capsfloors.CapsFloors(args)
+        
+    return capfloor
+
+def mrigweb_Option(option_name,
+                 underlying_name,
+                 maturity_date,
+                 option_type,
+                 strike,
+                 exercise_type,
+                 day_count='30-360',
+                 calendar='India'):
+    
+    
+    args = {'option_name':option_name.strip(),
+            'underlying_name':underlying_name.strip(),
+            'maturity_date':maturity_date,
+            'option_type':option_type.strip(),
+            'strike': strike,                               
+            'exercise_type':exercise_type.strip(),
+            'day_count':day_count.strip(),
+            'calendar':calendar.strip()}
+    
+    option = None
+    if mu.args_inspector(args)[0]:
+        
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+            
+        if exercise_type == 'European':
+            option = options.VanillaEuropeanOption(args)
+
+        if exercise_type == 'American':
+            option = options.VanillaAmericanOption(args)
+
+    return option

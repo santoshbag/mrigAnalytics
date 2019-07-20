@@ -4,8 +4,10 @@ Created on Thu Dec 27 11:51:58 2018
 
 @author: Santosh Bag
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-import sys, csv
+import csv
 import nsepy
 import strategies.stocks as st
 import datetime #import date, timedelta
@@ -59,6 +61,7 @@ from time import sleep
 
 def oc_download(stock):
     timecounter = 0
+    print(stock,end = ' ')
     while True:
         stk = st.Stock(stock)
         timecounter = timecounter + 1
@@ -111,14 +114,25 @@ def index_oc_download(stock):
     else:
         return None
 
-def oc_download_all():
+def oc_download_all(progressbar=True):
     print("Stock Option Chains download started")
     stocks = [key for key in nsepy.constants.symbol_list]
-    count = 0
+    count,stkcount = 0,0
     with Executor(max_workers=5) as exe:
         jobs = [exe.submit(oc_download,stock) for stock in stocks]
         results = [job.result() for job in jobs]
         for result in results:
+            stkcount = stkcount + 1
+            """ Progress Animation routine starts"""
+            if len(results) < 50:
+                steps = len(results)
+            else:
+                steps = 50
+            if progressbar:
+                sys.stdout.write("\r[%-*s] %d%%" % (steps,'='*int(stkcount/(len(results)/steps)), int(100/len(results)*stkcount)))
+                sys.stdout.flush()        
+            """ Progress Animation routine ends"""
+
             if result != None:
                 count = count + 1
     index_oc_download('NIFTY 50')

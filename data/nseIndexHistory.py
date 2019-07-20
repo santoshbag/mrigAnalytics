@@ -4,7 +4,8 @@ Created on Fri Sep 15 09:01:52 2017
 
 @author: Santosh Bag
 """
-import sys
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from time import sleep
 import nsepy
 import datetime #import date, timedelta
@@ -12,13 +13,13 @@ from pandas import DataFrame
 #from sqlalchemy import create_engine
 import mrigutilities
 
-def nseIndexHistory_download(startdate=None,enddate=None):
+def nseIndexHistory_download(startdate=None,enddate=None,progressbar=True):
 #    nseIndexList = open("nseStockList1.txt","r")
     print("NSE Indices download started")
     errorLog = open("errorLog.txt","a+")
 #    today = datetime.datetime.now()
     #nseStockPrices = open("nseStockHistory.csv","a+")
-    data_folder = "F:/Mrig Analytics/Development/data/"
+#    data_folder = "F:/Mrig Analytics/Development/data/"
     
     arguments = sys.argv[1:]
     
@@ -42,7 +43,10 @@ def nseIndexHistory_download(startdate=None,enddate=None):
     write_counter = 0
     indicesdata = DataFrame()
     
-    nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+#    nseIndexPrices = open(data_folder+"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv","a+")
+    datadir = os.path.dirname(__file__)
+    nseIndexPrices_path = os.path.join(datadir,'..','..','data',"nseIndexHistory_"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y")+".csv")
+    nseIndexPrices = open(nseIndexPrices_path,"a+")
     
     errorLog.write("\n########### START OF nseIndexHistory_ErrorLog for Period --"+startdate.strftime("%d-%b-%Y")+"_"+enddate.strftime("%d-%b-%Y") +"---###########\n")
     engine = mrigutilities.sql_engine()
@@ -63,8 +67,9 @@ def nseIndexHistory_download(startdate=None,enddate=None):
             steps = len(indices)
         else:
             steps = 50
-        sys.stdout.write("\r[%-*s] %d%%" % (steps,'='*int(stkcount/(len(indices)/steps)), int(100/len(indices)*stkcount)))
-        sys.stdout.flush()        
+        if progressbar:
+            sys.stdout.write("\r[%-*s] %d%%" % (steps,'='*int(stkcount/(len(indices)/steps)), int(100/len(indices)*stkcount)))
+            sys.stdout.flush()        
         """ Progress Animation routine ends"""
         
         try:

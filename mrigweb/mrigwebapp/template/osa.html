@@ -2,6 +2,15 @@
 <!DOCTYPE html>
 <html >
 <head>
+{% if GOOGLE_ADS > 0 %}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-1156439579459750",
+    enable_page_level_ads: true
+  });
+</script>
+{% endif %}
   <!-- Site made with Mobirise Website Builder v4.8.10, https://mobirise.com -->
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -114,12 +123,15 @@ body {
 <img src="{% static 'assets/images/mrigweblogo.png' %}" style="width:140px;height:50px;">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </a>
+
   <a href="/">Home</a>
-  <a href="/stock/">Stocks</a>
-  <a href="/ss/">Stock Strategies</a>
-  <a class="active" href="/os/">Option Strategies</a>
+  <a href="/stock/">Markets</a>
   <a href="/news/">News</a>
-  <a href="/">About Us</a>
+  <a class="active" href="/ia/">Investment Advisory</a>
+  <a href="/ra/">Risk Analytics</a>
+  <a href="/softs/">Software Services</a>
+  <a href="/ds/">Data Services</a>  
+  <a href="/about/">About Us</a>
 </div>
 </section>
 <br>

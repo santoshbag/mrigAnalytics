@@ -4,6 +4,8 @@ Created on Mon Sep  4 20:16:07 2017
 
 @author: Santosh Bag
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from nsetools import Nse
 

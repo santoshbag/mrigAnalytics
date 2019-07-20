@@ -6,7 +6,8 @@ Created on Thu Sep  6 12:16:12 2018
 
 This module downloads data by using various modules
 """
-import sys
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime,time,sched
 import moneycontrol as mc
 import mutual_funds as mf
@@ -23,12 +24,15 @@ import nseIndexHistory as inx
 import totalreturnindicesHistory as tri
 import optionChainHistory as och
 import stockScreener as ss
+import optionHistory as oh
+import webserver_load as wl
 
 today = datetime.date.today()
 
 arguments = sys.argv[1:]
 
-alldata = False
+alldata = 0
+progressbar = True
 
 startdate= datetime.date.today() - datetime.timedelta(days=1)
 enddate= datetime.date.today()
@@ -37,6 +41,7 @@ try:
     startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
     enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
     alldata = arguments[2]
+    progressbar = bool(int(arguments[3]))
 except:
     pass
 
@@ -70,6 +75,8 @@ def returns():
     engine.execute(calculate_returns_sql)
 
 def stock_strategies():
+
+    print("Populating Stock Strategies Started----\n")
     bigm = ss.big_money_zack()
     scg = ss.small_cap_growth()
     gi = ss.growth_income()
@@ -116,10 +123,13 @@ def stock_strategies():
     oc = oc.to_string()
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
+    print("Populating Stock Strategies Finished----\n")    
 
 scheduler = sched.scheduler(timefunc=time.time)
-morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=8,minute=0)
-eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=18,minute=0)
+morninghour = 6
+eveninghour = 16
+morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=morninghour,minute=0)
+eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
 if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
@@ -148,26 +158,6 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
         fx.exchange_rates_download(startdate,enddate)
     except:
         pass
-#    try:    
-#        stock_strategies()
-#    except:
-#        pass
-
-    
-
-if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
-    try:    
-        sh.stockHistory_download(startdate,enddate)
-    except:
-        pass
-    try:
-        inx.nseIndexHistory_download(startdate,enddate)
-    except:
-        pass
-    try:    
-        tri.tri_download(startdate,enddate)
-    except:
-        pass
     try:    
         ratios_download()
     except:
@@ -180,19 +170,50 @@ if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
         corp_action_download()
     except:
         pass
-    try:    
-        returns()
-    except:
-        pass
-    try:    
-        och.oc_download_all()
-    except:
-        pass
+#    try:    
+#        stock_strategies()
+#    except:
+#        pass
+
+    
+
+if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
+##    try:    
+#    sh.stockHistory_download(startdate,enddate,progressbar)
+##    except:
+##        pass
+#    try:
+#        inx.nseIndexHistory_download(startdate,enddate,progressbar)
+#    except:
+#        pass
+#    try:    
+#        tri.tri_download(startdate,enddate,progressbar)
+#    except:
+#        pass
+#    try:    
+#        returns()
+#    except:
+#        pass
+#    try:    
+#        och.oc_download_all()
+#    except:
+#        pass
     try:    
         stock_strategies()
     except:
         pass
-
+#    try:    
+#        oh.optionHistory_download()
+#    except:
+#        pass    
+#    try:    
+#        oh.optionLot_download()
+#    except:
+#        pass
+    wl.stock_page_load()
+    wl.ss_page_load()
+    wl.os_page_load()
+    
 
 #try:
 #    try:

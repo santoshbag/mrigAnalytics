@@ -1,0 +1,1567 @@
+{% load static %}
+<!DOCTYPE html>
+<html >
+<head>
+{% if GOOGLE_ADS > 0 %}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-1156439579459750",
+    enable_page_level_ads: true
+  });
+</script>
+{% endif %}
+  <!-- Site made with Mobirise Website Builder v4.8.10, https://mobirise.com -->
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Mobirise v4.8.10, mobirise.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="shortcut icon" href="{% static 'assets/images/mriglogo_icon_half.png' %}" type="image/x-icon">
+  <meta name="description" content="Web Site Builder Description">
+  <title>Stock Screener </title>
+  <link rel="stylesheet" href="{% static 'assets/tether/tether.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-grid.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap-reboot.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/datatables/data-tables.bootstrap4.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/theme/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/mobirise/css/mbr-additional.css' %}" type="text/css">
+  
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: "Lato", sans-serif;
+}
+
+.sidenav {
+  width: 140px;
+  position: fixed;
+  z-index: 1;
+  top: 80px;
+  left: 10px;
+  background: #eee;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+.sidenav a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 15px;
+  color: #2196F3;
+  display: block;
+}
+
+.sidenav a:hover {
+  color: #064579;
+}
+
+.main {
+  margin-left: 140px; /* Same width as the sidebar + left position in px */
+  font-size: 28px; /* Increased text to enable scrolling */
+  padding: 0px 10px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidenav {padding-top: 15px;}
+  .sidenav a {font-size: 18px;}
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.topnav {
+  overflow: hidden;
+  position: fixed;
+  z-index: 1;
+  top: 0px;
+  width: 100%;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+
+</style>
+  
+  
+  
+</head>
+<body>
+
+<div class="sidenav">
+{% if customscreen  %}  
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#screenedstocks">Screened Stocks</a>  
+{% endif %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#customscreener">Custom Stock Screener</a>  
+
+</div>
+
+
+  <link rel="stylesheet" href="{% static 'assets/dropdown/css/style.css' %}" class="cid-rfSjApRui9" id="menu1-a" data-rv-view="8">
+  <section class="menu cid-rfSjApRui9" once="menu" id="menu1-a">
+
+<div class="topnav">
+ <a style="padding: 1px 1px;"href="/">
+<img src="{% static 'assets/images/mrigweblogo.png' %}" style="width:140px;height:50px;">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</a>
+
+  <a href="/">Home</a>
+  <a href="/stock/">Markets</a>
+  <a href="/news/">News</a>
+  <a class="active" href="/ia/">Investment Advisory</a>
+  <a href="/ra/">Risk Analytics</a>
+  <a href="/softs/">Software Services</a>
+  <a href="/ds/">Data Services</a>  
+  <a href="/about/">About Us</a>
+</div>
+</section>
+<br>
+<br>
+
+  <section class="section-table cid-rfI3i2lFgM mbr-parallax-background" id="table1-3">
+
+  
+  <div class="mbr-overlay" style="opacity: 0.8; background-color: rgb(15, 118, 153);">
+  </div>
+  <div class="container container-table " style="margin-left:150px";>
+      <h2 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-2">
+      <strong>Stock Screener</strong>
+      </h2>
+    <br>
+      <div class="table-wrapper">
+        <br>
+        {% if customscreen  %}  
+        <div class="container scroll" id="screenedstocks">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+          Screened Stocks </h5>
+          <table class="table" cellspacing="0" id="myTable">
+          <thead>
+          {{customscreen|safe}}
+          </table>
+        </div>
+        {% endif  %}  
+        <br>
+        <div class="container scroll" id="customscreener">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+          Custom Stock Screener</h5>
+          <form class=" mbr-white mbr-fonts-style align-center pb-3 display-7 name = "form" action = "{% url "screener" %}" method = "POST" novalidate>{% csrf_token %}
+          <table class="table" cellspacing="0">
+          <thead>
+          <tr class="table-heads">
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Fields</font>
+          </th>
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Aggregate Function</font>
+          </th>
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Aggregate Period</font>
+          </th>
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1"></font>
+          </th>
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Absolute Criteria</font>
+          </th>
+          <th class="head-item mbr-fonts-style" style="padding: 5px;" bgcolor="#f9f295">
+          <font color="#0f7699" size="1">Benchmark Criteria</font>
+          </th>
+          </tr></thead>
+          <tbody>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Market/Technical Parameter</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Market Capitalization</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input list="marketcapaggf" name="marketcap_aggf"> -->
+           <select name="marketcap_aggf" disabled>
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="marketcap_aggpnum" value="-">
+<!--	       <input  list="marketcapaggp" name="marketcap_aggp"> -->
+           <select name="marketcap_aggp">
+           <option value="-999"></option>
+           <option value="D">Days</option>
+           <option value="W">Weeks</option>       
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input list="marketcapop" name="marketcap_op" placeholder="Enter comparison operator"> -->
+           <select name="marketcap_op" placeholder="Enter comparison operator">
+           <option value="greater than">greater than</option>          
+           <option value="equals">equals</option>
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="marketcap_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input  list="marketcapbmf" name="marketcap_bm_f"> -->
+           <select name="marketcap_bm_f" disabled>
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty Average">Nifty Average</option>
+           <option value="Nifty Median">Nifty Median</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <input list="priceaggf" name="price_aggf"> -->
+           <select name="price_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="price_aggpnum" value="-">
+	       <!-- <input list="priceaggp" name="price__aggp"> -->
+          <select name="price_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="priceop" name="price_op"> -->
+           <select name="price_op" placeholder="Enter comparison operator">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="price_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="price_bmf" name="price_bm_f"> -->
+           <select name="price_bm_f" disabled>
+           <option value="-999"></option><option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty Average">Nifty Average</option>
+           <option value="Nifty Median">Nifty Median</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Daily Volume</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="volumeaggf" name="volume_aggf"> -->
+           <select name="volume_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="volume_aggpnum" value="-">
+	       <!-- <input list="volumeaggp" name="volume_aggp"> -->
+           <select name="volume_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="volumeop" name="volume__op"> -->
+           <select name="volume_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="volume_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="volumebmf" name="volume_bm_f"> -->
+           <select name="volume_bm_f" disabled>
+           <option value="-999"></option><option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty Average">Nifty Average</option>
+           <option value="Nifty Median">Nifty Median</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price Volume</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="pricevolumeaggf" name="pricevolume_aggf"> -->
+           <select name="pricevolume_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pricevolume_aggpnum" value="-">
+	       <!-- <input list="pricevolumeaggp" name="pricevolume_aggp"> -->
+           <select name="pricevolume_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pricevolumeop" name="pricevolume_op"> -->
+           <select name="pricevolume_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pricevolume_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pricevolumebmf" name="pricevolume_bm_f"> -->
+           <select name="pricevolume_bm_f" disabled>
+           <option value="-999"></option><option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty Average">Nifty Average</option>
+           <option value="Nifty Median">Nifty Median</option>          
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price Returns</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="pricereturnaggf" name="pricereturn_aggf"> -->
+           <select name="pricereturn_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pricereturn_aggpnum" min="0" value="3">
+	       <!-- <input list="pricereturnaggp" name="pricereturn_aggp"> -->
+           <select name="pricereturn_aggp">
+           <option value="M">Months</option>
+           <option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pricereturnop" name="pricereturn__op"> -->
+           <select name="pricereturn_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pricereturn_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pricereturnbmf" name="pricereturn_bm_f"> -->
+           <select name="pricereturn_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Market/Valuation Ratios</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">EPS Growth</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="basicepsaggf" name="basiceps_aggf"> -->
+           <select name="basiceps_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="basiceps_aggpnum" value="-">
+	       <!-- <input list="basicepsaggp" name="basiceps_aggp"> -->
+           <select name="basiceps_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="basicepsop" name="basiceps_op"> -->
+           <select name="basiceps_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="basiceps_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="basicepsbmf" name="basiceps_bm_f"> -->
+           <select name="basiceps_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Dividend Yield</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="dividendyieldaggf" name="dividendyield_aggf"> -->
+           <select name="dividendyield_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="dividendyield_aggpnum" value="-">
+	       <!-- <input list="dividendyieldaggp" name="dividendyield_aggp"> -->
+           <select name="dividendyield_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="dividendyieldop" name="dividendyield_op"> -->
+           <select name="dividendyield_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="dividendyield_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="dividendyieldbmf" name="dividendyield_bm_f"> -->
+           <select name="dividendyield_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price / Earning</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="peaggf" name="pe_aggf"> -->
+           <select name="pe_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pe_aggpnum" value="-">
+	       <!-- <input list="peaggp" name="pe_aggp"> -->
+           <select name="pe_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="peop" name="pe_op"> -->
+           <select name="pe_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pe_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pebmf" name="pe_bm_f"> -->
+           <select name="pe_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price / Book Value</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="pbaggf" name="pb_aggf"> -->
+           <select name="pb_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pb_aggpnum" value="-">
+	       <!-- <input list="pbaggp" name="pb_aggp"> -->
+           <select name="pb_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pbop" name="pb_op"> -->
+           <select name="pb_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="pb_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pbbmf" name="pb_bm_f"> -->
+           <select name="pb_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price / Sales</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="psaggf" name="ps_aggf"> -->
+           <select name="ps_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="ps_aggpnum" value="-">
+	       <!-- <input list="psaggp" name="ps_aggp"> -->
+           <select name="ps_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="psop" name="ps_op"> -->
+           <select name="ps_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="ps_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="psbmf" name="ps_bm_f"> -->
+           <select name="ps_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Price / Earnings to Growth</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="pegaggf" name="peg_aggf"> -->
+           <select name="peg_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="peg_aggpnum" value="-">
+	       <!-- <input list="pegaggp" name="peg_aggp"> -->
+           <select name="peg_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pegop" name="peg_op"> -->
+           <select name="peg_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="peg_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="pegbmf" name="peg_bm_f"> -->
+           <select name="peg_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Profitability Ratios</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Return on Equity</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="roeaggf" name="roe_aggf"> -->
+           <select name="roe_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="roe_aggpnum" value="-">
+	       <!-- <input list="roeaggp" name="roe__aggp"> -->
+           <select name="roe_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="roeop" name="roe__op"> -->
+           <select name="roe_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="roe_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="roebmf" name="roe_bm_f"> -->
+           <select name="roe_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Return on Assets</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="roaaggf" name="roa_aggf"> -->
+           <select name="roa_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="roa_aggpnum" value="-">
+	       <!-- <input list="roaaggp" name="roa__aggp"> -->
+           <select name="roa_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="roaop" name="roa_op"> -->
+           <select name="roa_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="roa_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="roabmf" name="roa_bm_f"> -->
+           <select name="roa_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Net Profit Margin</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="netprofitmarginaggf" name="netprofitmargin_aggf"> -->
+           <select name="netprofitmargin_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="netprofitmargin_aggpnum" value="-">
+	       <!-- <input list="netprofitmarginaggp" name="netprofitmargin__aggp"> -->
+           <select name="netprofitmargin_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="netprofitmarginop" name="netprofitmargin_op"> -->
+           <select name="netprofitmargin_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="netprofitmargin_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="netprofitmarginbmf" name="netprofitmargin_bm_f"> -->
+           <select name="netprofitmargin_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Operating Profit Margin</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="operatingprofitmarginaggf" name="operatingprofitmargin_aggf"> -->
+           <select name="operatingprofitmargin_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="operatingprofitmargin_aggpnum" value="-">
+	       <!-- <input list="operatingprofitmarginaggp" name="operatingprofitmargin__aggp"> -->
+           <select name="operatingprofitmargin_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="operatingprofitmarginop" name="operatingprofitmargin_op"> -->
+           <select name="operatingprofitmargin_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="operatingprofitmargin_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="operatingprofitmarginbmf" name="operatingprofitmargin_bm_f"> -->
+           <select name="operatingprofitmargin_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Liquidity Ratios</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Current Ratio</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="currentratioaggf" name="currentratio_aggf"> -->
+           <select name="currentratio_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="currentratio_aggpnum" value="-">
+	       <!-- <input list="currentratioaggp" name="currentratio__aggp"> -->
+           <select name="currentratio_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="currentratioop" name="currentratio_op"> -->
+           <select name="currentratio_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="currentratio_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="currentratiobmf" name="currentratio_bm_f"> -->
+           <select name="currentratio_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Quick Ratio</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="quickratioaggf" name="quickratio_aggf"> -->
+           <select name="quickratio_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="quickratio_aggpnum" value="-">
+	       <!-- <input list="quickratioaggp" name="quickratio__aggp"> -->
+           <select name="quickratio_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="quickratioop" name="quickratio_op"> -->
+           <select name="quickratio_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="quickratio_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="quickratiobmf" name="quickratio_bm_f"> -->
+           <select name="quickratio_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Solvency Ratios</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Debt-Equity Ratio</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="debtequityaggf" name="currentratio_aggf"> -->
+           <select name="debtequity_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="debtequity_aggpnum" value="-">
+	       <!-- <input list="debtequityaggp" name="debtequity__aggp"> -->
+           <select name="debtequity_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="debtequityop" name="debtequity_op"> -->
+           <select name="debtequity_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="debtequity_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="debtequitybmf" name="debtequity_bm_f"> -->
+           <select name="debtequity_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Efficiency Ratios</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Asset Turnover Ratio</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="assetturnoveraggf" name="assetturnover_aggf"> -->
+           <select name="assetturnover_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="assetturnover_aggpnum" value="-">
+	       <!-- <input list="assetturnoveraggp" name="assetturnover__aggp"> -->
+           <select name="assetturnover_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="assetturnoverop" name="assetturnover_op"> -->
+           <select name="assetturnover_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="assetturnover_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="assetturnoverbmf" name="assetturnover_bm_f"> -->
+           <select name="assetturnover_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Inventory Turnover Ratio</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="inventoryturnoveraggf" name="inventoryturnover_aggf"> -->
+           <select name="inventoryturnover_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="inventoryturnover_aggpnum" value="-">
+	       <!-- <input list="inventoryturnoveraggp" name="inventoryturnover__aggp"> -->
+           <select name="inventoryturnover_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="inventoryturnoverop" name="inventoryturnover_op"> -->
+           <select name="inventoryturnover_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="inventoryturnover_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="inventoryturnoverbmf" name="inventoryturnover_bm_f"> -->
+           <select name="inventoryturnover_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap" colspan="6" align="left">
+          <font size="2">Market Risk</font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Volatility</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="volatilityaggf" name="volatility_aggf"> -->
+           <select name="volatility_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="volatility_aggpnum" value="-">
+	       <!-- <input list="volatilityaggp" name="volatility__aggp"> -->
+           <select name="volatility_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="volatilityop" name="volatility_op"> -->
+           <select name="volatility_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="volatility_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="volatilitybmf" name="volatility_bm_f"> -->
+           <select name="volatility_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Beta</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="betaaggf" name="beta_aggf"> -->
+           <select name="beta_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="beta_aggpnum" value="-">
+	       <!-- <input list="betaaggp" name="beta__aggp"> -->
+           <select name="beta_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="betaop" name="beta_op"> -->
+           <select name="beta_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="beta_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="betabmf" name="beta_bm_f"> -->
+           <select name="beta_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+          <tr class="table-heads">
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">Sharpe</font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+<!--	       <!-- <input list="sharpeaggf" name="sharpe_aggf"> -->
+           <select name="sharpe_aggf">
+           <option value="-999"></option>
+           <option value="Average">Average</option>
+           <option value="Median">Median</option>          
+           <option value="High">High</option>
+           <option value="Low">Low</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="sharpe_aggpnum" value="-">
+	       <!-- <input list="sharpeaggp" name="sharpe__aggp"> -->
+           <select name="sharpe_aggp">
+           <option value="-999"></option><option value="D">Days</option>
+           <option value="W">Weeks</option>          
+           <option value="M">Months</option>
+           <option value="Y">Years</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="sharpeop" name="sharpe_op"> -->
+           <select name="sharpe_op">
+           <option value="equals">equals</option>
+           <option value="greater than">greater than</option>          
+           <option value="greater than or equals">greater than or equals</option>
+           <option value="less than">less than</option>          
+           <option value="less than or equals">less than or equals</option>
+           </select>
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <input name="sharpe_abs_filter" value="-">
+          </font>
+          </td>
+          <td class="body-item mbr-fonts-style" style="padding: 5px;" nowrap="nowrap">
+          <font size="1">
+	       <!-- <input list="sharpebmf" name="sharpe_bm_f"> -->
+           <select name="sharpe_bm_f">
+           <option value="-999"></option>
+           <option value="Industry Average">Industry Average</option>
+           <option value="Industry Median">Industry Median</option>          
+           <option value="Nifty">Nifty</option>         
+           </select>
+          </font>
+          </td>
+          </tr>
+
+          </tbody>
+          </table>
+          <button type="submit" >Screen</button>
+        </form>
+        </div>
+        {{startegyform.errors}}
+        <div class="container table-info-container">
+          
+        </div>
+      </div>
+    </div>
+</section>
+
+
+  <script src="{% static 'assets/popper/popper.min.js' %}"></script>
+  <script src="{% static 'assets/tether/tether.min.js' %}"></script>
+  <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'assets/smoothscroll/smooth-scroll.js' %}"></script>
+  <script src="{% static 'assets/datatables/jquery.data-tables.min.js' %}"></script>
+  <script src="{% static 'assets/datatables/data-tables.bootstrap4.min.js' %}"></script>
+  <script src="{% static 'assets/parallax/jarallax.min.js' %}"></script>
+  <script src="{% static 'assets/theme/js/script.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
+  
+  
+</body>
+</html>

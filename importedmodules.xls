@@ -1,0 +1,375 @@
+crudeoilprices.py:import sys
+crudeoilprices.py:import requests
+crudeoilprices.py:import datetime #import date, timedelta
+crudeoilprices.py:from pandas import DataFrame
+crudeoilprices.py:from bs4 import BeautifulSoup
+crudeoilprices.py:import mrigutilities
+datarun.py:import sys
+datarun.py:import datetime,time,sched
+datarun.py:import moneycontrol as mc
+datarun.py:import mutual_funds as mf
+datarun.py:import strategies.stocks as st
+datarun.py:import media.news as news
+datarun.py:import mrigutilities as mu
+datarun.py:import navAllFetcher as nav
+datarun.py:import goldprice as gp
+datarun.py:import crudeoilprices as cp
+datarun.py:import yieldcurve as yc
+datarun.py:import exchangeratesHistory as fx
+datarun.py:import stockHistory as sh
+datarun.py:import nseIndexHistory as inx
+datarun.py:import totalreturnindicesHistory as tri
+datarun.py:import optionChainHistory as och
+datarun.py:import stockScreener as ss
+exchangeratesHistory.py:import sys
+exchangeratesHistory.py:import requests
+exchangeratesHistory.py:import datetime #import date, timedelta
+exchangeratesHistory.py:from pandas import DataFrame
+exchangeratesHistory.py:from bs4 import BeautifulSoup
+exchangeratesHistory.py:import mrigutilities
+futuresHistory.py:import sys
+futuresHistory.py:import nsepy
+futuresHistory.py:import datetime #import date, timedelta
+futuresHistory.py:from pandas import DataFrame
+futuresHistory.py:#from sqlalchemy import create_engine
+futuresHistory.py:#from dateutil import relativedelta
+futuresHistory.py:import mrigutilities
+goldprice.py:import sys
+goldprice.py:import requests
+goldprice.py:import datetime #import date, timedelta
+goldprice.py:from pandas import DataFrame
+goldprice.py:from bs4 import BeautifulSoup
+goldprice.py:import mrigutilities
+instruments\bonds.py:import sys,os
+instruments\bonds.py:import QuantLib as ql
+instruments\bonds.py:import mrigutilities as mu
+instruments\bonds.py:import instruments.qlMaps as qlMaps
+instruments\bonds.py:from instruments.portfolio import Product
+instruments\capsfloors.py:import sys,os
+instruments\capsfloors.py:import QuantLib as ql
+instruments\capsfloors.py:import mrigutilities as mu
+instruments\capsfloors.py:import instruments.qlMaps as qlMaps
+instruments\capsfloors.py:from instruments.options import Option
+instruments\index.py:import sys,os
+instruments\index.py:import QuantLib as ql
+instruments\index.py:import instruments.qlMaps as qlMaps
+instruments\options.py:import sys,os
+instruments\options.py:import QuantLib as ql
+instruments\options.py:from instruments.portfolio import Product
+instruments\options.py:import instruments.qlMaps as qlMaps
+instruments\portfolio.py:import datetime
+instruments\portfolio.py:import csv 
+instruments\qlMaps.py:import QuantLib as ql
+instruments\swaps.py:import sys,os
+instruments\swaps.py:import QuantLib as ql
+instruments\swaps.py:import mrigutilities as mu
+instruments\swaps.py:import instruments.qlMaps as qlMaps
+instruments\swaps.py:from instruments.portfolio import Product
+instruments\termstructure.py:import sys,os
+instruments\termstructure.py:import QuantLib as ql
+instruments\termstructure.py:import mrigutilities
+instruments\termstructure.py:import pandas as pd
+instruments\termstructure.py:import instruments.qlMaps as qlMaps
+instruments\termstructure.py:import datetime
+interface\chatbot.py:import nltk
+interface\chatbot.py:import warnings
+interface\chatbot.py:import numpy as np
+interface\chatbot.py:import random
+interface\chatbot.py:import string # to process standard python strings
+interface\chatbot.py:from sklearn.feature_extraction.text import TfidfVectorizer
+interface\chatbot.py:from sklearn.metrics.pairwise import cosine_similarity
+interface\dashboard.py:import sys,os
+interface\dashboard.py:import xlwings as xw
+interface\dashboard.py:import pandas as pd
+interface\dashboard.py:import numpy as np
+interface\dashboard.py:from dateutil import relativedelta
+interface\dashboard.py:from scipy.interpolate import griddata
+interface\dashboard.py:from mpl_toolkits.mplot3d import Axes3D
+interface\dashboard.py:import datetime
+interface\dashboard.py:import QuantLib as ql
+interface\dashboard.py:import mrigutilities as mu
+interface\dashboard.py:import strategies.stocks as stocks
+interface\dashboard.py:from pywintypes import Time
+interface\dashboard.py:import stockScreener as ss
+interface\dashboard.py:import mrigplots as mp
+interface\dashboard.py:from matplotlib import colors as mcolors
+interface\mrigplots.py:import matplotlib.pyplot as plt
+interface\mrigplots.py:import matplotlib
+interface\mrigxl.py:import sys,os
+interface\mrigxl.py:import xlwings as xw
+interface\mrigxl.py:import pandas as pd
+interface\mrigxl.py:import numpy as np
+interface\mrigxl.py:from scipy.interpolate import griddata
+interface\mrigxl.py:from mpl_toolkits.mplot3d import Axes3D
+interface\mrigxl.py:import datetime
+interface\mrigxl.py:import QuantLib as ql
+interface\mrigxl.py:import mrigutilities as mu
+interface\mrigxl.py:import instruments.termstructure as ts
+interface\mrigxl.py:import instruments.bonds as bonds
+interface\mrigxl.py:import instruments.swaps as swaps
+interface\mrigxl.py:import instruments.options as options
+interface\mrigxl.py:import instruments.capsfloors as capsfloors
+interface\mrigxl.py:import instruments.index as index
+interface\mrigxl.py:import instruments.qlMaps as qlMaps
+interface\mrigxl.py:from pywintypes import Time
+interface\mrigxl.py:import matplotlib.pyplot as plt
+interface\mrigxl.py:import matplotlib
+interface\pyxcel.py:import sys,os
+interface\pyxcel.py:import xlwings as xw
+interface\pyxcel.py:import pandas as pd
+interface\pyxcel.py:import numpy as np
+interface\pyxcel.py:from scipy.interpolate import griddata
+interface\pyxcel.py:from mpl_toolkits.mplot3d import Axes3D
+interface\pyxcel.py:import datetime
+interface\pyxcel.py:import QuantLib as ql
+interface\pyxcel.py:import mrigutilities as mu
+interface\pyxcel.py:from pywintypes import Time
+interface\pyxcel.py:import matplotlib.pyplot as plt
+interface\pyxcel.py:import matplotlib
+interface\web\webdashboard.py:import sys,os
+interface\web\webdashboard.py:import xlwings as xw
+interface\web\webdashboard.py:import pandas as pd
+interface\web\webdashboard.py:import numpy as np
+interface\web\webdashboard.py:from dateutil import relativedelta
+interface\web\webdashboard.py:import datetime
+interface\web\webdashboard.py:import mrigutilities as mu
+interface\web\webdashboard.py:import strategies.stocks as stocks
+interface\web\webdashboard.py:import io,base64
+interface\web\webdashboard.py:import stockScreener as ss
+interface\web\webdashboard.py:import media.news as n
+interface\web\webdashboard.py:import nsepy
+interface\web\webdashboard.py:import instruments.options as options
+interface\web\webdashboard.py:import instruments.termstructure as ts
+interface\web\webdashboard.py:import instruments.qlMaps as qlMaps
+interface\web\webdashboard.py:from fuzzywuzzy import fuzz
+interface\web\webdashboard.py:import mrigplots as mp
+interface\web\webdashboard.py:from matplotlib import colors as mcolors
+interface\web\webrisk.py:import sys,os
+interface\web\webrisk.py:import xlwings as xw
+interface\web\webrisk.py:import pandas as pd
+interface\web\webrisk.py:import numpy as np
+interface\web\webrisk.py:from scipy.interpolate import griddata
+interface\web\webrisk.py:from mpl_toolkits.mplot3d import Axes3D
+interface\web\webrisk.py:import datetime
+interface\web\webrisk.py:import QuantLib as ql
+interface\web\webrisk.py:import mrigutilities as mu
+interface\web\webrisk.py:import instruments.termstructure as ts
+interface\web\webrisk.py:import instruments.bonds as bonds
+interface\web\webrisk.py:import instruments.swaps as swaps
+interface\web\webrisk.py:import instruments.options as options
+interface\web\webrisk.py:import instruments.capsfloors as capsfloors
+interface\web\webrisk.py:import instruments.index as index
+interface\web\webrisk.py:import instruments.qlMaps as qlMaps
+interface\web\webrisk.py:from pywintypes import Time
+interface\web\webrisk.py:import matplotlib.pyplot as plt
+interface\web\webrisk.py:import matplotlib
+interface\XW2.py:import xlwings as xw
+interface\XW2.py:import pandas as pd
+interface\XW2.py:import QuantLib as ql
+maintenance\missingStockPrices.py:import sys,os
+maintenance\missingStockPrices.py:import nsepy
+maintenance\missingStockPrices.py:import datetime #import date, timedelta
+maintenance\missingStockPrices.py:from pandas import DataFrame
+maintenance\missingStockPrices.py:from sqlalchemy import create_engine
+maintenance\missingStockPrices.py:import mrigutilities as mu
+media\news.py:import sys,os
+media\news.py:import requests
+media\news.py:import datetime,pandas,time
+media\news.py:from bs4 import BeautifulSoup
+media\news.py:import mrigstatics,mrigutilities
+media\news.py:import xml.etree.ElementTree as ET
+moneycontrol.py:import requests
+moneycontrol.py:import datetime,pandas,time
+moneycontrol.py:from bs4 import BeautifulSoup
+moneycontrol.py:import mrigstatics,mrigutilities
+moneycontrol.py:from time import sleep
+mrigutilities.py:import csv
+mrigutilities.py:import pandas as pd
+mrigutilities.py:from pandas.compat import StringIO
+mrigutilities.py:from collections import deque
+mrigutilities.py:from sqlalchemy import create_engine
+mrigutilities.py:from dateutil import relativedelta
+mrigutilities.py:import datetime,nsepy, nsetools
+mrigutilities.py:import mrigstatics
+mrigutilities.py:import QuantLib as ql
+mrigutilities.py:from urllib.parse import quote
+mrigutilities.py:import requests,socket,time
+mrigutilities.py:from bs4 import BeautifulSoup
+mrigutilities.py:from random import choice
+mrigutilities.py:import string
+mrigutilities.py:import json
+mrigweb\manage.py:import os
+mrigweb\manage.py:import sys
+mrigweb\manage.py:        from django.core.management import execute_from_command_line
+mrigweb\manage.py:            "Couldn't import Django. Are you sure it's installed and "
+mrigweb\mrigweb\settings.py:import os
+mrigweb\mrigweb\urls.py:    1. Add an import:  from my_app import views
+mrigweb\mrigweb\urls.py:    1. Add an import:  from other_app.views import Home
+mrigweb\mrigweb\urls.py:    1. Import the include() function: from django.urls import include, path
+mrigweb\mrigweb\urls.py:from django.contrib import admin
+mrigweb\mrigweb\urls.py:from django.urls import path , include
+mrigweb\mrigweb\urls.py:from mrigwebapp import views, urls
+mrigweb\mrigweb\wsgi.py:import os
+mrigweb\mrigweb\wsgi.py:from django.core.wsgi import get_wsgi_application
+mrigweb\mrigwebapp\admin.py:from django.contrib import admin
+mrigweb\mrigwebapp\apps.py:from django.apps import AppConfig
+mrigweb\mrigwebapp\forms.py:from django import forms
+mrigweb\mrigwebapp\forms.py:import nsepy
+mrigweb\mrigwebapp\models.py:from django.db import models
+mrigweb\mrigwebapp\myhtml\myhtml.py:import datetime
+mrigweb\mrigwebapp\tests.py:from django.test import TestCase
+mrigweb\mrigwebapp\urls.py:    1. Add an import:  from my_app import views
+mrigweb\mrigwebapp\urls.py:    1. Add an import:  from other_app.views import Home
+mrigweb\mrigwebapp\urls.py:    1. Import the include() function: from django.urls import include, path
+mrigweb\mrigwebapp\urls.py:from django.urls import path
+mrigweb\mrigwebapp\urls.py:import mrigwebapp.views as vw
+mrigweb\mrigwebapp\views.py:import sys,os
+mrigweb\mrigwebapp\views.py:from django.shortcuts import render
+mrigweb\mrigwebapp\views.py:from django.http import HttpResponse
+mrigweb\mrigwebapp\views.py:import nsepy
+mrigweb\mrigwebapp\views.py:from mrigwebapp.myhtml import myhtml
+mrigweb\mrigwebapp\views.py:import mrigwebapp.forms as fm
+mrigweb\mrigwebapp\views.py:import interface.web.webdashboard as wdb
+mrigweb\mrigwebapp\views.py:import pandas as pd
+mrigweb\mrigwebapp\views.py:import mrigutilities as mu
+mrigweb\mrigwebapp\views.py:import datetime
+mrigweb\mrigwebapp\views.py:import json
+mutual_funds.py:import urllib,csv,requests
+mutual_funds.py:import datetime,pandas
+mutual_funds.py:from bs4 import BeautifulSoup
+mutual_funds.py:import mrigstatics,mrigutilities
+navAllFetcher.py:import datetime
+navAllFetcher.py:import urllib.request
+navAllFetcher.py:from pandas import DataFrame
+navAllFetcher.py:#from sqlalchemy import create_engine
+navAllFetcher.py:import mrigutilities
+navFetcher.py:import datetime,csv
+navFetcher.py:import urllib.request
+navFetcher.py:from pandas import DataFrame
+navFetcher.py:from collections import deque
+nseIndexHistory.py:import sys
+nseIndexHistory.py:from time import sleep
+nseIndexHistory.py:import nsepy
+nseIndexHistory.py:import datetime #import date, timedelta
+nseIndexHistory.py:from pandas import DataFrame
+nseIndexHistory.py:#from sqlalchemy import create_engine
+nseIndexHistory.py:import mrigutilities
+nseLivePrices.py:from nsetools import Nse
+optionChainHistory.py:import sys, csv
+optionChainHistory.py:import nsepy
+optionChainHistory.py:import strategies.stocks as st
+optionChainHistory.py:import datetime #import date, timedelta
+optionChainHistory.py:from pandas import DataFrame
+optionChainHistory.py:from sqlalchemy import create_engine
+optionChainHistory.py:import mrigutilities as mu
+optionChainHistory.py:from concurrent.futures import ThreadPoolExecutor as Executor
+optionChainHistory.py:from time import sleep
+research\math.py:import numpy as np
+research\math.py:from statsmodels import regression
+research\math.py:import statsmodels.api as sm
+research\math.py:import matplotlib.pyplot as plt
+research\math.py:import math
+research\math.py:from statsmodels.stats.stattools import jarque_bera
+scheduledDataJobs.py:import datetime
+scheduledDataJobs.py:import moneycontrol as mc
+scheduledDataJobs.py:import mutual_funds as mf
+scheduledDataJobs.py:import strategies.stocks as st
+scheduledDataJobs.py:import media.news as news
+sql_stored_procs.py:import sys
+sql_stored_procs.py:import nsepy
+sql_stored_procs.py:import datetime #import date, timedelta
+sql_stored_procs.py:from pandas import DataFrame
+sql_stored_procs.py:from sqlalchemy import create_engine
+sql_stored_procs.py:import mrigutilities
+stockHistory.py:import sys
+stockHistory.py:import nsepy
+stockHistory.py:import datetime #import date, timedelta
+stockHistory.py:from pandas import DataFrame
+stockHistory.py:from sqlalchemy import create_engine
+stockHistory.py:import mrigutilities
+stockHistory.py:import time
+stockHistory_adhoc.py:import sys,csv
+stockHistory_adhoc.py:import nsepy
+stockHistory_adhoc.py:import datetime #import date, timedelta
+stockHistory_adhoc.py:from pandas import DataFrame
+stockHistory_adhoc.py:from sqlalchemy import create_engine
+stockHistory_adhoc.py:import mrigutilities
+stockScreener.py:import sys,os
+stockScreener.py:import mrigutilities as mu
+stockScreener.py:import datetime, dateutil.relativedelta, time
+stockScreener.py:import pandas as pd
+stockScreener.py:import matplotlib.pyplot as plt
+stockScreener.py:import statsmodels.api as sm
+stockScreener.py:import research.math as rm
+stockScreener.py:import strategies.stocks as st
+stockScreener.py:from concurrent.futures import ThreadPoolExecutor as Executor
+stockScreener.py:import nsepy
+stockScreener.py:import numpy as np
+stockScreener.py:from time import sleep
+strategies\kera_stock_prediction.py:import sys,os
+strategies\kera_stock_prediction.py:import mrigutilities as mu
+strategies\kera_stock_prediction.py:import datetime, dateutil
+strategies\kera_stock_prediction.py:import numpy as np
+strategies\kera_stock_prediction.py:import pandas as pd
+strategies\kera_stock_prediction.py:import stockstats as ss
+strategies\kera_stock_prediction.py:import random
+strategies\kera_stock_prediction.py:from sklearn.preprocessing import StandardScaler
+strategies\kera_stock_prediction.py:from keras.models import Sequential
+strategies\kera_stock_prediction.py:from keras.layers import Dense
+strategies\kera_stock_prediction.py:from keras.layers import Dropout
+strategies\kera_stock_prediction.py:import matplotlib.pyplot as plt
+strategies\stocks.py:import sys,os
+strategies\stocks.py:import mrigutilities as mu
+strategies\stocks.py:import moneycontrol as mc
+strategies\stocks.py:import mrigstatics
+strategies\stocks.py:import datetime, dateutil.relativedelta
+strategies\stocks.py:import pandas as pd
+strategies\stocks.py:import numpy as np
+strategies\stocks.py:import matplotlib.pyplot as plt
+strategies\stocks.py:import statsmodels.api as sm
+strategies\stocks.py:import research.math as rm
+strategies\stocks.py:import stockstats as ss
+strategies\stocks.py:import requests
+strategies\stocks.py:import instruments.termstructure as rates
+strategies\stocks.py:from bs4 import BeautifulSoup
+strategies\stock_prediction_LSTM.py:import sys,os
+strategies\stock_prediction_LSTM.py:import mrigutilities as mu
+strategies\stock_prediction_LSTM.py:import datetime, dateutil
+strategies\stock_prediction_LSTM.py:import numpy as np
+strategies\stock_prediction_LSTM.py:import matplotlib.pyplot as plt
+strategies\stock_prediction_LSTM.py:#importing required libraries
+strategies\stock_prediction_LSTM.py:from sklearn.preprocessing import MinMaxScaler
+strategies\stock_prediction_LSTM.py:from keras.models import Sequential
+strategies\stock_prediction_LSTM.py:from keras.layers import Dense, Dropout, LSTM
+strategies\strategies.py:import sys,os
+strategies\strategies.py:import mrigutilities as mu
+strategies\strategies.py:import datetime
+strategies\strategies.py:import pandas as pd
+strategies\strategies.py:import numpy as np
+strategies\strategies.py:import matplotlib.pyplot as plt
+strategies\strategies.py:import statsmodels.api as sm
+strategies\strategies.py:import research.math as rm
+test.py:import sys
+test.py:from instruments import termstructure as ir
+test.py:from instruments import bonds as bo
+test.py:from instruments import index as i
+test.py:from instruments import qlMaps as qm
+test.py:import QuantLib as ql
+test.py:from datetime import date
+test.py:import requests
+test.py:import datetime,pandas
+test.py:from bs4 import BeautifulSoup
+test.py:import mrigstatics,mrigutilities
+totalreturnindicesHistory.py:import sys
+totalreturnindicesHistory.py:import nsepy
+totalreturnindicesHistory.py:import datetime #import date, timedelta
+totalreturnindicesHistory.py:from pandas import DataFrame
+totalreturnindicesHistory.py:from sqlalchemy import create_engine
+totalreturnindicesHistory.py:import mrigutilities, mrigstatics
+totalreturnindicesHistory.py:import urllib, gzip
+totalreturnindicesHistory.py:from bs4 import BeautifulSoup
+totalreturnindicesHistory.py:from time import sleep
+yieldcurve.py:import requests
+yieldcurve.py:import datetime,pandas
+yieldcurve.py:from bs4 import BeautifulSoup
+yieldcurve.py:import mrigstatics,mrigutilities

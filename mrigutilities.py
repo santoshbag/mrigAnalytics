@@ -90,7 +90,7 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     #print(df)
     return [df,existing_security]
 
-def sql_engine(dbname='RB_WAREHOUSE'):
+def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT]):
     DB_TYPE = 'postgresql'
     DB_DRIVER = 'psycopg2'
     DB_USER = 'postgres'
@@ -103,7 +103,7 @@ def sql_engine(dbname='RB_WAREHOUSE'):
     SQLALCHEMY_DATABASE_URI = '%s+%s://%s:%s@%s:%s/%s' % (DB_TYPE, DB_DRIVER, DB_USER,
                                                           DB_PASS, DB_HOST, DB_PORT, DB_NAME)
     ENGINE = create_engine(
-        SQLALCHEMY_DATABASE_URI, pool_size=POOL_SIZE, max_overflow=0)
+        SQLALCHEMY_DATABASE_URI, pool_size=POOL_SIZE, max_overflow=0,client_encoding='utf8')
 
     return ENGINE
 
@@ -270,42 +270,59 @@ def getStockData(symbol,start_date,end_date):
     return stock_df
 
 def getStockQuote(symbol):
-    stockQuote = None
-    try:
-        timecounter = 0
-        while True:
-            timecounter = timecounter + 1
-            if is_connected():
-                stockQuote  = nsepy.get_quote(quote(symbol,safe=''))
-            if is_connected() or timecounter > 5:
-                break
-            else:
-                time.sleep(60)
-    except:
-        pass
-    momentum = 0
-    for i in range(1,10):
+    stockQuote = {}
+    sql = "select * from live where symbol='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    stockQuote = pd.read_sql(sql%(symbol),engine)
+    if not stockQuote.empty:
+        stockQuote.drop('date',axis=1,inplace=True)
+        stockQuote = stockQuote.to_dict()
+        for key in stockQuote.keys():
+            stockQuote[key] = stockQuote[key][0]
+        stockQuote['lastPrice'] = stockQuote['quote']
+    else:
         try:
-            momentum = (stockQuote['buyPrice'+str(i)]*stockQuote['buyQuantity'+str(i)]) 
-            - (stockQuote['sellPrice'+str(i)]*stockQuote['sellQuantity'+str(i)])
-            stockQuote['momentum'] = momentum
+            timecounter = 0
+            while True:
+                timecounter = timecounter + 1
+                if is_connected():
+                    stockQuote  = nsepy.get_quote(quote(symbol,safe=''))
+                if is_connected() or timecounter > 5:
+                    break
+                else:
+                    time.sleep(60)
         except:
             pass
+        momentum = 0
+        for i in range(1,10):
+            try:
+                momentum = (stockQuote['buyPrice'+str(i)]*stockQuote['buyQuantity'+str(i)]) 
+                - (stockQuote['sellPrice'+str(i)]*stockQuote['sellQuantity'+str(i)])
+                stockQuote['momentum'] = momentum
+            except:
+                pass
     return stockQuote
 
 def getStockOptionQuote(symbol,expiry,strike,option_type='CE'):
-    stockOptionQuote  = nsepy.get_quote(symbol=quote(symbol,safe=''),
-                                        expiry=expiry,strike=strike,
-                                        option_type=option_type,
-                                        instrument='OPTSTK')
-    momentum = 0
-    for i in range(1,10):
-        try:
-            momentum = (stockOptionQuote['buyPrice'+str(i)]*stockOptionQuote['buyQuantity'+str(i)]) 
-            - (stockOptionQuote['sellPrice'+str(i)]*stockOptionQuote['sellQuantity'+str(i)])
-        except:
-            pass
-    stockOptionQuote['momentum'] = momentum
+    stockOptionQuote = {}
+    sql = "select * from live where symbol='%s' and expiry='%s' and strike='%s' and option_type='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    stockOptionQuote = pd.read_sql(sql%(symbol,expiry.strftime('%Y-%m-%d'),str(strike),option_type),engine)
+    if not stockOptionQuote.empty:
+        stockOptionQuote.set_index('symbol',inplace=True)
+    else:
+        stockOptionQuote  = nsepy.get_quote(symbol=quote(symbol,safe=''),
+                                            expiry=expiry,strike=strike,
+                                            option_type=option_type,
+                                            instrument='OPTSTK')
+        momentum = 0
+        for i in range(1,10):
+            try:
+                momentum = (stockOptionQuote['buyPrice'+str(i)]*stockOptionQuote['buyQuantity'+str(i)]) 
+                - (stockOptionQuote['sellPrice'+str(i)]*stockOptionQuote['sellQuantity'+str(i)])
+            except:
+                pass
+        stockOptionQuote['momentum'] = momentum
     return stockOptionQuote
 
 def closestmatch(x,arr,diff):
@@ -408,6 +425,25 @@ def getIndustry(symbol):
     else:
         return ""
 
+def getSecMasterData(symbol):
+    sql = "select distinct * from security_master where symbol = '"+symbol+"'"
+    engine = sql_engine()
+    metadata = pd.read_sql(sql,engine)
+    
+    if not metadata.empty:
+        metadata = metadata.to_dict()
+        for key in metadata.keys():
+            if metadata[key][0]:
+#                print(key)
+#                print(metadata[key][0])
+                metadata[key] = metadata[key][0]
+            else:
+#                print("setting blank for "+key)
+                metadata[key] = ""
+        return metadata
+    else:
+        return {}
+
 def getMFNAV(reference_date, isinlist=None):
     
     sql = "select * from mf_nav_history where \"Date\">='"+ reference_date.strftime('%Y-%m-%d') +"' and \"ISIN Div Payout/ ISIN Growth\" in ("
@@ -443,8 +479,8 @@ def generatekey(length=20):
 def mrigsession_write(to_write):
 
     now_tstamp = datetime.datetime.timestamp(datetime.datetime.now())
-    prior_tstamp = datetime.datetime.timestamp(datetime.datetime.now() - datetime.timedelta(hours=2))
-    engine = sql_engine('MRIGWEB')
+    prior_tstamp = datetime.datetime.timestamp(datetime.datetime.now() - datetime.timedelta(days=2))
+    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     
     flushsql = "delete from  mrigsession where sessionexpiry <= "+str(prior_tstamp)
     
@@ -460,7 +496,7 @@ def mrigsession_write(to_write):
     return sessionid
     
 def mrigsession_get(to_get):
-    engine = sql_engine('MRIGWEB')
+    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     
     getsql = "select sessionobj from  mrigsession where sessionid = '"+to_get+"'"
     
@@ -478,7 +514,32 @@ def getStrikes(symbol):
     
     return strikes
 
+def getNifty200():
+    nifty200 = []
+    nifty200_url = "https://www.nseindia.com/content/indices/ind_nifty200list.csv"
+    
+    r = requests.get(nifty200_url)
+    symbols = r.text.split("\r\n")
+    for row in symbols:
+        try:
+            nifty200.append(row.split(',')[2])
+        except:
+            pass
+    return nifty200      
 
+def getNifty50():
+    nifty50 = []
+    nifty50_url = "https://www.nseindia.com/content/indices/ind_nifty50list.csv"
+    
+    r = requests.get(nifty50_url)
+    symbols = r.text.split("\r\n")
+    for row in symbols:
+        try:
+            nifty50.append(row.split(',')[2])
+        except:
+            pass
+    return nifty50      
+      
 if __name__ == '__main__':
-    optionChain('ICICIBANK')
+    getNifty200()
     

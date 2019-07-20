@@ -4,6 +4,8 @@ Created on Tue Aug 15 05:35:56 2017
 
 @author: Santosh Bag
 """
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime,csv
 import urllib.request
 from pandas import DataFrame

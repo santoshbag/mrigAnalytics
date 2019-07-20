@@ -6,9 +6,10 @@ Created on Wed Jul  4 17:37:47 2018
 """
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 import mrigutilities as mu
-import moneycontrol as mc
+import data.moneycontrol as mc
 import mrigstatics
 import datetime, dateutil.relativedelta
 import pandas as pd
@@ -20,7 +21,7 @@ import stockstats as ss
 import requests
 import instruments.termstructure as rates
 from bs4 import BeautifulSoup
-
+from pandas.tseries.offsets import BDay
 
 
 
@@ -28,7 +29,15 @@ class Stock():
     def __init__(self,name):
         self.symbol = name
         self.quote = mu.getStockQuote(name)
-        self.industry = mu.getIndustry(name)
+#        print(self.quote)
+        metadata = mu.getSecMasterData(name)
+        if 'industry' in metadata.keys():
+            self.industry = metadata['industry']
+        if 'stock_name' in metadata.keys():
+            self.stock_name = metadata['stock_name']
+        if 'isin' in metadata.keys():
+            self.isin = metadata['isin']
+        
         self.beta = None
         
     
@@ -52,7 +61,7 @@ class Stock():
                                                                  months=months,
                                                                  weeks=weeks,
                                                                  days=days)
-        print(startdate)
+#        print(startdate)
         self.pricevol_data = mu.getStockData(self.symbol,
                                            startdate,
                                            today)
@@ -264,7 +273,7 @@ class Stock():
             except:
                 pass
             try:
-                VaR = self.quote['securityVar']
+#                VaR = self.quote['securityVar']
                 VaR95 = 1.65*np.std(B)
                 self.risk.update({'VaR(95)':VaR95})
             except:
@@ -319,7 +328,7 @@ class Index():
                                                                  months=months,
                                                                  weeks=weeks,
                                                                  days=days)
-        print(startdate)
+#        print(startdate)
         self.pricevol_data = mu.getIndexData(self.symbol,
                                            startdate,
                                            today)
@@ -483,6 +492,75 @@ class Index():
     #    print (optionchain)
         return option_chain
 
+    def get_ratios(self):
+        today = pd.datetime.today() - BDay(1)
+        sql = "select date, pe,pb,div_yield from stock_history where symbol='%s' \
+        and series='IN' and date in (SELECT date '%s' - interval '1' month * s.a AS date \
+        FROM generate_series(0,10,1) AS s(a)) order by date desc "
+        
+        engine = mu.sql_engine()
+        self.ratio_data = pd.read_sql(sql%(self.symbol,today.strftime('%Y-%m-%d')),engine)
+        if not self.ratio_data.empty:
+            self.ratio_data.set_index('date',inplace=True)
+
+
+    def get_risk(self,sym=None):
+        beta, SD, VaR,sharpe,sortino = None,None,None,None,None
+        if sym == None:
+            sym = self.symbol
+        return_sql = "select * from daily_returns dr where symbol in ('"+sym+"','NIFTY 50') and dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
+        engine = mu.sql_engine()
+        
+        returns = pd.read_sql(return_sql,engine)
+    
+        datesql = "select curvedate from yieldcurve where curve='INR' order by curvedate desc limit 1"
+        reference_date = engine.execute(datesql).fetchall()[0][0]
+        riskfree_1y = rates.SpotZeroYieldCurve('INR',reference_date)
+        riskfree_1y = riskfree_1y.getZeroRate(reference_date+datetime.timedelta(days=360))
+
+        if not returns.empty:
+            returns.set_index('symbol',inplace=True)
+            A = list(returns[returns['date'].isin(set(returns['date'].loc['NIFTY 50']) & set(returns['date'].loc[sym]))]['daily_log_returns'].loc['NIFTY 50'])
+            B = list(returns[returns['date'].isin(set(returns['date'].loc['NIFTY 50']) & set(returns['date'].loc[sym]))]['daily_log_returns'].loc[sym])
+            try:
+                beta = np.cov(A,B)[0][1]/np.var(A)
+                self.risk = {'Beta':beta}
+            except:
+                pass
+            try:
+                SD = np.std(B)*np.sqrt(250)
+                self.risk.update({'SD':SD})
+            except:
+                pass
+            try:
+#                VaR = self.quote['securityVar']
+                VaR95 = 1.65*np.std(B)
+                self.risk.update({'VaR(95)':VaR95})
+            except:
+                pass
+            try:
+                return_1Y = sum(B)
+                sharpe = (return_1Y - riskfree_1y)/SD
+                self.risk.update({'Sharpe':sharpe})
+            except:
+                pass
+            try:
+                return_1Y = sum(B)
+                B_Down = [a if a < 0 else 0 for a in B]
+                sortino = (return_1Y - riskfree_1y)/np.std(B_Down)
+                self.risk.update({'Sortino':sortino})
+            except:
+                pass
+
+            try:
+                return_1Y = sum(B)
+                treynor = (return_1Y - riskfree_1y)/beta
+                self.risk.update({'Treynor':treynor})
+            except:
+                pass
+            
+        return self.risk
+
         
 def stock_adjust():
     
@@ -517,6 +595,8 @@ def stock_adjust():
 
 if __name__ == '__main__':
     nifty = Index('NIFTY 50')
-    print(nifty.quote)
-    niftyoc = nifty.optionChain()
-    print(niftyoc)
+#    print(nifty.quote)
+    nifty.get_ratios()
+    print(nifty.ratio_data)
+    
+#    print(niftyoc)

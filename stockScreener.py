@@ -148,7 +148,7 @@ def top_mf_midcap_holdings(holding_percent=5):
     holdings = pd.read_sql(sql,engine)
     #for hld in holdings:
         
-    print(holdings)
+#    print(holdings)
 
 def top_mf_largecap_holdings(holding_percent=5):
     """
@@ -172,7 +172,7 @@ def top_mf_largecap_holdings(holding_percent=5):
     holdings = pd.read_sql(sql,engine)
     #for hld in holdings:
         
-    print(holdings)
+#    print(holdings)
 
 def top_mf_multicap_holdings(holding_percent=5):
     """
@@ -196,7 +196,7 @@ def top_mf_multicap_holdings(holding_percent=5):
     holdings = pd.read_sql(sql,engine)
     #for hld in holdings:
         
-    print(holdings)
+#    print(holdings)
 
 def top_mf_value_holdings(holding_percent=5):
     """
@@ -220,7 +220,7 @@ def top_mf_value_holdings(holding_percent=5):
     holdings = pd.read_sql(sql,engine)
     #for hld in holdings:
         
-    print(holdings)
+#    print(holdings)
 
 def sector_returns(num_companies_per_sector='10',period='1Y'):
           
@@ -298,7 +298,7 @@ def small_cap_growth():
     PELow = EPSGrowth.loc[EPSGrowth['pe'] <= EPSGrowth['pemedian']]
     PSLow = PELow.loc[PELow['ps'] <= PELow['psmedian']]
     PSLow = PSLow.sort_values(by='ps',ascending=1).head(7)
-    print(PSLow[['industry','close','basic_eps','eps_growth','pe','ps','pemedian','psmedian','eps_growth_median']])
+#    print(PSLow[['industry','close','basic_eps','eps_growth','pe','ps','pemedian','psmedian','eps_growth_median']])
     return(PSLow)
 
 def roe_growth():
@@ -328,7 +328,7 @@ def roe_growth():
     ROEGrowth = roe.loc[roe['return_on_equity'] >= 10]
     PSLow = ROEGrowth.loc[ROEGrowth['ps'] <= 1]
     PRICE5 = PSLow.loc[PSLow['close'] >= 5]
-    print(PRICE5[['industry','close','basic_eps','eps_growth','ps','return_on_equity']])
+#    print(PRICE5[['industry','close','basic_eps','eps_growth','ps','return_on_equity']])
     return(PRICE5)
 
 def ta_fa():
@@ -464,16 +464,19 @@ def newhighs():
     start24 = today -dateutil.relativedelta.relativedelta(weeks=24)
     start12 = today -dateutil.relativedelta.relativedelta(weeks=12)
     start4 = today -dateutil.relativedelta.relativedelta(weeks=4)
-    #print(set(PSLow.index))
+#    print(set(PSLow.index))
+    PSLow['ret12W'] = np.NaN
+    PSLow['ret4W'] = np.NaN
     for sym in set(PSLow.index):
         PSLow.loc[sym,'ret12W'] = PSLow.loc[PSLow['date'] >= start12].loc[sym]['daily_log_returns'].sum()
         PSLow.loc[sym,'ret4W'] = PSLow.loc[PSLow['date'] >= start4].loc[sym]['daily_log_returns'].sum()
+#    print(PSLow)
     PSLow = PSLow.loc[PSLow['ret12W'] > 0]
     PSLow = PSLow.loc[PSLow['ret4W'] > 0]
     PSLow['ret'] = PSLow['ret12W'] + PSLow['ret4W']
     PSLow.sort_values(by='ret',ascending=0)
     PSLow = PSLow[['industry','eps_growth','ps','pe','ret12W','ret4W','eps_growth_median','psmedian','pemedian']].drop_duplicates()
-    print(PSLow)
+#    print(PSLow)
     return(PSLow)
 
 def growth_income():
@@ -527,7 +530,7 @@ def growth_income():
 #    print(set(PEGLow.index))
     DIVHigh = DIVHigh.loc[DIVHigh['beta']<= 1]
     DIVHigh = DIVHigh.sort_values(by='divyld', ascending=0)
-    print(DIVHigh.head(7))
+#    print(DIVHigh.head(7))
     return(DIVHigh.head(7))
 
 
@@ -725,7 +728,7 @@ def custom_stock_screener(criteria):
                    dr.date >= (now() - interval '"+pricereturn_aggpnum+" "+period[pricereturn_aggp]+"') group by dr.symbol) tab1 where  tab1.returns\
                    "+operator[pricereturn_op] +" "+pricereturn_abs_filter
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             pricereturn = pd.read_sql(sql,engine)
@@ -767,7 +770,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.eps_growth"+operator[basiceps_op] +" "+basiceps_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             basiceps = pd.read_sql(sql,engine)
@@ -810,7 +813,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.dividend_yield"+operator[dividendyield_op] +" "+dividendyield_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             dividendyield = pd.read_sql(sql,engine)
@@ -853,7 +856,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.price_to_earnings"+operator[pe_op] +" "+pe_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             pe = pd.read_sql(sql,engine)
@@ -896,7 +899,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.price_to_bv"+operator[pb_op] +" "+pb_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             pb = pd.read_sql(sql,engine)
@@ -940,7 +943,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.price_to_sales"+operator[ps_op] +" "+ps_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             ps = pd.read_sql(sql,engine)
@@ -984,7 +987,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.price_to_earningsgrowth"+operator[peg_op] +" "+peg_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             peg = pd.read_sql(sql,engine)
@@ -1028,7 +1031,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.return_on_equity"+operator[roe_op] +" "+roe_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             roe = pd.read_sql(sql,engine)
@@ -1072,7 +1075,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.return_on_assets"+operator[roa_op] +" "+roa_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             roa = pd.read_sql(sql,engine)
@@ -1115,7 +1118,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.net_profit_margin"+operator[netprofitmargin_op] +" "+netprofitmargin_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             netprofitmargin = pd.read_sql(sql,engine)
@@ -1158,7 +1161,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.operating_profit_margin"+operator[operatingprofitmargin_op] +" "+operatingprofitmargin_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             operatingprofitmargin = pd.read_sql(sql,engine)
@@ -1201,7 +1204,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.current_ratio"+operator[currentratio_op] +" "+currentratio_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             currentratio = pd.read_sql(sql,engine)
@@ -1244,7 +1247,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.quick_ratio"+operator[quickratio_op] +" "+quickratio_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             quickratio = pd.read_sql(sql,engine)
@@ -1287,7 +1290,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.debt_to_equity"+operator[debtequity_op] +" "+debtequity_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             debtequity = pd.read_sql(sql,engine)
@@ -1330,7 +1333,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.asset_turnover_ratio "+operator[assetturnover_op] +" "+assetturnover_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             assetturnover = pd.read_sql(sql,engine)
@@ -1373,7 +1376,7 @@ def custom_stock_screener(criteria):
                   inner join (select distinct st.symbol from stock_history st "+symbollist+") stock on stock.symbol=isr1.symbol \
                   where isr1.ratiorank = 1 and isr1.inventory_turnover_ratio"+operator[inventoryturnover_op] +" "+inventoryturnover_abs_filter+" order by isr1.industry"
         
-        print(sql)
+#        print(sql)
         engine = mu.sql_engine()
         if sql != "":
             inventoryturnover = pd.read_sql(sql,engine)
@@ -1385,7 +1388,7 @@ def custom_stock_screener(criteria):
         
     if len(resultdf.columns) == 0: 
         resultdf = pd.DataFrame()
-    print(resultdf)
+#    print(resultdf)
     return(resultdf)
 
 
