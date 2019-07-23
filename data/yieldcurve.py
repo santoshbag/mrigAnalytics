@@ -13,77 +13,106 @@ import requests
 import datetime,pandas
 from bs4 import BeautifulSoup
 import mrigstatics,mrigutilities
+import pandas as pd
 
 def get_yieldCurve(currency="INR"):
     
-    s = requests.Session()
-    response = s.get(mrigstatics.WGB_YIELD_URL[currency])
-    
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    yield_table_num = {'INR':4,
-                       'USD':4,
-                       'GBP':4}
-    
-    price_table_num = {'INR':6,
-                       'USD':6,
-                       'GBP':6}
-    
-    curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
-    curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
-    curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
-    tables = soup.find_all("table")
-    
     yield_table = []
     price_table = []
-    
-    yield_heads = tables[yield_table_num[currency]].find_all('th')
-    yield_table_cols = [col.text for col in yield_heads]
-    yield_table_cols = ['ResidualMaturity','Yield','Chg 1M','Chg 6M']
-    print(yield_table_cols)
-            
-    for row in tables[yield_table_num[currency]].find_all('tr'):
-        cells = row.find_all('td')
-        yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:5])
+
+    if currency=='INR':
+        yield_table = INR_CCIL_ZCYC()
+    else:
+        s = requests.Session()
+        response = s.get(mrigstatics.WGB_YIELD_URL[currency])
         
-    
-    price_heads = tables[price_table_num[currency]].find_all('th')
-    price_table_cols = [col.text for col in price_heads]
-    price_table_cols.pop(3)
-    print(price_table_cols)
-    
-    for row in tables[price_table_num[currency]].find_all('tr'):
-        cells = row.find_all('td')
-        price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
-    
-    dupindex = []    
-    for items in yield_table:
-        if items == []:
-            dupindex.append(yield_table.index(items))
-    for dups in dupindex:
-        yield_table.pop(dups)
-    
-    dupindex = []    
-    for items in price_table:
-        if items == []:
-            dupindex.append(price_table.index(items))
-    for dups in dupindex:
-        price_table.pop(dups)
-    
-#    print(yield_table)
-    yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols))
-    yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
-    yield_table.insert(0,column='curvedate',value=curve_date)
-    yield_table.insert(1,column='curve',value=currency)
-    price_table = pandas.DataFrame(price_table[1:-1],columns=mrigutilities.get_finalColumns(price_table_cols[1:]))
-    price_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
-    price_table.insert(0,column='curvedate',value=curve_date)
-    price_table.insert(1,column='curve',value=currency)
-    
-    yield_table = yield_table.merge(price_table,how='left',on=['curvedate','curve','tenor','yield'])
-    
-    s.close()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        yield_table_num = {'INR':4,
+                           'USD':4,
+                           'GBP':4}
+        
+        price_table_num = {'INR':6,
+                           'USD':6,
+                           'GBP':6}
+        
+        curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
+        curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
+        curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
+        tables = soup.find_all("table")
+        
+        
+        yield_heads = tables[yield_table_num[currency]].find_all('th')
+        yield_table_cols = [col.text for col in yield_heads]
+        yield_table_cols = ['ResidualMaturity','Yield','Chg 1M','Chg 6M']
+#        print(yield_table_cols)
+                
+        for row in tables[yield_table_num[currency]].find_all('tr'):
+            cells = row.find_all('td')
+            yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:5])
+            
+        
+        price_heads = tables[price_table_num[currency]].find_all('th')
+        price_table_cols = [col.text for col in price_heads]
+        price_table_cols.pop(3)
+#        print(price_table_cols)
+        
+        for row in tables[price_table_num[currency]].find_all('tr'):
+            cells = row.find_all('td')
+            price_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:])    
+        
+        dupindex = []    
+        for items in yield_table:
+            if items == []:
+                dupindex.append(yield_table.index(items))
+        for dups in dupindex:
+            yield_table.pop(dups)
+        
+        dupindex = []    
+        for items in price_table:
+            if items == []:
+                dupindex.append(price_table.index(items))
+        for dups in dupindex:
+            price_table.pop(dups)
+        
+    #    print(yield_table)
+        yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols))
+        yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
+        yield_table.insert(0,column='curvedate',value=curve_date)
+        yield_table.insert(1,column='curve',value=currency)
+        price_table = pandas.DataFrame(price_table[1:-1],columns=mrigutilities.get_finalColumns(price_table_cols[1:]))
+        price_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
+        price_table.insert(0,column='curvedate',value=curve_date)
+        price_table.insert(1,column='curve',value=currency)
+        
+        yield_table = yield_table.merge(price_table,how='left',on=['curvedate','curve','tenor','yield'])
+        
+        s.close()
+    print(yield_table)        
     return yield_table
+
+def INR_CCIL_ZCYC(date=None):
+    today= datetime.date.today() - datetime.timedelta(days=1)
+    CCIL_URL = "https://www.ccilindia.com/RiskManagement/SecuritiesSegment/Lists/Tenor%20Wise%20Zero%20Coupon%20Yield/Attachments/2419/Tenor-wise%20Zero%20Coupon%20Yields%20Sheet%20"
+    if date:
+        CCIL_URL = CCIL_URL+ date +'.xls'
+    else:
+        CCIL_URL = CCIL_URL+ today.strftime('%d%m%Y')+'.xls'
+    
+    rates = pd.DataFrame()
+    try:                                       
+        rates = pd.read_excel(CCIL_URL,skiprows=1)
+        rates['curvedate'] = rates.iloc[0][2].date()
+        rates['curve'] = 'INR'
+        rates = rates.iloc[9:]
+        rates.drop('Unnamed: 2',axis=1, inplace=True)
+        rates.rename(columns={'Unnamed: 0':'tenor','Unnamed: 1':'yield'},inplace=True)
+        rates.reset_index(drop=True,inplace=True)
+        rates.dropna(inplace=True)
+    except:
+        pass
+    return rates    
+
 
 def yield_download():
     print("Yield Curves download started", end =" ")

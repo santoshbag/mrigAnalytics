@@ -178,38 +178,38 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
     
 
 if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
-##    try:    
-#    sh.stockHistory_download(startdate,enddate,progressbar)
-##    except:
-##        pass
-#    try:
-#        inx.nseIndexHistory_download(startdate,enddate,progressbar)
-#    except:
-#        pass
 #    try:    
-#        tri.tri_download(startdate,enddate,progressbar)
+    sh.stockHistory_download(startdate,enddate,progressbar)
 #    except:
 #        pass
-#    try:    
-#        returns()
-#    except:
-#        pass
-#    try:    
-#        och.oc_download_all()
-#    except:
-#        pass
+    try:
+        inx.nseIndexHistory_download(startdate,enddate,progressbar)
+    except:
+        pass
+    try:    
+        tri.tri_download(startdate,enddate,progressbar)
+    except:
+        pass
+    try:    
+        returns()
+    except:
+        pass
+    try:    
+        och.oc_download_all()
+    except:
+        pass
     try:    
         stock_strategies()
     except:
         pass
-#    try:    
-#        oh.optionHistory_download()
-#    except:
-#        pass    
-#    try:    
-#        oh.optionLot_download()
-#    except:
-#        pass
+    try:    
+        oh.optionHistory_download()
+    except:
+        pass    
+    try:    
+        oh.optionLot_download()
+    except:
+        pass
     wl.stock_page_load()
     wl.ss_page_load()
     wl.os_page_load()
