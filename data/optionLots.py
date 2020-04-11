@@ -19,7 +19,7 @@ import re
 
 def optionLot_download():
     #"https://www.nseindia.com/content/historical/DERIVATIVES/2019/MAR/fo03MAR2019bhav.csv.zip"
-    bhavcopy = "https://www.nseindia.com/content/fo/fo_mktlots.csv"    
+    bhavcopy = "https://www1.nseindia.com/content/fo/fo_mktlots.csv"    
 
     engine = mu.sql_engine()
     request = get(bhavcopy)
@@ -28,6 +28,7 @@ def optionLot_download():
     
     cr = csv.reader(content.splitlines(), delimiter=',')
     my_list = list(cr)
+    print(my_list)
     sql = "insert into futures_option_lots values "
     for row in my_list:
         if row[1].strip() not in ['Symbol','SYMBOL']:

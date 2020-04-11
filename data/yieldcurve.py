@@ -20,7 +20,7 @@ def get_yieldCurve(currency="INR"):
     yield_table = []
     price_table = []
 
-    if currency=='INR':
+    if currency=='INR1':
         yield_table = INR_CCIL_ZCYC()
     else:
         s = requests.Session()
@@ -93,12 +93,13 @@ def get_yieldCurve(currency="INR"):
 
 def INR_CCIL_ZCYC(date=None):
     today= datetime.date.today() - datetime.timedelta(days=1)
-    CCIL_URL = "https://www.ccilindia.com/RiskManagement/SecuritiesSegment/Lists/Tenor%20Wise%20Zero%20Coupon%20Yield/Attachments/2419/Tenor-wise%20Zero%20Coupon%20Yields%20Sheet%20"
+    CCIL_URL = "https://www.ccilindia.com/RiskManagement/SecuritiesSegment/Lists/Tenor%20Wise%20Zero%20Coupon%20Yield/Attachments/2422/Tenor-wise%20Zero%20Coupon%20Yields%20Sheet%20"
     if date:
         CCIL_URL = CCIL_URL+ date +'.xls'
     else:
         CCIL_URL = CCIL_URL+ today.strftime('%d%m%Y')+'.xls'
-    
+
+    print(CCIL_URL)    
     rates = pd.DataFrame()
     try:                                       
         rates = pd.read_excel(CCIL_URL,skiprows=1)

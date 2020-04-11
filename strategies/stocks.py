@@ -149,7 +149,8 @@ class Stock():
         try:
             for dt in expiries:
                 expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
-                page = requests.get(Base_url %(self.symbol,expdt))
+                headers = {'User-Agent': 'Mozilla/5.0'} 
+                page = requests.get(Base_url %(self.symbol,expdt),headers=headers)
                 page.status_code
                 page.content
                 
@@ -393,21 +394,26 @@ class Index():
             self.daily_logreturns.set_index('date',inplace=True)
 
     def optionChain(self):
-        Base_url =("https://www.nseindia.com/live_market/dynaContent/"+
+        Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+
                    "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+
                    "symbol=UBL&instrument=OPTSTK&date=-&segmentLink=17&segmentLink=17")
-        Base_url = ("https://www.nseindia.com/live_market/dynaContent/"+
+        Base_url = ("https://www1.nseindia.com/live_market/dynaContent/"+
                     "live_watch/option_chain/optionKeys.jsp?segmentLink=17&instrument=OPTIDX"+
                     "&symbol=%s&date=%s")
         
         expiries = mu.get_indexoptions_expiry()
-        
+#        print(expiries)
+        today = datetime.date.today()
+#        expiries = [dt if dt >= today else dt for dt in expiries]
         
         option_chain = []
         try:
             for dt in expiries:
                 expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
-                page = requests.get(Base_url %(mrigstatics.INDEX_MAP_FOR_OC[self.symbol],expdt))
+                url = Base_url %(mrigstatics.INDEX_MAP_FOR_OC[self.symbol],expdt)
+#                print(url)
+                headers = {'User-Agent': 'Mozilla/5.0'}                
+                page = requests.get(url,headers=headers)
                 page.status_code
                 page.content
                 
@@ -447,7 +453,7 @@ class Index():
                         if i > 10:
                             col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
                                                     
-        #        print (col_list_fnl)          
+#                print (col_list_fnl)          
                 
                 table_cls_2 = soup.find(id="octable")
                 all_trs = table_cls_2.find_all('tr')
@@ -482,6 +488,7 @@ class Index():
                      row_marker += 1   
                 new_table['Expiry'] = dt
                 new_table.set_index('Expiry',inplace=True)
+#                print(new_table)
                 option_chain.append(new_table)
         except:
             pass

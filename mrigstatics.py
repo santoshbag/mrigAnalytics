@@ -76,7 +76,9 @@ YIELD CURVE DATA FROM www.worldgovernmentbonds.com
 
 WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/',
                  'USD': 'http://www.worldgovernmentbonds.com/country/united-states/',
-                 'GBP': 'http://www.worldgovernmentbonds.com/country/united-kingdom//'}
+                 'GBP': 'http://www.worldgovernmentbonds.com/country/united-kingdom/'}
+
+CCIL_INR_ZCYC_URL = {'INR' : 'https://www.ccilindia.com/RiskManagement/SecuritiesSegment/Lists/Tenor%20Wise%20Zero%20Coupon%20Yield/Attachments/2419/Tenor-wise%20Zero%20Coupon%20Yields%20Sheet%2019072019.xls'}
 
 CURVE_LIST = ['INR','USD','GBP']
 
@@ -196,6 +198,9 @@ MRIGWEB = {'development' : 'MRIGWEB',
 
 RB_WAREHOUSE = {'development' : 'RB_WAREHOUSE',
                 'production' : 'rb_warehouse'}
+
+DBHOST = {'SIRIUS' : '192.168.0.106',
+          'localhost' : 'localhost'}
 
 ENVIRONMENT = 'development'
 #ENVIRONMENT = 'production'

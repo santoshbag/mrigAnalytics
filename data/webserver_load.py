@@ -309,6 +309,6 @@ def os_page_load():
         
 if __name__ == '__main__':
 #    os_page_load()
-    stock_page_load()
-    ss_page_load()
+#    stock_page_load()
+#    ss_page_load()
     os_page_load()

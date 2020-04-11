@@ -14,7 +14,7 @@ import mrigutilities
 
 def navall_download():
     print("Mutual Fund NAVS download started", end =" ")
-    NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt?t=09082017092931"
+    NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt"
 #    mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVAllHistory.csv"
     datadir = os.path.dirname(__file__)
     mfNavHistory_path = os.path.join(datadir,'..','..','data','mfNAVAllHistory.csv')
@@ -30,7 +30,7 @@ def navall_download():
     headerAbsent = True
     try:
         last_download_date = last_fetched_data[0][navs_cols.index('Time Stamp')].split("-")[0]
-        #print(last_download_date)
+#        print(last_download_date)
         headerAbsent = False
     except:
         pass
@@ -51,7 +51,7 @@ def navall_download():
                 try:
                     current_date = line[-1].split("\r\n",1)[:-1][0]
                     navs.append(line[-1].split("\r\n",1)[:-1]+[mutual_fund_house,mutual_fund_scheme_type]+line[1:-1]+["",""]+[timestamp.strftime("%x-%X")])
-                    #print(navs)
+ #                   print(navs)
                     written= True
                 except:
                     pass
@@ -62,7 +62,7 @@ def navall_download():
                     if sub_header_count == 2:
                         mutual_fund_scheme_type = mutual_fund_house
                         mutual_fund_house= line[0]
-                        #print("mutual_fund_scheme_type ->" + mutual_fund_scheme_type)
+#                        print("mutual_fund_scheme_type ->" + mutual_fund_scheme_type)
                         sub_header_count = 0
                     else:
                         mutual_fund_house= line[0]

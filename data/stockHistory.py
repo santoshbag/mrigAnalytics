@@ -162,7 +162,7 @@ def stockHistory_download(startdate=None,enddate=None,progressbar=True):
 
 def nse_vol_download(eod=None):
     #"https://www.nseindia.com/content/historical/DERIVATIVES/2019/MAR/fo03MAR2019bhav.csv.zip"
-    bhavcopy = "https://www.nseindia.com/archives/nsccl/volt/CMVOLT_%s.CSV"    
+    bhavcopy = "https://www1.nseindia.com/archives/nsccl/volt/CMVOLT_%s.CSV"    
     if not eod:
         today = datetime.date.today()
     else:

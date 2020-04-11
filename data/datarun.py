@@ -40,7 +40,7 @@ enddate= datetime.date.today()
 try:
     startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
     enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
-    alldata = arguments[2]
+    alldata = int(arguments[2])
     progressbar = bool(int(arguments[3]))
 except:
     pass
@@ -134,6 +134,8 @@ eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 
 if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
     time.localtime().tm_hour <= eveningtime.hour - 2):
+    print("MORNING RUN")
+
     try:
         nav.navall_download()
     except:
@@ -178,38 +180,39 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
     
 
 if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
-#    try:    
-    sh.stockHistory_download(startdate,enddate,progressbar)
+    print("EVENING RUN")
+##    try:    
+#        sh.stockHistory_download(startdate,enddate,progressbar)
+##    except:
+##        pass
+#    try:
+#        inx.nseIndexHistory_download(startdate,enddate,progressbar)
 #    except:
 #        pass
-    try:
-        inx.nseIndexHistory_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:    
-        tri.tri_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:    
-        returns()
-    except:
-        pass
-    try:    
-        och.oc_download_all()
-    except:
-        pass
-    try:    
-        stock_strategies()
-    except:
-        pass
-    try:    
-        oh.optionHistory_download()
-    except:
-        pass    
-    try:    
-        oh.optionLot_download()
-    except:
-        pass
+#    try:    
+#        tri.tri_download(startdate,enddate,progressbar)
+#    except:
+#        pass
+#    try:    
+#        returns()
+#    except:
+#        pass
+#    try:    
+#        och.oc_download_all()
+#    except:
+#        pass
+#    try:    
+#        stock_strategies()
+#    except:
+#        pass
+#    try:    
+#        oh.optionHistory_download()
+#    except:
+#        pass    
+#    try:    
+#        oh.optionLot_download()
+#    except:
+#        pass
     wl.stock_page_load()
     wl.ss_page_load()
     wl.os_page_load()

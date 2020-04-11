@@ -20,7 +20,7 @@ symbol_map = {'NIFTY' : 'NIFTY 50'}
 
 def optionHistory_download(eod=None):
     #"https://www.nseindia.com/content/historical/DERIVATIVES/2019/MAR/fo03MAR2019bhav.csv.zip"
-    bhavcopy = "https://www.nseindia.com/content/historical/DERIVATIVES/%s/%s/fo%sbhav.csv.zip"
+    bhavcopy = "https://www1.nseindia.com/content/historical/DERIVATIVES/%s/%s/fo%sbhav.csv.zip"
     if not eod:
         today = datetime.date.today()
     else:
@@ -54,7 +54,7 @@ def optionHistory_download(eod=None):
         
 def optionLot_download():
     #"https://www.nseindia.com/content/historical/DERIVATIVES/2019/MAR/fo03MAR2019bhav.csv.zip"
-    bhavcopy = "https://www.nseindia.com/content/fo/fo_mktlots.csv"    
+    bhavcopy = "https://www1.nseindia.com/content/fo/fo_mktlots.csv"    
 
     engine = mu.sql_engine()
     request = get(bhavcopy)

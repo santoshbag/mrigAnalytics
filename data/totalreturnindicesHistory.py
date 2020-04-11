@@ -72,7 +72,7 @@ def tri_download(startdate=None,enddate=None,progressbar=True):
     def get_history(symbol,startDate,endDate):
         df = DataFrame()
         
-        TRI_URL = 'https://www.nseindia.com/products/dynaContent/equities/indices/total_returnindices.jsp?indexType=%s&fromDate=%s&toDate=%s'
+        TRI_URL = 'https://www1.nseindia.com/products/dynaContent/equities/indices/total_returnindices.jsp?indexType=%s&fromDate=%s&toDate=%s'
         urlsymbol = symbol.replace(" ",'%20')
         urlstartdate = startDate.strftime('%d')+"-"+startDate.strftime('%m')+"-"+startDate.strftime('%Y')
         urlenddate = endDate.strftime('%d')+"-"+endDate.strftime('%m')+"-"+endDate.strftime('%Y')
