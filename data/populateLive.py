@@ -87,7 +87,7 @@ def populateStockOption():
     sql = "select distinct symbol from stock_history"
     stocklist = engine.execute(sql).fetchall()
     
-    stocklist = [('ICICIBANK',),('BATAINDIA',)]
+#    stocklist = [('ICICIBANK',),('BATAINDIA',)]
     sql = "insert into live (date,symbol,quote,open,previousclose, metadata) values "
     for stock in stocklist:
         symbol = str(stock[0]).strip()
@@ -111,3 +111,4 @@ def populateStockOption():
 if __name__ == '__main__':
     populateIndex()
     populateStock()
+#    populateStockOption()
