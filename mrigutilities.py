@@ -298,36 +298,44 @@ def getStockData(symbol, start_date, end_date=None, last=False):
 
 def getStockQuote(symbol):
     stockQuote = {}
-    sql = "select * from live where symbol='%s' order by date desc limit 1"
-    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
-    stockQuote = pd.read_sql(sql % (symbol), engine)
-    if not stockQuote.empty:
-        stockQuote.drop('date', axis=1, inplace=True)
-        stockQuote = stockQuote.to_dict()
-        for key in stockQuote.keys():
-            stockQuote[key] = stockQuote[key][0]
-        stockQuote['lastPrice'] = stockQuote['quote']
-    else:
-        try:
-            timecounter = 0
-            while True:
-                timecounter = timecounter + 1
-                if is_connected():
-                    stockQuote = nsepy.get_quote(quote(symbol, safe=''))
-                if is_connected() or timecounter > 5:
-                    break
-                else:
-                    time.sleep(60)
-        except:
-            pass
-        momentum = 0
-        for i in range(1, 10):
+#    try:
+#        stockQuote = nsepy.get_quote(symbol)
+#    except:
+#        pass
+#    print(stockQuote)
+    if len(stockQuote) <= 0:
+#        print("not live")
+        sql = "select * from live where symbol='%s' order by date desc limit 1"
+        engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+        stockQuote = pd.read_sql(sql % (symbol), engine)
+        if not stockQuote.empty:
+            stockQuote.drop('date', axis=1, inplace=True)
+            stockQuote = stockQuote.to_dict()
+            stockQuote = json.loads(stockQuote['metadata'][0])
+#            for key in stockQuote.keys():
+#                stockQuote[key] = stockQuote[key][0]
+#            stockQuote['lastPrice'] = stockQuote['quote']
+        else:
             try:
-                momentum = (stockQuote['buyPrice' + str(i)] * stockQuote['buyQuantity' + str(i)])
-                - (stockQuote['sellPrice' + str(i)] * stockQuote['sellQuantity' + str(i)])
-                stockQuote['momentum'] = momentum
+                timecounter = 0
+                while True:
+                    timecounter = timecounter + 1
+                    if is_connected():
+                        stockQuote = nsepy.get_quote(quote(symbol, safe=''))
+                    if is_connected() or timecounter > 5:
+                        break
+                    else:
+                        time.sleep(60)
             except:
                 pass
+    momentum = 0
+    for i in range(1, 10):
+        try:
+            momentum = (stockQuote['buyPrice' + str(i)] * stockQuote['buyQuantity' + str(i)])
+            - (stockQuote['sellPrice' + str(i)] * stockQuote['sellQuantity' + str(i)])
+            stockQuote['momentum'] = momentum
+        except:
+            pass
     return stockQuote
 
 
