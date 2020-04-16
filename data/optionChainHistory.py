@@ -170,5 +170,4 @@ def oc_download_all(progressbar=True):
 #        
 if __name__ == '__main__':
 #    oc_download()
-#    oc_download_all()
-    index_oc_download('NIFTY 50')
+    oc_download_all()
