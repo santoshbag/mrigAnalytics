@@ -1412,6 +1412,7 @@ def covered_call(budget=1000000,live=False):
     engine = mu.sql_engine()
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
+    print(symbols)
     OC_COLS = ['Symbol','Underlying','Lot','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
 #    symbols = ['ICICIBANK','HDFCBANK','AMBUJACEM']
     calls = []
