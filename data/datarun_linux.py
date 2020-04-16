@@ -26,6 +26,7 @@ import optionChainHistory as och
 import stockScreener as ss
 import optionHistory as oh
 import webserver_load as wl
+import Bhavcopy as bc
 
 today = datetime.date.today()
 
@@ -141,6 +142,11 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
     except:
         pass
     try:
+        print("BHAVCOPY")
+        bc.bhavcopy_download()
+    except:
+        pass
+    try:
         print("NEWS")
         news.get_MCNews()
     except:
@@ -207,7 +213,7 @@ if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
     except:
         pass
     try:    
-        och.oc_download_all()
+        och.oc_download_all(progressbar)
     except:
         pass
 #    try:    
