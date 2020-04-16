@@ -181,6 +181,30 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
         corp_action_download()
     except:
         pass
+    try:    
+        tri.tri_download(startdate,enddate,progressbar)
+    except:
+        pass
+    try:    
+       oh.optionHistory_download()
+    except:
+        pass    
+    try:    
+        och.oc_download_all(progressbar)
+    except:
+        pass
+    try:    
+        stock_strategies()
+    except:
+        pass
+    try:    
+        oh.optionLot_download()
+    except:
+        pass
+    try:    
+        returns()
+    except:
+        pass
 #    try:    
 #        stock_strategies()
 #    except:
