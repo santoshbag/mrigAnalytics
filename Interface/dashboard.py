@@ -926,11 +926,11 @@ def mrigxl_stock():
     sht.range('W3').value = optionchain
 
 @xw.func
-def mrigxl_covered_call():
+def mrigxl_covered_call(live=False):
     sheet='Covered Calls'
     sht = xw.Book.caller().sheets[sheet]
     sht.range('B3:L500').clear_contents()
-    oc = ss.covered_call()
+    oc = ss.covered_call(live=live)
     sht.range('B3').value = oc[0]
     sht.range('AC4').value = oc[1]
 
@@ -960,19 +960,19 @@ def mrigxl_stockquote(symbol):
     return quote
 
 @xw.func
-def mrigxl_bull_put_spread():
+def mrigxl_bull_put_spread(live=False):
     sheet='Bull Put Spread'
     sht = xw.Book.caller().sheets[sheet]
     sht.range('B3:N500').clear_contents()
-    oc = ss.bull_put_spread()
+    oc = ss.bull_put_spread(live=live)
     sht.range('B3').value = oc[0]
     sht.range('AE4').value = oc[1]
 
 @xw.func
-def mrigxl_bear_call_spread():
+def mrigxl_bear_call_spread(live=False):
     sheet='Bear Call Spread'
     sht = xw.Book.caller().sheets[sheet]
     sht.range('B3:N500').clear_contents()
-    oc = ss.bear_call_spread()
+    oc = ss.bear_call_spread(live=live)
     sht.range('B3').value = oc[0]
     sht.range('AE4').value = oc[1]
