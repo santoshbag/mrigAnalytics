@@ -107,8 +107,11 @@ def bhavcopy_download():
                 indx = indx.replace('-', 0)
                 indx['turnover'] = pd.to_numeric(indx['turnover'], errors='coerce')
                 indx['turnover'] = indx['turnover'].apply(lambda x:x*10000000)
+                indx['close_adj'] = indx['close']
+                indx['volume_adj'] = indx['volume']
                 indx.set_index('date', inplace=True)
                 indx.to_sql('stock_history', engine, if_exists='append', index=True)    
+
 #                f = f.append(indx, ignore_index=True)
 
             f['TIMESTAMP'] = pd.Series(str(nextdt.date().strftime('%Y%m%d')) for _ in range(len(f)))
@@ -117,11 +120,13 @@ def bhavcopy_download():
                    'TOTTRDVAL', 'TOTALTRADES', 'DELIVERABLE']]
             f.to_csv(base + "/" + y + '/' + str(nextdt.date()) + '.csv', index=False)
             f = f.rename(columns=csv_header_map)
+            f['close_adj'] = f['close']
+            f['volume_adj'] = f['volume']
             f = f.replace('-', 0)
             # f['turnover'] = f['turnover'] * 10000000
             f.set_index('date', inplace=True)
             #        print(f)
-#            f.to_sql('stock_history', engine, if_exists='append', index=True)
+            f.to_sql('stock_history', engine, if_exists='append', index=True)
 
             os.remove(base + "/" + y + '/cm' + d + dmonth[m] + y + 'bhav.csv')
             futures = requests.get(
