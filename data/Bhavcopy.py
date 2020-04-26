@@ -125,7 +125,7 @@ def bhavcopy_download():
             f = f.replace('-', 0)
             # f['turnover'] = f['turnover'] * 10000000
             f.set_index('date', inplace=True)
-            #        print(f)
+           # print(f)
             f.to_sql('stock_history', engine, if_exists='append', index=True)
 
             os.remove(base + "/" + y + '/cm' + d + dmonth[m] + y + 'bhav.csv')
