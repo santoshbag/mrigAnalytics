@@ -12,7 +12,7 @@ import mrigutilities as mu
 import datetime, dateutil.relativedelta, time
 import pandas as pd
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import research.math as rm
 import strategies.stocks as st
