@@ -73,6 +73,7 @@ def navall_download():
             #print(navs.tail(n=20))
             navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
             navs = navs.drop('Time Stamp',axis=1)
+  #          print(max(navs['Date']))
             dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
             navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)[0]
             try:

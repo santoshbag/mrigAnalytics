@@ -25,7 +25,7 @@ import totalreturnindicesHistory as tri
 import optionChainHistory as och
 import stockScreener as ss
 import optionHistory as oh
-import webserver_load as wl
+#import webserver_load as wl
 import Bhavcopy as bc
 
 today = datetime.date.today()
@@ -129,7 +129,7 @@ def stock_strategies():
 
 scheduler = sched.scheduler(timefunc=time.time)
 morninghour = 6
-eveninghour = 16
+eveninghour = 20
 morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=morninghour,minute=0)
 eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
@@ -205,7 +205,7 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
         returns()
     except:
         pass
-#    try:    
+ #    try:    
 #        stock_strategies()
 #    except:
 #        pass
