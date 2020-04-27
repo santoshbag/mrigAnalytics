@@ -32,7 +32,7 @@ today = datetime.date.today()
 
 arguments = sys.argv[1:]
 
-alldata = 0
+alldata = [0]
 progressbar = True
 
 startdate= datetime.date.today() - datetime.timedelta(days=1)
@@ -41,12 +41,13 @@ enddate= datetime.date.today()
 try:
     startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
     enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
-    alldata = arguments[2]
+    alldata = arguments[2].split(sep=',')
     progressbar = bool(int(arguments[3]))
 except:
     pass
 print(startdate)
 print(enddate)
+print(alldata)
 def mf_codes():   
     if today.strftime('%A') == 'Thursday':
         mf.get_VR_MF_CODES()
@@ -134,7 +135,7 @@ morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
-if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
+if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
     time.localtime().tm_hour <= eveningtime.hour - 2):
     try:
         print("NAVS")
@@ -205,6 +206,92 @@ if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
         returns()
     except:
         pass
+    if '2' in alldata:
+        try:
+            print("NAVS")
+            nav.navall_download()
+        except:
+            pass
+    if '3' in alldata:
+        try:
+            print("BHAVCOPY")
+            bc.bhavcopy_download()
+        except:
+            pass
+    if '4' in alldata:
+        try:
+            print("NEWS")
+            news.get_MCNews()
+        except:
+            pass
+    if '5' in alldata:
+        try:
+            print("RATES")
+            yc.yield_download()
+        except:
+            pass
+    if '6' in alldata:
+        try:
+            print("GOLD")
+            gp.gold_download()
+        except:
+            pass
+    if '7' in alldata:
+        try:    
+            cp.crude_download()
+        except:
+            pass
+    if '8' in alldata:
+        try:    
+            fx.exchange_rates_download(startdate,enddate)
+        except:
+            pass
+    if '9' in alldata:
+        try:    
+            ratios_download()
+        except:
+            pass
+    if '10' in alldata:
+        try:    
+            mf_codes()
+        except:
+            pass
+    if '11' in alldata:
+        try:    
+            corp_action_download()
+        except:
+            pass
+    if '12' in alldata:
+        try:    
+            tri.tri_download(startdate,enddate,progressbar)
+        except:
+            pass
+    if '13' in alldata:
+        try:    
+           oh.optionHistory_download()
+        except:
+            pass    
+    if '14' in alldata:
+        try:    
+            och.oc_download_all(progressbar)
+        except:
+            pass
+    if '15' in alldata:
+        try:    
+            stock_strategies()
+        except:
+            pass
+    if '16' in alldata:
+        try:    
+            oh.optionLot_download()
+        except:
+            pass
+    if '17' in alldata:
+        try:    
+            returns()
+        except:
+            pass
+    
  #    try:    
 #        stock_strategies()
 #    except:
