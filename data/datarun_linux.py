@@ -32,7 +32,7 @@ today = datetime.date.today()
 
 arguments = sys.argv[1:]
 
-alldata = [0]
+alldata = ['0']
 progressbar = True
 
 startdate= datetime.date.today() - datetime.timedelta(days=1)
@@ -137,75 +137,76 @@ eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 
 if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
     time.localtime().tm_hour <= eveningtime.hour - 2):
-    try:
-        print("NAVS")
-        nav.navall_download()
-    except:
-        pass
-    try:
-        print("BHAVCOPY")
-        bc.bhavcopy_download()
-    except:
-        pass
-    try:
-        print("NEWS")
-        news.get_MCNews()
-    except:
-        pass
-    try:
-        print("RATES")
-        yc.yield_download()
-    except:
-        pass
-    try:
-        print("GOLD")
-        gp.gold_download()
-    except:
-        pass
-    try:    
-        cp.crude_download()
-    except:
-        pass
-    try:    
-        fx.exchange_rates_download(startdate,enddate)
-    except:
-        pass
-    try:    
-        ratios_download()
-    except:
-        pass
-    try:    
-        mf_codes()
-    except:
-        pass
-    try:    
-        corp_action_download()
-    except:
-        pass
-    try:    
-        tri.tri_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:    
-       oh.optionHistory_download()
-    except:
-        pass    
-    try:    
-        och.oc_download_all(progressbar)
-    except:
-        pass
-    try:    
-        stock_strategies()
-    except:
-        pass
-    try:    
-        oh.optionLot_download()
-    except:
-        pass
-    try:    
-        returns()
-    except:
-        pass
+    if ('1' in alldata):
+        try:
+            print("NAVS")
+            nav.navall_download()
+        except:
+            pass
+        try:
+            print("BHAVCOPY")
+            bc.bhavcopy_download()
+        except:
+            pass
+        try:
+            print("NEWS")
+            news.get_MCNews()
+        except:
+            pass
+        try:
+            print("RATES")
+            yc.yield_download()
+        except:
+            pass
+        try:
+            print("GOLD")
+            gp.gold_download()
+        except:
+            pass
+        try:    
+            cp.crude_download()
+        except:
+            pass
+        try:    
+            fx.exchange_rates_download(startdate,enddate)
+        except:
+            pass
+        try:    
+            ratios_download()
+        except:
+            pass
+        try:    
+            mf_codes()
+        except:
+            pass
+        try:    
+            corp_action_download()
+        except:
+            pass
+        try:    
+            tri.tri_download(startdate,enddate,progressbar)
+        except:
+            pass
+        try:    
+           oh.optionHistory_download()
+        except:
+            pass    
+        try:    
+            och.oc_download_all(progressbar)
+        except:
+            pass
+        try:    
+            stock_strategies()
+        except:
+            pass
+        try:    
+            oh.optionLot_download()
+        except:
+            pass
+        try:    
+            returns()
+        except:
+            pass
     if '2' in alldata:
         try:
             print("NAVS")
