@@ -1412,7 +1412,7 @@ def covered_call(budget=1000000,live=False):
     engine = mu.sql_engine()
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
-    print(symbols)
+#    print(symbols)
     OC_COLS = ['Symbol','Underlying','Lot','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
 #    symbols = ['ICICIBANK','HDFCBANK','AMBUJACEM']
     calls = []
@@ -1596,7 +1596,7 @@ def bull_put_spread(budget=1000000,live=False):
 #                                print(stock_oc[OC_COLS[3:]])
 #                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
 #                                                    ((h_ltp - stock_oc['PUT_LTP'])/abs(h_strike1 - stock_oc['Strike_Price']) >=0.10)] 
-                                stock_oc = stock_oc[((h_ltp - stock_oc['PUT_LTP'])/abs(h_strike1 - stock_oc['Strike_Price']) >=0.10)] 
+#                                stock_oc = stock_oc[((h_ltp - stock_oc['PUT_LTP'])/abs(h_strike1 - stock_oc['Strike_Price']) >=0.10)] 
                                 if not stock_oc.empty:
                                     errormsg = errormsg + "10% yield test passed | "
 
