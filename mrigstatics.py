@@ -196,7 +196,7 @@ INDEX_MAP_FOR_OC = {'NIFTY 50':'NIFTY',
 MRIGWEB = {'development' : 'MRIGWEB',
            'production' : 'mrigweb'}
 
-RB_WAREHOUSE = {'development' : 'RB_WAREHOUSE',
+RB_WAREHOUSE = {'development' : 'rb_warehouse',
                 'production' : 'rb_warehouse'}
 
 DBHOST = {'SIRIUS' : '192.168.0.106',
