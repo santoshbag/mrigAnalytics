@@ -32,7 +32,7 @@ today = datetime.date.today()
 
 arguments = sys.argv[1:]
 
-alldata = ['0']
+alldata = ['1']
 progressbar = True
 
 startdate= datetime.date.today() - datetime.timedelta(days=1)
