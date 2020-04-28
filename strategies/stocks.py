@@ -603,7 +603,7 @@ def stock_adjust():
 if __name__ == '__main__':
     nifty = Index('NIFTY 50')
 #    print(nifty.quote)
-    nifty.get_ratios()
-    print(nifty.ratio_data)
+#    nifty.get_ratios()
+    print(nifty.optionChain())
     
 #    print(niftyoc)
