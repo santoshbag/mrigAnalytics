@@ -94,7 +94,7 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     return [df, existing_security]
 
 
-def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT], dbhost="SIRIUS"):
+def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT], dbhost="localhost"):
     DB_TYPE = 'postgresql'
     DB_DRIVER = 'psycopg2'
     DB_USER = 'postgres'
