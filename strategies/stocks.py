@@ -144,7 +144,7 @@ class Stock():
                     "&symbol=%s&date=%s")
         
         expiries = mu.get_futures_expiry(datetime.date.today(),datetime.date.today())
-        
+#        print(expiries)
         option_chain = []
         try:
             for dt in expiries:
@@ -153,7 +153,7 @@ class Stock():
                 page = requests.get(Base_url %(self.symbol,expdt),headers=headers)
                 page.status_code
                 page.content
-                
+                #print(page.content) 
                 soup = BeautifulSoup(page.content, 'html.parser')
                 #print(soup.prettify())
                 
@@ -190,14 +190,14 @@ class Stock():
                         if i > 10:
                             col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
                                                     
-        #        print (col_list_fnl)          
+                #print (col_list_fnl)          
                 
                 table_cls_2 = soup.find(id="octable")
                 all_trs = table_cls_2.find_all('tr')
                 req_row = table_cls_2.find_all('tr')
                 
                 new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
-                
+                #print(new_table) 
                 row_marker = 0 
                 
                 for row_number, tr_nos in enumerate(req_row):
@@ -207,11 +207,11 @@ class Stock():
                          continue
                           
                      td_columns = tr_nos.find_all('td')
-                     
                      # This removes the graphs columns
                      select_cols = td_columns[1:22]                  
+                     print(select_cols) 
                      cols_horizontal = range(0,len(select_cols))
-                      
+                     print(cols_horizontal) 
                      for nu, column in enumerate(select_cols):
                          
                          utf_string = column.get_text()
@@ -221,10 +221,11 @@ class Stock():
                          tr = str(tr, 'utf-8')
                          tr = tr.replace(',' , '')
                          new_table.ix[row_marker,[nu]]= tr
-                         
+                         #print(new_table)
                      row_marker += 1   
                 new_table['Expiry'] = dt
                 new_table.set_index('Expiry',inplace=True)
+                print(new_table)
                 option_chain.append(new_table)
         except:
             pass
@@ -232,7 +233,7 @@ class Stock():
             option_chain = pd.concat(option_chain)
         else:
             option_chain = pd.DataFrame()
-    #    print (optionchain)
+        print (option_chain)
         return option_chain
 
     def max_drawdown(self,window_days=29, period_months=12):
@@ -601,9 +602,8 @@ def stock_adjust():
     engine.execute(enable_sql)
 
 if __name__ == '__main__':
-    nifty = Index('NIFTY 50')
+    nifty = Stock('SBIN')
 #    print(nifty.quote)
-    nifty.get_ratios()
-    print(nifty.ratio_data)
-    
+#    nifty.get_ratios()
+    print(nifty.optionChain()) 
 #    print(niftyoc)
