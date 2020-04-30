@@ -6,7 +6,8 @@ Created on Thu May 17 15:13:11 2018
 """
 import csv
 import pandas as pd
-from pandas.compat import StringIO
+#from pandas.compat import StringIO
+from io import StringIO
 from collections import deque
 from sqlalchemy import create_engine
 from dateutil import relativedelta
