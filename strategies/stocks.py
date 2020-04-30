@@ -136,10 +136,10 @@ class Stock():
             self.ratio_data.set_index('ratio_date',inplace=True)
             
     def optionChain(self):
-        Base_url =("https://www.nseindia.com/live_market/dynaContent/"+
+        Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+
                    "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+
                    "symbol=UBL&instrument=OPTSTK&date=-&segmentLink=17&segmentLink=17")
-        Base_url = ("https://www.nseindia.com/live_market/dynaContent/"+
+        Base_url = ("https://www1.nseindia.com/live_market/dynaContent/"+
                     "live_watch/option_chain/optionKeys.jsp?segmentLink=17&instrument=OPTSTK"+
                     "&symbol=%s&date=%s")
         
@@ -190,28 +190,27 @@ class Stock():
                         if i > 10:
                             col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
                                                     
-        #        print (col_list_fnl)          
+                #print (col_list_fnl)          
                 
                 table_cls_2 = soup.find(id="octable")
                 all_trs = table_cls_2.find_all('tr')
                 req_row = table_cls_2.find_all('tr')
-                
+                print(len(list(enumerate(req_row))))
                 new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
-                
                 row_marker = 0 
                 
                 for row_number, tr_nos in enumerate(req_row):
-                     
+                     #print(row_number)
                      # This ensures that we use only the rows with values    
                      if row_number <=1 or row_number == len(req_row)-1:   
                          continue
                           
                      td_columns = tr_nos.find_all('td')
-                     
+                     #print(td_columns[:1])
                      # This removes the graphs columns
                      select_cols = td_columns[1:22]                  
                      cols_horizontal = range(0,len(select_cols))
-                      
+                     
                      for nu, column in enumerate(select_cols):
                          
                          utf_string = column.get_text()
@@ -220,8 +219,7 @@ class Stock():
                          tr = utf_string.encode('utf-8')
                          tr = str(tr, 'utf-8')
                          tr = tr.replace(',' , '')
-                         new_table.ix[row_marker,[nu]]= tr
-                         
+                         new_table.iloc[row_marker,[nu]]= tr
                      row_marker += 1   
                 new_table['Expiry'] = dt
                 new_table.set_index('Expiry',inplace=True)
@@ -460,7 +458,8 @@ class Index():
                 req_row = table_cls_2.find_all('tr')
                 
                 new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
-                
+                print("new table")
+                print(new_table)
                 row_marker = 0 
                 
                 for row_number, tr_nos in enumerate(req_row):
@@ -483,7 +482,7 @@ class Index():
                          tr = utf_string.encode('utf-8')
                          tr = str(tr, 'utf-8')
                          tr = tr.replace(',' , '')
-                         new_table.ix[row_marker,[nu]]= tr
+                         new_table.iloc[row_marker,[nu]]= tr
                          
                      row_marker += 1   
                 new_table['Expiry'] = dt
@@ -601,9 +600,9 @@ def stock_adjust():
     engine.execute(enable_sql)
 
 if __name__ == '__main__':
-    nifty = Index('NIFTY 50')
+    nifty = Stock('SBIN')
 #    print(nifty.quote)
 #    nifty.get_ratios()
-    print(nifty.optionChain())
+    nifty.optionChain()
     
 #    print(niftyoc)

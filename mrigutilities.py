@@ -243,13 +243,13 @@ def python_dates(qldates):
     return datetime.date(qldates.year(), qldates.month(), qldates.dayOfMonth())
 
 
-def getIndexData(symbol, start_date, end_date):
+def getIndexData(symbol, start_date, end_date,db='localhost'):
     sql = "select * from stock_history where series = 'IN' and date >='" + start_date.strftime('%Y-%m-%d') \
           + "' and date <'" + end_date.strftime('%Y-%m-%d') \
           + "' and symbol='" \
           + symbol + "'"
 
-    engine = sql_engine()
+    engine = sql_engine(dbhost=db)
     index_df = pd.read_sql(sql, engine)
     if not index_df.empty:
         for i in range(0, len(index_df['date']) - 1):
@@ -263,7 +263,7 @@ def getIndexData(symbol, start_date, end_date):
     return index_df
 
 
-def getStockData(symbol, start_date, end_date=None, last=False):
+def getStockData(symbol, start_date, end_date=None, last=False,db='localhost'):
     
     if end_date:
         sql = "select * from stock_history where date >='" + start_date.strftime('%Y-%m-%d') \
@@ -282,7 +282,7 @@ def getStockData(symbol, start_date, end_date=None, last=False):
                   + " and symbol='" \
                   + symbol + "'"
             
-    engine = sql_engine()
+    engine = sql_engine(dbhost=db)
     stock_df = pd.read_sql(sql, engine)
     if not stock_df.empty:
         for i in range(0, len(stock_df['date']) - 1):
@@ -306,7 +306,7 @@ def getStockQuote(symbol):
     if len(stockQuote) <= 0:
 #        print("not live")
         sql = "select * from live where symbol='%s' order by date desc limit 1"
-        engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+        engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
         stockQuote = pd.read_sql(sql % (symbol), engine)
         if not stockQuote.empty:
             stockQuote.drop('date', axis=1, inplace=True)
@@ -494,10 +494,10 @@ def getSecMasterData(symbol):
         return {}
 
 
-def getMFNAV(reference_date, isinlist=None):
+def getMFNAV(reference_date, isinlist=None,db='localhost'):
     sql = "select * from mf_nav_history where \"Date\">='" + reference_date.strftime(
         '%Y-%m-%d') + "' and \"ISIN Div Payout/ ISIN Growth\" in ("
-    engine = sql_engine()
+    engine = sql_engine(dbhost=db)
     for isin in isinlist:
         sql = sql + "'" + isin + "',"
     sql = sql[:-1] + ")"
