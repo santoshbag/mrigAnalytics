@@ -11,16 +11,17 @@ set progressbar=%4
 
 if [%1] == [] set startdate=%YESTERDAY%
 if [%2] == [] set enddate=%TODAY%
-if [%3] == [] set alldata="0"
+if [%3] == [] set alldata="1"
 if [%4] == [] set progressbar="1"
 
 echo Welcome to Mrig Data Run!
+echo %alldata%
 @echo -------------Mrig Data Run----------- >> dailyBatchRunLog.txt
 @echo ------------%date% %time%------------>> dailyBatchRunLog.txt 
 cd /D F:\Mrig Analytics\Development\mrigAnalytics\data\
 
 
-python.exe datarun.py %startdate% %enddate% %alldata% %progressbar%
+python.exe datarun_linux.py %startdate% %enddate% %alldata% %progressbar%
 
 echo ---Backing RB_WAREHOUSE------
 db_dump RB_WAREHOUSE

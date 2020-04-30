@@ -26,9 +26,9 @@ from datetime import date
 @xw.func
 @xw.arg('isinlist', ndim=1, transpose=True)
 @xw.ret(expand='table', transpose=False)
-def mrigxl_getMFNAV(reference_date, isinlist=None):
+def mrigxl_getMFNAV(reference_date, isinlist=None,db='localhost'):
     
-    nav_df = mu.getMFNAV(reference_date,isinlist)
+    nav_df = mu.getMFNAV(reference_date,isinlist,db='localhost')
     nav_df.drop(['Fund House','Scheme Type'],axis=1,inplace=True)
     #nav_df.drop('Scheme Type',axis=1)
     nav_df.reset_index(level=0, inplace=True)
@@ -37,9 +37,9 @@ def mrigxl_getMFNAV(reference_date, isinlist=None):
     
 @xw.func
 #@xw.ret(expand='table', transpose=False)
-def mrigxl_getStockData(symbol,start_date,end_date=None,last=True):
+def mrigxl_getStockData(symbol,start_date,end_date=None,last=True,db='localhost'):
     
-    stock_df = mu.getStockData(symbol,start_date,end_date,last)
+    stock_df = mu.getStockData(symbol,start_date,end_date,last,db='localhost')
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     if not stock_df.empty:
         stock_df = stock_df['close']

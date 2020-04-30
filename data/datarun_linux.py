@@ -8,12 +8,11 @@ This module downloads data by using various modules
 """
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-import datetime,time,sched
-import moneycontrol as mc
-import mutual_funds as mf
-import strategies.stocks as st
-import media.news as news
-import mrigutilities as mu
+from time import localtime
+from datetime import date, datetime, timedelta
+
+
+from mrigutilities import sql_engine
 import navAllFetcher as nav
 import goldprice as gp
 import crudeoilprices as cp
@@ -28,19 +27,19 @@ import optionHistory as oh
 #import webserver_load as wl
 import Bhavcopy as bc
 
-today = datetime.date.today()
+today = date.today()
 
 arguments = sys.argv[1:]
 
 alldata = ['1']
 progressbar = True
 
-startdate= datetime.date.today() - datetime.timedelta(days=1)
-enddate= datetime.date.today()
+startdate= date.today() - timedelta(days=1)
+enddate= date.today()
 
 try:
-    startdate= datetime.date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
-    enddate= datetime.date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
+    startdate= date(int(arguments[0][0:4]),int(arguments[0][4:6]),int(arguments[0][6:8]))
+    enddate= date(int(arguments[1][0:4]),int(arguments[1][4:6]),int(arguments[1][6:8]))
     alldata = arguments[2].split(sep=',')
     progressbar = bool(int(arguments[3]))
 except:
@@ -50,6 +49,7 @@ print(enddate)
 print(alldata)
 def mf_codes():   
     if today.strftime('%A') == 'Thursday':
+        import mutual_funds as mf
         mf.get_VR_MF_CODES()
         eqlist = mf.get_equity_fundlist()
         print("Getting Mutual Fund Snapshots\n")
@@ -59,6 +59,8 @@ def mf_codes():
 
 def corp_action_download():
     if today.strftime('%A') == 'Monday':
+        import moneycontrol as mc
+        import strategies.stocks as st
         mc.get_MCStockCodes()
         print("Getting Corporate Actions\n")
         mc.get_CorporateActions()
@@ -66,6 +68,7 @@ def corp_action_download():
 
 def ratios_download():    
     if today.strftime('%A') == 'Tuesday' and 15 <= today.day <= 21:
+        import moneycontrol as mc
         mc.get_MCStockCodes()
         print("Getting Ratios\n")
         mc.get_MCRatios()
@@ -73,7 +76,7 @@ def ratios_download():
 
 def returns():
     calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
-    engine = mu.sql_engine()
+    engine = sql_engine()
     print("Populating Returns")
     engine.execute(calculate_returns_sql)
 
@@ -86,8 +89,8 @@ def stock_strategies():
     nh = ss.newhighs()
     tafa = ss.ta_fa()
     
-    engine = mu.sql_engine()
-    timestamp = "BIGM"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
+    engine = sql_engine()
+    timestamp = "BIGM"+str(localtime().tm_year)+str(localtime().tm_mon)+str(localtime().tm_mday)+str(localtime().tm_hour)+str(localtime().tm_min)
     sql = "insert into strategies (name,type,date,strategy_df) values ('%s','bigm','%s','%s')"
 #    if not bigm.empty:
     oc = bigm.reset_index()
@@ -95,7 +98,7 @@ def stock_strategies():
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
 
-    timestamp = "SCG"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
+    timestamp = "SCG"+str(localtime().tm_year)+str(localtime().tm_mon)+str(localtime().tm_mday)+str(localtime().tm_hour)+str(localtime().tm_min)
     sql = "insert into strategies (name,type,date,strategy_df) values ('%s','scg','%s','%s')"
 #    if not scg.empty:
     oc = scg.reset_index()
@@ -103,7 +106,7 @@ def stock_strategies():
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
 
-    timestamp = "GI"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
+    timestamp = "GI"+str(localtime().tm_year)+str(localtime().tm_mon)+str(localtime().tm_mday)+str(localtime().tm_hour)+str(localtime().tm_min)
     sql = "insert into strategies (name,type,date,strategy_df) values ('%s','gi','%s','%s')"
 #    if not gi.empty:
     oc = gi.reset_index()
@@ -111,7 +114,7 @@ def stock_strategies():
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
 
-    timestamp = "NH"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
+    timestamp = "NH"+str(localtime().tm_year)+str(localtime().tm_mon)+str(localtime().tm_mday)+str(localtime().tm_hour)+str(localtime().tm_min)
     sql = "insert into strategies (name,type,date,strategy_df) values ('%s','nh','%s','%s')"
 #    if not nh.empty:
     oc = nh.reset_index()
@@ -119,7 +122,7 @@ def stock_strategies():
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
 
-    timestamp = "TAFA"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
+    timestamp = "TAFA"+str(localtime().tm_year)+str(localtime().tm_mon)+str(localtime().tm_mday)+str(localtime().tm_hour)+str(localtime().tm_min)
     sql = "insert into strategies (name,type,date,strategy_df) values ('%s','tafa','%s','%s')"
 #    if not tafa.empty:
     oc = tafa.reset_index()
@@ -128,15 +131,15 @@ def stock_strategies():
     engine.execute(sql)
     print("Populating Stock Strategies Finished----\n")    
 
-scheduler = sched.scheduler(timefunc=time.time)
+
 morninghour = 6
 eveninghour = 20
 morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=morninghour,minute=0)
 eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
-if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
-    time.localtime().tm_hour <= eveningtime.hour - 2):
+if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
+    localtime().tm_hour <= eveningtime.hour - 2):
     if ('1' in alldata):
         try:
             print("NAVS")
@@ -150,6 +153,7 @@ if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
             pass
         try:
             print("NEWS")
+            import media.news as news
             news.get_MCNews()
         except:
             pass
@@ -222,6 +226,7 @@ if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
     if '4' in alldata:
         try:
             print("NEWS")
+            import media.news as news
             news.get_MCNews()
         except:
             pass
@@ -303,7 +308,7 @@ if ('1' in alldata) or (time.localtime().tm_hour >= morningtime.hour and
 #    wl.os_page_load()
     
 
-if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
+if (alldata==1) or (localtime().tm_hour >= eveningtime.hour):
     try:    
         sh.stockHistory_download(startdate,enddate,progressbar)
     except:
