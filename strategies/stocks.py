@@ -195,7 +195,7 @@ class Stock():
                 table_cls_2 = soup.find(id="octable")
                 all_trs = table_cls_2.find_all('tr')
                 req_row = table_cls_2.find_all('tr')
-                print(len(list(enumerate(req_row))))
+#                print(len(list(enumerate(req_row))))
                 new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
                 row_marker = 0 
                 
@@ -458,8 +458,8 @@ class Index():
                 req_row = table_cls_2.find_all('tr')
                 
                 new_table = pd.DataFrame(index=range(0,len(req_row)-3) , columns=col_list_fnl)
-                print("new table")
-                print(new_table)
+#                print("new table")
+#                print(new_table)
                 row_marker = 0 
                 
                 for row_number, tr_nos in enumerate(req_row):
