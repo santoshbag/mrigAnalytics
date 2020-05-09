@@ -134,8 +134,8 @@ def stock_strategies():
 
 morninghour = 6
 eveninghour = 20
-morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=morninghour,minute=0)
-eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
+morningtime = datetime(year=today.year,month=today.month,day=today.day,hour=morninghour,minute=0)
+eveningtime = datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
 if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
@@ -308,47 +308,47 @@ if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
 #    wl.os_page_load()
     
 
-if (alldata==1) or (localtime().tm_hour >= eveningtime.hour):
-    try:    
-        sh.stockHistory_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:
-        inx.nseIndexHistory_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:    
-        tri.tri_download(startdate,enddate,progressbar)
-    except:
-        pass
-    try:    
-       oh.optionHistory_download()
-    except:
-        pass    
-    try:    
-        returns()
-    except:
-        pass
-    try:    
-        och.oc_download_all(progressbar)
-    except:
-        pass
+#if (alldata==1) or (localtime().tm_hour >= eveningtime.hour):
 #    try:    
-#        stock_strategies()
+#        sh.stockHistory_download(startdate,enddate,progressbar)
 #    except:
 #        pass
-    try:    
-        oh.optionLot_download()
-    except:
-        pass
-#    wl.stock_page_load()
-#    wl.ss_page_load()
-#    wl.os_page_load()
-    
-
-#try:
 #    try:
-#        scheduler.enterabs(morningtime.timestamp(),priority=0,action=nav.navall_download())
+#        inx.nseIndexHistory_download(startdate,enddate,progressbar)
+#    except:
+#        pass
+#    try:    
+#        tri.tri_download(startdate,enddate,progressbar)
+#    except:
+#        pass
+#    try:    
+#       oh.optionHistory_download()
+#    except:
+#        pass    
+#    try:    
+#        returns()
+#    except:
+#        pass
+#    try:    
+#        och.oc_download_all(progressbar)
+#    except:
+#        pass
+##    try:    
+##        stock_strategies()
+##    except:
+##        pass
+#    try:    
+#        oh.optionLot_download()
+#    except:
+#        pass
+##    wl.stock_page_load()
+##    wl.ss_page_load()
+##    wl.os_page_load()
+#    
+#
+##try:
+##    try:
+##        scheduler.enterabs(morningtime.timestamp(),priority=0,action=nav.navall_download())
 #    except:
 #        pass
 #    try:
