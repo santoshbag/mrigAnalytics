@@ -1795,6 +1795,12 @@ def bear_call_spread(budget=1000000,live=False):
 #    print(calls)
     return [calls,errormsg]
 
+def long_iron_butterfly(budget=1000000,live=False):
+    bcs = bear_call_spread(budget=1000000,live=False)
+    bps = bull_put_spread(budget=1000000,live=False)
+    
+    lib = pd.merge(bcs[0],bps[0],on=['Symbol'], how='inner')
+    
 
 
 def intraday_performers():
@@ -1815,6 +1821,8 @@ def intraday_performers():
     df = df.set_index('symbol')
     df = df.sort_values(by='change',ascending=0)
     return df
+
+
 if __name__ == '__main__':
 #    big_money_zack()
 #    top_mf_smallcap_holdings(3)
