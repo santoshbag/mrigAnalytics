@@ -323,6 +323,7 @@ def getStockQuote(symbol):
                     timecounter = timecounter + 1
                     if is_connected():
                         stockQuote = nsepy.get_quote(quote(symbol, safe=''))
+                        stockQuote = stockQuote['data'][0]
                     if is_connected() or timecounter > 5:
                         break
                     else:
@@ -352,6 +353,7 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE'):
                                            expiry=expiry, strike=strike,
                                            option_type=option_type,
                                            instrument='OPTSTK')
+        stockOptionQuote = stockOptionQuote['data'][0]
         momentum = 0
         for i in range(1, 10):
             try:
