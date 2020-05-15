@@ -1545,7 +1545,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
     OC_COLS = ['Symbol','Underlying','Lot','Higher_Strike','Higher_Strike_LTP','Strike_Price','PUT_LTP','PUT_OI','PUT_BidQty','PUT_BidPrice','PUT_AskPrice','PUT_AskQty']#,'MaxDrawdown']
-#    symbols = ['HCLTECH']#,'HDFCBANK','AMBUJACEM']
+    symbols = ['APOLLOTYRE']#,'HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
     for symbol in symbols:
@@ -1554,6 +1554,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
         try:
             stock = st.Stock(symbol)
             stockquote = stock.quote['lastPrice']
+            stockquote = float(stockquote.replace(',',''))
             errormsg = errormsg + " "+str(stockquote)+"|"
 #            drawdown = stock.avg_drawdown()
             if live:
@@ -1605,17 +1606,24 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
                         errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
 #                        print(valid_expiries[0])
                         optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],h_strike1,'PE')
-        #                print(optionquote)
+#                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
+                            marketLot = float(marketLot.replace(',',''))
                             errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
                         else:
                             errormsg = errormsg + "market lot failed \n"
+                        if ('underlyingValue' in optionquote.keys()):
+                            stockquote = optionquote['underlyingValue']
+                            stockquote = float(stockquote.replace(',',''))
+                            errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
+                        else:
+                            errormsg = errormsg + "underlyingValue failed \n"
 
 #                        h_ltp = optionquote['lastPrice']
                         h_ltp = stock_oc[stock_oc['Strike_Price'] == h_strike1].loc[valid_expiries[0]]['PUT_LTP']
                         errormsg = errormsg + "h_ltp -> " + str(h_ltp) + "\n"
-                        if (float(marketLot)*stockquote) <= budget:
+                        if (marketLot*stockquote) <= budget:
                             try:
 #                                print(stock_oc[OC_COLS[3:]])
 #                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
@@ -1725,7 +1733,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
     OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
-#    symbols = ['ADANIENT']#,'HDFCBANK','AMBUJACEM']
+    symbols = ['PIDILITIND']#,'HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
     for symbol in symbols:
@@ -1734,6 +1742,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
         try:
             stock = st.Stock(symbol)
             stockquote = stock.quote['lastPrice']
+            stockquote = float(stockquote.replace(',',''))
 #            drawdown = stock.avg_drawdown()
             if live:
                 stock_oc = stock.optionChain()
@@ -1764,6 +1773,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
                     strike_pts = abs(strikes[2]-strikes[3])
                     errormsg = errormsg + "Strike Points -> " + str(strike_pts) + "\n"
                     l_strike = stockquote+int(stockquote*0.1/strike_pts)*strike_pts
+#                    print(l_strike)
                     l_strike = mu.closestmatch(l_strike,
                                                 strikes,
                                                 strike_pts)
@@ -1791,9 +1801,16 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
 #                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
+                            marketLot = float(marketLot.replace(',',''))
                             errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
                         else:
                             errormsg = errormsg + "market lot failed \n"
+                        if ('underlyingValue' in optionquote.keys()):
+                            stockquote = optionquote['underlyingValue']
+                            stockquote = float(stockquote.replace(',',''))
+                            errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
+                        else:
+                            errormsg = errormsg + "underlyingValue failed \n"
                         #l_ltp = optionquote['lastPrice']
 ##-------------STRIKES FILTER
 #"""                  
@@ -1804,7 +1821,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
                         l_ltp = stock_oc[stock_oc['Strike_Price'] == l_strike1].loc[valid_expiries[0]]['CALL_LTP']
 #                        print(l_ltp)
                         errormsg = errormsg + "l_ltp -> " + str(l_ltp) + "\n"
-                        if (float(marketLot)*stockquote) <= budget:
+                        if (marketLot*stockquote) <= budget:
                             try:
                                 #print(stock_oc)
 #"""
@@ -1883,7 +1900,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
     else:
         calls = pd.DataFrame()
 
-#    print(calls)
+    print(calls)
 #    print(errormsg)
     return [calls,errormsg]
 
@@ -1930,5 +1947,5 @@ if __name__ == '__main__':
 #      growth_income()
 #      top_mf_holdings()
 #    covered_call()
-   bull_put_spread()
-#   bear_call_spread()
+#   bull_put_spread(live=True)
+   bear_call_spread(live=True)
