@@ -1527,7 +1527,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
     """
     maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
     marketLot = 50    # default lot
-    
+    desired_OI = 20000
     #Stock Filter Criteria
     #1. Return for past 8 weeks is positive
     #2. Average Daily Volume >= 500000
@@ -1545,7 +1545,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
     OC_COLS = ['Symbol','Underlying','Lot','Higher_Strike','Higher_Strike_LTP','Strike_Price','PUT_LTP','PUT_OI','PUT_BidQty','PUT_BidPrice','PUT_AskPrice','PUT_AskQty']#,'MaxDrawdown']
-    symbols = ['APOLLOTYRE']#,'HDFCBANK','AMBUJACEM']
+#    symbols = ['DABUR']#,'HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
     for symbol in symbols:
@@ -1554,7 +1554,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
         try:
             stock = st.Stock(symbol)
             stockquote = stock.quote['lastPrice']
-            stockquote = float(stockquote.replace(',',''))
+            stockquote = float(str(stockquote).replace(',',''))
             errormsg = errormsg + " "+str(stockquote)+"|"
 #            drawdown = stock.avg_drawdown()
             if live:
@@ -1609,13 +1609,13 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
 #                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
-                            marketLot = float(marketLot.replace(',',''))
+                            marketLot = float(str(marketLot).replace(',',''))
                             errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
                         else:
                             errormsg = errormsg + "market lot failed \n"
                         if ('underlyingValue' in optionquote.keys()):
                             stockquote = optionquote['underlyingValue']
-                            stockquote = float(stockquote.replace(',',''))
+                            stockquote = float(str(stockquote).replace(',',''))
                             errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
                         else:
                             errormsg = errormsg + "underlyingValue failed \n"
@@ -1650,7 +1650,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
 
                                 # OPEN INTEREST FILTER
                                 
-                                stock_oc = stock_oc[stock_oc['PUT_OI'] >= 500]
+                                stock_oc = stock_oc[stock_oc['PUT_OI'] >= desired_OI]
                                 if len(stock_oc) > 0:
                                     errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
                                 else:
@@ -1698,7 +1698,8 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
                 pass
     else:
         calls = pd.DataFrame()
-    print(calls)
+#    print(calls)
+#    print(errormsg)
     return [calls,errormsg]
 
 def bear_call_spread(budget=1000000,live=False, im=0.10):
@@ -1715,7 +1716,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
     """
     maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
     marketLot = 50    # default lot
-    
+    desired_OI = 20000
     #Stock Filter Criteria
     #1. Return for past 8 weeks is negative
     #2. Average Daily Volume >= 500000
@@ -1733,7 +1734,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
     symbols = pd.read_sql(sql,engine)
     symbols = list(symbols.symbol)
     OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
-    symbols = ['PIDILITIND']#,'HDFCBANK','AMBUJACEM']
+#    symbols = ['PIDILITIND']#,'HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
     for symbol in symbols:
@@ -1742,7 +1743,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
         try:
             stock = st.Stock(symbol)
             stockquote = stock.quote['lastPrice']
-            stockquote = float(stockquote.replace(',',''))
+            stockquote = float(str(stockquote).replace(',',''))
 #            drawdown = stock.avg_drawdown()
             if live:
                 stock_oc = stock.optionChain()
@@ -1801,13 +1802,13 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
 #                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
-                            marketLot = float(marketLot.replace(',',''))
+                            marketLot = float(str(marketLot).replace(',',''))
                             errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
                         else:
                             errormsg = errormsg + "market lot failed \n"
                         if ('underlyingValue' in optionquote.keys()):
                             stockquote = optionquote['underlyingValue']
-                            stockquote = float(stockquote.replace(',',''))
+                            stockquote = float(str(stockquote).replace(',',''))
                             errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
                         else:
                             errormsg = errormsg + "underlyingValue failed \n"
@@ -1852,7 +1853,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
                                 
                                 # OPEN INTEREST FILTER , OI more than 500
                                 
-                                stock_oc = stock_oc[stock_oc['CALL_OI'] >= 500]
+                                stock_oc = stock_oc[stock_oc['CALL_OI'] >= desired_OI]
                                 if len(stock_oc) > 0:
                                     errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
                                 else:
@@ -1947,5 +1948,5 @@ if __name__ == '__main__':
 #      growth_income()
 #      top_mf_holdings()
 #    covered_call()
-#   bull_put_spread(live=True)
-   bear_call_spread(live=True)
+   bull_put_spread(live=True)
+#   bear_call_spread(live=True)

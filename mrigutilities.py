@@ -323,7 +323,8 @@ def getStockQuote(symbol):
                     timecounter = timecounter + 1
                     if is_connected():
                         stockQuote = nsepy.get_quote(quote(symbol, safe=''))
-                        stockQuote = stockQuote['data'][0]
+                        if ('data' in stockQuote.keys()):
+                            stockQuote = stockQuote['data'][0]
                     if is_connected() or timecounter > 5:
                         break
                     else:
@@ -344,7 +345,7 @@ def getStockQuote(symbol):
 def getStockOptionQuote(symbol, expiry, strike, option_type='CE'):
     stockOptionQuote = {}
     sql = "select * from live where symbol='%s' and expiry='%s' and strike='%s' and option_type='%s' order by date desc limit 1"
-    engine = sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
     stockOptionQuote = pd.read_sql(sql % (symbol, expiry.strftime('%Y-%m-%d'), str(strike), option_type), engine)
     if not stockOptionQuote.empty:
         stockOptionQuote.set_index('symbol', inplace=True)
@@ -353,7 +354,8 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE'):
                                            expiry=expiry, strike=strike,
                                            option_type=option_type,
                                            instrument='OPTSTK')
-        stockOptionQuote = stockOptionQuote['data'][0]
+        if ('data' in stockOptionQuote.keys()):
+            stockOptionQuote = stockOptionQuote['data'][0]
         momentum = 0
         for i in range(1, 10):
             try:
