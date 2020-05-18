@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import mrigutilities as mu
 import datetime, dateutil.relativedelta, time
 import pandas as pd
-
+import mrigstatics
 #import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import research.math as rm
@@ -1702,7 +1702,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
 #    print(errormsg)
     return [calls,errormsg]
 
-def bear_call_spread(budget=1000000,live=False, im=0.10):
+def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[]):
     """ 
     BEAR CALL SPREAD.
     
@@ -1712,37 +1712,47 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
     Arguments : budget: Numeric, defaults to 1000000
                 live : boolean, whether to use already stored OC or get it live, defaults to false                
                 im : numeric, initial margin for viability, defaults to 0.10
-                
+                seclist : stock tickers for trades for selected tickers, defaults to []
     """
     maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
     marketLot = 50    # default lot
     desired_OI = 20000
+    OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
     #Stock Filter Criteria
     #1. Return for past 8 weeks is negative
     #2. Average Daily Volume >= 500000
     #3. Remove Penny stocks
     
-    
-    sql = "select symbol from (select sh.symbol, avg(sh.volume) as adtv, \
-           sum(dr.daily_log_returns) as pr from stock_history sh inner join daily_returns dr \
-           on sh.symbol = dr.symbol where sh.series = 'EQ' and sh.date = dr.date and sh.close > 10 and \
-           sh.date > (now() - interval '8 weeks') group by sh.symbol) CR1 \
-           where adtv >= 500000 and pr < 0 "
-           
-#    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
-    engine = mu.sql_engine()
-    symbols = pd.read_sql(sql,engine)
-    symbols = list(symbols.symbol)
-    OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
+    if len(seclist)==0: 
+        sql = "select symbol from (select sh.symbol, avg(sh.volume) as adtv, \
+               sum(dr.daily_log_returns) as pr from stock_history sh inner join daily_returns dr \
+               on sh.symbol = dr.symbol where sh.series = 'EQ' and sh.date = dr.date and sh.close > 10 and \
+               sh.date > (now() - interval '8 weeks') group by sh.symbol) CR1 \
+               where adtv >= 500000 and pr < 0 "
+               
+    #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
+        engine = mu.sql_engine()
+        symbols = pd.read_sql(sql,engine)
+        symbols = list(symbols.symbol)
+        symbols.append(['NIFTY 50', 'NIFTY IT', 'NIFTY BANK'])
+    else:
+        symbols = seclist 
 #    symbols = ['PIDILITIND']#,'HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
+    instrument='OPTSTK'
     for symbol in symbols:
 #        print(symbol)
         errormsg = errormsg + " {"+symbol+"\n"
         try:
-            stock = st.Stock(symbol)
-            stockquote = stock.quote['lastPrice']
+            if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
+                stock = st.Index(symbol)
+                instrument='OPTIDX'
+                stockquote = "9000" # some initial value as Index quote is not available
+                symbol = mrigstatics.INDEX_MAP_FOR_OC[symbol]
+            else:    
+                stock = st.Stock(symbol)
+                stockquote = stock.quote['lastPrice']
             stockquote = float(str(stockquote).replace(',',''))
 #            drawdown = stock.avg_drawdown()
             if live:
@@ -1774,12 +1784,12 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
                     strike_pts = abs(strikes[2]-strikes[3])
                     errormsg = errormsg + "Strike Points -> " + str(strike_pts) + "\n"
                     l_strike = stockquote+int(stockquote*0.1/strike_pts)*strike_pts
-#                    print(l_strike)
+                    print(l_strike)
                     l_strike = mu.closestmatch(l_strike,
                                                 strikes,
                                                 strike_pts)
                     errormsg = errormsg + "Closest Strike -> " + str(l_strike) + "\n"
-                    #print(l_strike)
+#                    print(l_strike)
                     l_strike1,h_strike2,h_strike3 = l_strike,l_strike,l_strike
                     h_strike2,h_strike3 = h_strike2 + strike_pts,h_strike3 + strike_pts
                     errormsg = errormsg + "strikes -> " + str([l_strike,h_strike2,h_strike3]) + "\n"
@@ -1798,7 +1808,8 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
                     if len(valid_expiries) > 0:
                         errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
 #                        print(valid_expiries[0])
-                        optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],l_strike1)
+#                        print([symbol,valid_expiries[0],l_strike1])
+                        optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],l_strike1,instrument=instrument)
 #                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
@@ -1902,7 +1913,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10):
         calls = pd.DataFrame()
 
     print(calls)
-#    print(errormsg)
+    print(errormsg)
     return [calls,errormsg]
 
 def long_iron_butterfly(budget=1000000,live=False):
@@ -1948,5 +1959,5 @@ if __name__ == '__main__':
 #      growth_income()
 #      top_mf_holdings()
 #    covered_call()
-   bull_put_spread(live=True)
-#   bear_call_spread(live=True)
+#   bull_put_spread(live=True)
+   bear_call_spread(live=True,seclist=['NIFTY 50'],im=.05)
