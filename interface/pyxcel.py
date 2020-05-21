@@ -51,8 +51,13 @@ def mrigxl_getStockData(symbol,start_date,end_date=None,last=True,db='localhost'
 @xw.func
 #@xw.ret(expand='table', transpose=False)
 @xw.arg('investments', pd.DataFrame, index=False, header=True)
-def mrigxl_IRR(symbol,investments=None):
+def mrigxl_IRR(symbol,investments=None,startDate=None,endDate=None):
     df = investments[investments.Date.notnull()]
+    if startDate != None:
+        df = df[df['Date'] >= startDate]
+    if endDate != None:
+        df = df[df['Date'] <= endDate]
+
     if symbol!="ALL":
         df = investments[investments['Scheme Name']==symbol]
     dates = [dt.date() for dt in list(df['Date'])] +[datetime.date.today()]
