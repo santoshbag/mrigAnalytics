@@ -962,11 +962,20 @@ def mrigxl_stockquote(symbol):
 @xw.func
 def mrigxl_bull_put_spread(live=False):
     sheet='Bull Put Spread'
-    sht = xw.Book.caller().sheets[sheet]
-    sht.range('B3:N500').clear_contents()
+    ts = datetime.datetime.now()
+    output = open(os.path.join(os.path.dirname(__file__), 'bps'+str(ts).replace(":","")+'.csv'),"w+")
+#    err_info = open('bps_err'+str(ts).replace(":","")+'.csv',"w+")
+    bps = pd.DataFrame()
+#    sht = xw.Book.caller().sheets[sheet]
+#    sht.range('B3:N500').clear_contents()
     oc = ss.bull_put_spread(live=live)
-    sht.range('B3').value = oc[0]
-    sht.range('AE4').value = oc[1]
+    bps = oc[0]
+    bps.to_csv(output)
+#    err_info.write(oc[1])
+    output.close()
+#    err_info.close()
+#    sht.range('B3').value = oc[0]
+#    sht.range('AE4').value = oc[1]
 
 @xw.func
 def mrigxl_bear_call_spread(live=False):

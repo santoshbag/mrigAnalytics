@@ -342,7 +342,7 @@ def getStockQuote(symbol):
     return stockQuote
 
 
-def getStockOptionQuote(symbol, expiry, strike, option_type='CE'):
+def getStockOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPTSTK'):
     stockOptionQuote = {}
     sql = "select * from live where symbol='%s' and expiry='%s' and strike='%s' and option_type='%s' order by date desc limit 1"
     engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
@@ -353,7 +353,8 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE'):
         stockOptionQuote = nsepy.get_quote(symbol=quote(symbol, safe=''),
                                            expiry=expiry, strike=strike,
                                            option_type=option_type,
-                                           instrument='OPTSTK')
+                                           instrument=instrument)
+#        print(stockOptionQuote)
         if ('data' in stockOptionQuote.keys()):
             stockOptionQuote = stockOptionQuote['data'][0]
         momentum = 0

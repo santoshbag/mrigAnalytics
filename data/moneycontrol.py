@@ -317,7 +317,7 @@ def get_NSELive():
             quote['low52'] = sym[8].text.strip().replace(',','')
     except:
         pass
-#    print(quote)    
+    print(quote)    
     return quote
             
        
@@ -1004,7 +1004,7 @@ def get_CorporateActions(symbol=None):
 
 
 if __name__ == '__main__':
-    get_MCStockCodes()
+#    get_MCStockCodes()
     
 #    get_MCRatios()
 #    populate_ratios_table()
@@ -1016,5 +1016,5 @@ if __name__ == '__main__':
 #    get_BalanceSheet()       
 #    get_CashFLowStatement()
     #get_OutShares_NSE()
-    get_CorporateActions()
-#    get_NSELive()
+#    get_CorporateActions()
+    get_NSELive()
