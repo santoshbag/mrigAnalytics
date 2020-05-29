@@ -1513,7 +1513,7 @@ def covered_call(budget=1000000,live=False):
     return [calls,errormsg]
 
 
-def bull_put_spread(budget=1000000,live=False,im=0.10):
+def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localhost'):
     """ 
     BULL PUT SPREAD.
     
@@ -1533,17 +1533,20 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
     #2. Average Daily Volume >= 500000
     #3. Remove Penny stocks
     
+    engine = mu.sql_engine(dbhost=dbhost)
     
-    sql = "select symbol from (select sh.symbol, avg(sh.volume) as adtv, \
-           sum(dr.daily_log_returns) as pr from stock_history sh inner join daily_returns dr \
-           on sh.symbol = dr.symbol where sh.series = 'EQ' and sh.date = dr.date and sh.close > 10 and \
-           sh.date > (now() - interval '8 weeks') group by sh.symbol) CR1 \
-           where adtv >= 500000 and pr > 0 "
-           
+    if (len(seclist) == 0):    
+        sql = "select symbol from (select sh.symbol, avg(sh.volume) as adtv, \
+               sum(dr.daily_log_returns) as pr from stock_history sh inner join daily_returns dr \
+               on sh.symbol = dr.symbol where sh.series = 'EQ' and sh.date = dr.date and sh.close > 10 and \
+               sh.date > (now() - interval '8 weeks') group by sh.symbol) CR1 \
+               where adtv >= 500000 and pr > 0 "
+        symbols = pd.read_sql(sql,engine)
+        symbols = list(symbols.symbol)
+        symbols.append(['NIFTY 50', 'NIFTY IT', 'NIFTY BANK'])
+    else:
+        symbols = seclist
 #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
-    engine = mu.sql_engine()
-    symbols = pd.read_sql(sql,engine)
-    symbols = list(symbols.symbol)
     OC_COLS = ['Symbol','Underlying','Lot','Higher_Strike','Higher_Strike_LTP','Strike_Price','PUT_LTP','PUT_OI','PUT_BidQty','PUT_BidPrice','PUT_AskPrice','PUT_AskQty']#,'MaxDrawdown']
 #    symbols = ['DABUR']#,'HDFCBANK','AMBUJACEM']
     calls = []
@@ -1702,7 +1705,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10):
 #    print(errormsg)
     return [calls,errormsg]
 
-def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[]):
+def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],dbhost='localhost'):
     """ 
     BEAR CALL SPREAD.
     
@@ -1722,6 +1725,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[]):
     #1. Return for past 8 weeks is negative
     #2. Average Daily Volume >= 500000
     #3. Remove Penny stocks
+    engine = mu.sql_engine(dbhost=dbhost)
     
     if len(seclist)==0: 
         sql = "select symbol from (select sh.symbol, avg(sh.volume) as adtv, \
@@ -1731,7 +1735,6 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[]):
                where adtv >= 500000 and pr < 0 "
                
     #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
-        engine = mu.sql_engine()
         symbols = pd.read_sql(sql,engine)
         symbols = list(symbols.symbol)
         symbols.append(['NIFTY 50', 'NIFTY IT', 'NIFTY BANK'])

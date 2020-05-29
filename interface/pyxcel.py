@@ -29,10 +29,19 @@ from datetime import date
 def mrigxl_getMFNAV(reference_date, isinlist=None,db='localhost'):
     
     nav_df = mu.getMFNAV(reference_date,isinlist,db=db)
-    nav_df.drop(['Fund House','Scheme Type'],axis=1,inplace=True)
-    #nav_df.drop('Scheme Type',axis=1)
+    nav_df.drop(['Fund House','Scheme Type','Repurchase Price','Sale Price'],axis=1,inplace=True)
     nav_df.reset_index(level=0, inplace=True)
-    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+#    nav_df.sort_index(ascending=False, inplace=True)
+    nav_df['Net Asset Value'] = nav_df['Net Asset Value'].apply(pd.to_numeric,errors='coerce')
+    
+    nav_df['Return'] = np.log(nav_df.groupby('Scheme Name')['Net Asset Value'].pct_change().add(1))
+    nav_df['Cum Return'] = nav_df.groupby('Scheme Name')['Return'].cumsum().fillna(0).map("{:.2%}".format)
+    nav_df['Return'] = nav_df['Return'].fillna(0).map("{:.2%}".format)
+
+    nav_df.sort_values(by=['Scheme Name','Date'],ascending=[True,False],inplace=True)
+    #nav_df.drop('Scheme Type',axis=1)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    nav_df.set_index('Date', inplace=True)
     return nav_df
     
 @xw.func
