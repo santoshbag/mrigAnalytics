@@ -1543,7 +1543,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                where adtv >= 500000 and pr > 0 "
         symbols = pd.read_sql(sql,engine)
         symbols = list(symbols.symbol)
-        symbols.append(['NIFTY 50', 'NIFTY IT', 'NIFTY BANK'])
+        symbols = symbols + ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']
     else:
         symbols = seclist
 #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
@@ -1737,7 +1737,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],dbhost='local
     #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
         symbols = pd.read_sql(sql,engine)
         symbols = list(symbols.symbol)
-        symbols.append(['NIFTY 50', 'NIFTY IT', 'NIFTY BANK'])
+        symbols = symbols + ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']
     else:
         symbols = seclist 
 #    symbols = ['PIDILITIND']#,'HDFCBANK','AMBUJACEM']
@@ -1904,7 +1904,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],dbhost='local
         calls = pd.concat(calls)
         if (time.localtime().tm_hour > 17):
             timestamp = "BCS_"+str(time.localtime().tm_year)+str(time.localtime().tm_mon)+str(time.localtime().tm_mday)+str(time.localtime().tm_hour)+str(time.localtime().tm_min)
-            sql = "insert into strategies (name,type,date,strategy_df) values ('%s','bull_put_spread','%s','%s')"
+            sql = "insert into strategies (name,type,date,strategy_df) values ('%s','bear_call_spread','%s','%s')"
             oc = calls.reset_index()
             oc = oc.to_string()
             sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
