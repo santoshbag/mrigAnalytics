@@ -70,7 +70,7 @@ def navall_download():
         if written:
             navs = DataFrame(navs[1:],columns=navs_cols)
             #navs = DataFrame(navs[22:23],columns=navs_cols)
-            #print(navs.tail(n=20))
+            print(navs.tail(n=20))
             navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
             navs = navs.drop('Time Stamp',axis=1)
   #          print(max(navs['Date']))

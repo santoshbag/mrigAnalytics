@@ -408,19 +408,21 @@ def avg_stock_drawdown(symbol, window_days=29, period_months=12):
     return drawdown
 
 
-def get_stored_option_strategies(name=None):
-    if name == None:
-        sql = "select strategy_df from strategies order by date asc limit 1"
-    else:
+def get_stored_option_strategies(name=None,strategy_type=None):
+    if name != None:
         sql = "select strategy_df from strategies where name='" + name + "'"
+    elif strategy_type != None:
+        sql = "select strategy_df from strategies where type='" + strategy_type + "' order by date desc limit 1"
+    else:
+        sql = "select strategy_df from strategies order by date desc limit 1"
 
     engine = sql_engine()
     df = engine.execute(sql).fetchall()
     if len(df) > 0:
         df = df[0][0]
         df = pd.read_csv(StringIO(df), sep='\s+')
-        df['Expiry'] = pd.to_datetime(df['Expiry'], format='%Y-%m-%d').apply(lambda x: x.date())
-        df = df.set_index('Expiry')
+#        df['Expiry'] = pd.to_datetime(df['Expiry'], format='%Y-%m-%d').apply(lambda x: x.date())
+#        df = df.set_index('Expiry')
     else:
         df = pd.DataFrame()
     return df
@@ -603,6 +605,55 @@ def getNifty50():
             pass
     return nifty50
 
+def getZerodhaChgs(tran_type='EQ_D',qty=0,buy=0,sell=0):
+    charges = 0
+    
+    brokerage_flat = mrigstatics.ZERODHA_CHARGES[tran_type]['BROK_FLAT']
+    brokerage_per = mrigstatics.ZERODHA_CHARGES[tran_type]['BROK_PER']
+    stt_ctt = mrigstatics.ZERODHA_CHARGES[tran_type]['STT/CTT']
+    exch = mrigstatics.ZERODHA_CHARGES[tran_type]['EXCH']
+    gst = mrigstatics.ZERODHA_CHARGES[tran_type]['GST']
+    sebi = mrigstatics.ZERODHA_CHARGES[tran_type]['SEBI']
+    sell_val = sell*qty
+    buy_val = buy*qty
+    tran_val = buy_val + sell_val
+    
+    if tran_type == 'EQ_D':
+        brokerage = min(brokerage_flat,brokerage_per*(buy_val + sell_val))
+#        print(brokerage)
+        stt_ctt_chgs = stt_ctt * (buy_val + sell_val)
+#        print(stt_ctt_chgs)
+        exch_chgs = exch * tran_val
+#        print(exch_chgs)
+        gst_chgs = gst * (brokerage + exch_chgs)
+#        print(gst_chgs)
+        sebi_chgs = sebi*(buy_val+sell_val)/10000000
+#        print(sebi_chgs)
+        charges = brokerage + stt_ctt_chgs + exch_chgs + gst_chgs + sebi_chgs
+    if tran_type == 'EQ_I':
+        brokerage = min(brokerage_flat,brokerage_per*buy_val) + min(brokerage_flat,brokerage_per*sell_val)
+        stt_ctt_chgs = stt_ctt * sell_val
+        exch_chgs = exch * (buy_val + sell_val)
+        gst_chgs = gst * (brokerage + exch_chgs)
+        sebi_chgs = sebi*(buy_val+sell_val)/10000000
+        charges = brokerage + stt_ctt_chgs + exch_chgs + gst_chgs + sebi_chgs
+    if tran_type == 'EQ_F':
+        brokerage = min(brokerage_flat,brokerage_per*buy_val) + min(brokerage_flat,brokerage_per*sell_val)
+        stt_ctt_chgs = stt_ctt * sell_val
+        exch_chgs = exch * (buy_val + sell_val)
+        gst_chgs = gst * (brokerage + exch_chgs)
+        sebi_chgs = sebi*(buy_val+sell_val)/10000000
+        charges = brokerage + stt_ctt_chgs + exch_chgs + gst_chgs + sebi_chgs
+    if tran_type == 'EQ_O':
+        brokerage = min(brokerage_flat,brokerage_per*buy_val) + min(brokerage_flat,brokerage_per*sell_val)
+        stt_ctt_chgs = stt_ctt * sell_val
+        exch_chgs = exch * (buy_val + sell_val)
+        gst_chgs = gst * (brokerage + exch_chgs)
+        sebi_chgs = sebi*(buy_val+sell_val)/10000000
+        charges = brokerage + stt_ctt_chgs + exch_chgs + gst_chgs + sebi_chgs
+    
+    return [charges,brokerage,stt_ctt_chgs,exch_chgs,gst_chgs,sebi_chgs]
+
 
 if __name__ == '__main__':
-    getNifty200()
+    print(getZerodhaChgs('EQ_D',8,0,310.35))

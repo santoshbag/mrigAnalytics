@@ -181,13 +181,33 @@ OECD_URLS = {'BALANCE_OF_PAYMENTS' : 'https://stats.oecd.org/SDMX-JSON/data/MEI_
 """
 ZERODHA CHARGES
 """
-
-TR_CHARGES ={'BROK':0,
+ZERODHA_CHARGES = {
+'EQ_D' : {'BROK_FLAT':0,
+               'BROK_PER':0,
              'STT/CTT':0.001,
              'EXCH':0.0000325,
              'GST':0.18,
-             'SEBI':15}
+             'SEBI':10},
+'EQ_I' : {'BROK_FLAT':20,
+            'BROK_PER':0.0003,
+             'STT/CTT':0.00025,
+             'EXCH':0.0000325,
+             'GST':0.18,
+             'SEBI':10},
+'EQ_F' : {'BROK_FLAT':20,
+             'BROK_PER':0.0003,
+             'STT/CTT':0.0001,
+             'EXCH':0.000019,
+             'GST':0.18,
+             'SEBI':10},
+'EQ_O' : {'BROK_FLAT':20,
+            'BROK_PER':0,
+             'STT/CTT':0.0005,
+             'EXCH':0.0005,
+             'GST':0.18,
+             'SEBI':10}
 
+}
 INDEX_MAP_FOR_OC = {'NIFTY 50':'NIFTY',
                     'NIFTY IT':'NIFTYIT',
                     'NIFTY BANK':'BANKNIFTY',
