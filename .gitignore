@@ -1,1 +1,10 @@
 /data/__pycache__
+/.spyproject
+/.vs
+/__pycache__
+/strategies/__pycache__
+/interface/__pycache__
+/media/__pycache__
+/instruments/__pycache__
+/research/__pycache__
+/mrigweb/mrigweb/__pycache__
