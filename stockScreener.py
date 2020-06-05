@@ -1725,7 +1725,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,
     """
     if not stored:
         maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
-        marketLot = 50    # default lot
+        marketLot = 50    # default market lot
         desired_OI = 20000
         OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
         #Stock Filter Criteria
