@@ -12,6 +12,19 @@ insert into daily_returns (symbol, date, price, daily_arithmetic_returns,daily_l
 )
 UNION
 
+(
+SELECT "ISIN Div Payout/ ISIN Growth" as symbol,
+    mf."Date" as date,
+    to_number(mf."Net Asset Value",'9999999.9999') as price,
+    to_number(mf."Net Asset Value",'9999999.9999') / lag(to_number(mf."Net Asset Value",'9999999.9999'), 1) OVER (ORDER BY mf."Date") - 1::numeric AS daily_arithmetic_returns,
+    ln(to_number(mf."Net Asset Value",'9999999.9999') / lag(to_number(mf."Net Asset Value",'9999999.9999'), 1) OVER (ORDER BY mf."Date")) AS daily_log_returns
+   FROM mf_nav_history mf where mf."Net Asset Value" ~ '^([0-9]+[.]?[0-9]*|[.][0-9]+)$'
+   and  to_number(mf."Net Asset Value",'9999999.9999') <> 0 and mf."ISIN Div Payout/ ISIN Growth" ~ '[0-9a-zA-Z]'
+  ORDER BY mf."Date"
+)
+
+UNION
+
 (SELECT co.crude_benchmark as symbol,
     co.value_date as date,
     to_number(co.price,'9999999.99') as price,
