@@ -30,11 +30,13 @@ def navall_download():
     headerAbsent = True
     try:
         last_download_date = last_fetched_data[0][navs_cols.index('Time Stamp')].split("-")[0]
-#        print(last_download_date)
+        #print(last_download_date)
         headerAbsent = False
     except:
         pass
+        #print("here")
     if last_download_date != timestamp.strftime("%x"):
+        print("here")
         written = False
         navs = []
         mutual_fund_scheme_type = ""
@@ -50,6 +52,7 @@ def navall_download():
                 #print(line)
                 try:
                     current_date = line[-1].split("\r\n",1)[:-1][0]
+                    #print(current_date)
                     navs.append(line[-1].split("\r\n",1)[:-1]+[mutual_fund_house,mutual_fund_scheme_type]+line[1:-1]+["",""]+[timestamp.strftime("%x-%X")])
  #                   print(navs)
                     written= True
@@ -70,17 +73,19 @@ def navall_download():
         if written:
             navs = DataFrame(navs[1:],columns=navs_cols)
             #navs = DataFrame(navs[22:23],columns=navs_cols)
-            #print(navs.tail(n=20))
+            
             navs.to_csv(mfNavHistory,index=False,header=headerAbsent)
             navs = navs.drop('Time Stamp',axis=1)
-  #          print(max(navs['Date']))
+#            print(navs[navs['Fund House'].str.contains('Axis')])
+#            print(navs[navs['Date'] == '03-Jun-2020'])
+#            navs = navs[navs['Date'] == '03-Jun-2020']
             dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
             navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)[0]
             try:
                 navs.to_sql('mf_nav_history',engine, if_exists='append', index=False)
             except:
                 pass
-            #mfNavHistory.write("\n<End>\n")
+            mfNavHistory.write("\n<End>\n")
     mfNavHistory.close()
     print("Mutual Fund NAVS download finished\n")
     
