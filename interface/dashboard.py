@@ -960,28 +960,28 @@ def mrigxl_stockquote(symbol):
     return quote
 
 @xw.func
-def mrigxl_bull_put_spread(live=False):
+def mrigxl_bull_put_spread(live=False,stored=False, dbhost='localhost'):
     sheet='Bull Put Spread'
-    ts = datetime.datetime.now()
-    output = open(os.path.join(os.path.dirname(__file__), 'bps'+str(ts).replace(":","")+'.csv'),"w+")
+#    ts = datetime.datetime.now()
+#    output = open(os.path.join(os.path.dirname(__file__), 'bps'+str(ts).replace(":","")+'.csv'),"w+")
 #    err_info = open('bps_err'+str(ts).replace(":","")+'.csv',"w+")
-    bps = pd.DataFrame()
-#    sht = xw.Book.caller().sheets[sheet]
-#    sht.range('B3:N500').clear_contents()
-    oc = ss.bull_put_spread(live=live)
-    bps = oc[0]
-    bps.to_csv(output)
+#    bps = pd.DataFrame()
+    sht = xw.Book.caller().sheets[sheet]
+    sht.range('B3:N500').clear_contents()
+    oc = ss.bull_put_spread(live=live,stored=stored, dbhost=dbhost)
+#    bps = oc[0]
+#    bps.to_csv(output)
 #    err_info.write(oc[1])
-    output.close()
+#    output.close()
 #    err_info.close()
-#    sht.range('B3').value = oc[0]
-#    sht.range('AE4').value = oc[1]
+    sht.range('B3').value = oc[0]
+    sht.range('AE4').value = oc[1]
 
 @xw.func
-def mrigxl_bear_call_spread(live=False):
+def mrigxl_bear_call_spread(live=False,stored=False,dbhost='localhost'):
     sheet='Bear Call Spread'
     sht = xw.Book.caller().sheets[sheet]
     sht.range('B3:N500').clear_contents()
-    oc = ss.bear_call_spread(live=live)
+    oc = ss.bear_call_spread(live=live,stored=stored,dbhost=dbhost)
     sht.range('B3').value = oc[0]
     sht.range('AE4').value = oc[1]

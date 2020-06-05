@@ -95,7 +95,15 @@ def xnpv(rate, values, dates):
     d0 = dates[0]    # or min(dates)
     return sum([ vi / (1.0 + rate)**((di - d0).days / 365.0) for vi, di in zip(values, dates)])
 
-
+@xw.func
+def mrigxl_zerodha(tran_type='EQ_D',qty=0,buy=0,sell=0,mode='oc'):
+    
+    charges = mu.getZerodhaChgs(tran_type,qty,buy,sell)
+    if mode=='oc':
+        return charges[0]
+    else:
+        return charges
+    
 if __name__ == '__main__':
     dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
     values = [-10000, 20, 10100]
