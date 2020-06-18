@@ -79,12 +79,14 @@ def navall_download():
 #            print(navs[navs['Fund House'].str.contains('Axis')])
 #            print(navs[navs['Date'] == '03-Jun-2020'])
 #            navs = navs[navs['Date'] == '03-Jun-2020']
-            dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
-            navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)[0]
-            try:
-                navs.to_sql('mf_nav_history',engine, if_exists='append', index=False)
-            except:
-                pass
+#            dt_handling = "to_char(\"Date\",'dd-Mon-YYYY') as \"Date\""
+#            navs = mrigutilities.clean_df_db_dups(navs,'mf_nav_history',engine,dup_cols=["Date","Scheme Name"],date_handling=dt_handling)[0]
+#            try:
+            engine.execute(open(os.path.join(datadir,'..','sql_queries','mf1.sql'),"r").read())
+            navs.to_sql('temp_mf',engine, if_exists='append', index=False)
+            engine.execute(open(os.path.join(datadir,'..','sql_queries','mf2.sql'),"r").read())
+#            except:
+#                pass
 #            mfNavHistory.write("\n<End>\n")
     mfNavHistory.close()
     print("Mutual Fund NAVS download finished\n")

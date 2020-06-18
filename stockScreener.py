@@ -1552,13 +1552,20 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
     #    symbols = ['DABUR']#,'HDFCBANK','AMBUJACEM']
         calls = []
         errormsg = ""
+        instrument='OPTSTK'
         for symbol in symbols:
     #        print(symbol)
             errormsg = errormsg + " {"+symbol+"\n"
             try:
-                stock = st.Stock(symbol)
-                stockquote = stock.quote['lastPrice']
-                stockquote = float(str(stockquote).replace(',',''))
+                if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
+                    stock = st.Index(symbol)
+                    instrument='OPTIDX'
+                    stockquote = "10000" # some initial value as Index quote is not available
+                    symbol = mrigstatics.INDEX_MAP_FOR_OC[symbol]
+                else: 
+                    stock = st.Stock(symbol)
+                    stockquote = stock.quote['lastPrice']
+                    stockquote = float(str(stockquote).replace(',',''))
                 errormsg = errormsg + " "+str(stockquote)+"|"
     #            drawdown = stock.avg_drawdown()
                 if live:
@@ -1758,7 +1765,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,
                 if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
                     stock = st.Index(symbol)
                     instrument='OPTIDX'
-                    stockquote = "9000" # some initial value as Index quote is not available
+                    stockquote = "10000" # some initial value as Index quote is not available
                     symbol = mrigstatics.INDEX_MAP_FOR_OC[symbol]
                 else:    
                     stock = st.Stock(symbol)
@@ -1958,7 +1965,27 @@ def intraday_performers():
     df = df.sort_values(by='change',ascending=0)
     return df
 
-
+def stock_fut_data(symbol='NIFTY 50'):
+    sql = "select date, expiry, close as futures_price from option_history where symbol='"+ symbol + \
+          "' and instrument='FUTSTK' and expiry >= now()"
+    
+    engine = mu.sql_engine()
+    futures_data = pd.read_sql(sql,engine)
+    if not futures_data.empty:
+        futures_data.set_index('date',inplace=True)
+        futures_data.index = pd.to_datetime(futures_data.index)
+        futures_data = futures_data.reset_index().pivot('date','expiry','futures_price')
+        futures_data.rename_axis('date', inplace=True)
+        
+    sql = "select date, close as stock_price from stock_history where symbol='"+ symbol + "'"    
+    stock_data = pd.read_sql(sql,engine)
+    if not stock_data.empty:
+        stock_data.set_index('date',inplace=True)
+        stock_data.index = pd.to_datetime(stock_data.index)
+        
+    stock_fut_data = pd.merge(stock_data,futures_data,left_index=True, right_index=True)
+    return stock_fut_data
+        
 if __name__ == '__main__':
 #    big_money_zack()
 #    top_mf_smallcap_holdings(3)
