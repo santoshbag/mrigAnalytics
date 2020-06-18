@@ -135,6 +135,19 @@ class Stock():
         if not self.ratio_data.empty:
             self.ratio_data.set_index('ratio_date',inplace=True)
             
+    def futures(self):
+        futures_data = pd.DataFrame()        
+        sql = "select * from option_history where symbol='"+ self.symbol + \
+              "' and instrument='FUTSTK' and expiry >= now()"
+        
+        engine = mu.sql_engine()
+        futures_data = pd.read_sql(sql,engine)
+        if not futures_data.empty:
+            futures_data.set_index('date',inplace=True)
+            futures_data.index = pd.to_datetime(futures_data.index)
+            
+        return futures_data
+    
     def optionChain(self):
         Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+
                    "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+

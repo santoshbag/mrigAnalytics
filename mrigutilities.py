@@ -95,7 +95,7 @@ def clean_df_db_dups(df, tablename, engine, dup_cols=[],
     return [df, existing_security]
 
 
-def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT], dbhost="SIRIUS"):
+def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT], dbhost="localhost"):
     DB_TYPE = 'postgresql'
     DB_DRIVER = 'psycopg2'
     DB_USER = 'postgres'
@@ -507,7 +507,8 @@ def getMFNAV(reference_date, isinlist=None,db='localhost'):
         '%Y-%m-%d') + "' and \"ISIN Div Payout/ ISIN Growth\" in ("
     engine = sql_engine(dbhost=db)
     for isin in isinlist:
-        sql = sql + "'" + isin + "',"
+        if isin != None:
+            sql = sql + "'" + isin + "',"
     sql = sql[:-1] + ")"
     nav_df = pd.read_sql(sql, engine)
     nav_df.set_index('Date', inplace=True)
