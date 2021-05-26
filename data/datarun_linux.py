@@ -75,10 +75,18 @@ def ratios_download():
         mc.populate_ratios_table()
 
 def returns():
-    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
+#    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
     engine = sql_engine()
     print("Populating Returns")
-    engine.execute(calculate_returns_sql)
+#    engine.execute(calculate_returns_sql)
+    engine.execute(open(os.path.join(datadir,'..','sql_queries','returns_ver2.sql'),"r").read())
+
+def return_correlations():
+#    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
+    engine = sql_engine()
+    print("Populating Returns")
+#    engine.execute(calculate_returns_sql)
+    engine.execute(open(os.path.join(datadir,'..','sql_queries','return_correlations.sql'),"r").read())
 
 def stock_strategies():
 
@@ -138,8 +146,9 @@ morningtime = datetime(year=today.year,month=today.month,day=today.day,hour=morn
 eveningtime = datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
-if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
-    localtime().tm_hour <= eveningtime.hour - 2):
+#if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
+#    localtime().tm_hour <= eveningtime.hour - 2):
+if (len(alldata) > 0):
     if ('1' in alldata):
         try:
             print("NAVS")
@@ -195,10 +204,10 @@ if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
            oh.optionHistory_download()
         except:
             pass    
-        try:    
-            och.oc_download_all(progressbar)
-        except:
-            pass
+#        try:    
+#            och.oc_download_all(progressbar)
+#        except:
+#            pass
         try:    
             stock_strategies()
         except:
@@ -211,6 +220,10 @@ if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
             returns()
         except:
             pass
+#        try:    
+#            return_correlations()
+#        except:
+#            pass
     if '2' in alldata:
         try:
             print("NAVS")
@@ -295,6 +308,11 @@ if ('1' in alldata) or (localtime().tm_hour >= morningtime.hour and
     if '17' in alldata:
         try:    
             returns()
+        except:
+            pass
+    if '18' in alldata:
+        try:    
+            return_correlations()
         except:
             pass
     
