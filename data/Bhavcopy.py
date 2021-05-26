@@ -55,11 +55,10 @@ def bhavcopy_download():
             while True:
                 try:
                     url = 'https://www1.nseindia.com/content/historical/EQUITIES/' + y + '/' + dmonth[m] + '/cm' + d + \
-                          dmonth[m] + y + 'bhav.csv.zip'
+                      dmonth[m] + y + 'bhav.csv.zip'
                     print(url)
-                    a = requests.get(
-                        'https://www1.nseindia.com/content/historical/EQUITIES/' + y + '/' + dmonth[m] + '/cm' + d +
-                        dmonth[m] + y + 'bhav.csv.zip')
+                    a = requests.get(url)
+                    print(a)
                 except requests.ConnectionError:
                     print('No connection, retrying')
                 break
@@ -110,6 +109,8 @@ def bhavcopy_download():
                 indx['close_adj'] = indx['close']
                 indx['volume_adj'] = indx['volume']
                 indx.set_index('date', inplace=True)
+                print("----INDICES----")
+                print(indx)
                 indx.to_sql('stock_history', engine, if_exists='append', index=True)    
 
 #                f = f.append(indx, ignore_index=True)
@@ -125,7 +126,8 @@ def bhavcopy_download():
             f = f.replace('-', 0)
             # f['turnover'] = f['turnover'] * 10000000
             f.set_index('date', inplace=True)
-           # print(f)
+            print("---EQUITIES---")
+            print(f)
             f.to_sql('stock_history', engine, if_exists='append', index=True)
 
             os.remove(base + "/" + y + '/cm' + d + dmonth[m] + y + 'bhav.csv')
