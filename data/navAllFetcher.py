@@ -23,6 +23,7 @@ def navall_download():
     engine = mrigutilities.sql_engine()
     
     data = urllib.request.urlopen(NAV_URL) # read only 20 000 chars
+#    data = open("NAVAll_26feb2021.txt")
     timestamp = datetime.datetime.now()
     navs_cols = ['Date','Fund House','Scheme Type','ISIN Div Payout/ ISIN Growth','ISIN Div Reinvestment','Scheme Name','Net Asset Value','Repurchase Price','Sale Price','Time Stamp']
     last_fetched_data = mrigutilities.get_last_row(mfNavHistory_path)
