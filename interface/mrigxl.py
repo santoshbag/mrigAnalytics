@@ -510,7 +510,10 @@ def mrigxl_Option(option_name,
                  exercise_type,
                  day_count='30-360',
                  calendar='India'):
-    
+
+    """
+    Function to create Option object.
+    """    
     
     args = {'option_name':option_name.strip(),
             'underlying_name':underlying_name.strip(),

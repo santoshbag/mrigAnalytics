@@ -219,7 +219,7 @@ MRIGWEB = {'development' : 'MRIGWEB',
 RB_WAREHOUSE = {'development' : 'rb_warehouse',
                 'production' : 'rb_warehouse'}
 
-DBHOST = {'SIRIUS' : '192.168.0.106',
+DBHOST = {'SIRIUS' : '192.168.29.208',
           'localhost' : 'localhost'}
 
 ENVIRONMENT = 'development'

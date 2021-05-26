@@ -1,6 +1,5 @@
 delete from return_correlations;
 
-
 insert into return_correlations
 (select date, stock, daily_log_returns, 
 corr(daily_log_returns,nifty) over (partition by stock order by date rows between 19 preceding and current row) as nifty_20_corr,
