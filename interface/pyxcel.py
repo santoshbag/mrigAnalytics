@@ -26,7 +26,7 @@ from datetime import date
 @xw.func
 @xw.arg('isinlist', ndim=1, transpose=True)
 @xw.ret(expand='table', transpose=False)
-def mrigxl_getMFNAV(reference_date, isinlist=None,db='localhost'):
+def mrigxl_getMFNAV(reference_date, isinlist=None,db='localhost',justnav=0):
     
     nav_df = mu.getMFNAV(reference_date,isinlist,db=db)
     nav_df.drop(['Fund House','Scheme Type','Repurchase Price','Sale Price'],axis=1,inplace=True)
@@ -42,6 +42,34 @@ def mrigxl_getMFNAV(reference_date, isinlist=None,db='localhost'):
     #nav_df.drop('Scheme Type',axis=1)
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     nav_df.set_index('Date', inplace=True)
+    nav_df.index = pd.DatetimeIndex(nav_df.index)
+    if (justnav==1):
+#        nav_df = reference_date.strftime('%Y-%d-%d')
+        try:
+            nav_df = nav_df.loc[reference_date]['Net Asset Value']#.head(1).values)
+        except:
+            pass
+    return nav_df
+
+@xw.func
+@xw.arg('isinlist', ndim=1, transpose=True)
+def mrigxl_getMFNAV1(reference_date, isinlist=None,db='localhost'):
+    
+    nav_df = mu.getMFNAV(reference_date,isinlist,db=db)
+    nav_df.reset_index(level=0, inplace=True)
+#    nav_df.sort_index(ascending=False, inplace=True)
+    nav_df['Net Asset Value'] = nav_df['Net Asset Value'].apply(pd.to_numeric,errors='coerce')
+    
+    nav_df.sort_values(by=['Scheme Name','Date'],ascending=[True,False],inplace=True)
+    #nav_df.drop('Scheme Type',axis=1)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    nav_df.set_index('Date', inplace=True)
+    nav_df.index = pd.DatetimeIndex(nav_df.index)
+
+    try:
+        nav_df = nav_df.loc[reference_date]['Net Asset Value']#.head(1).values)
+    except:
+        pass
     return nav_df
     
 @xw.func
@@ -76,9 +104,12 @@ def mrigxl_IRR(symbol,investments=None,startDate=None,endDate=None):
     values = values + [curr_investment_val]
     
     try:
-        return scipy.optimize.newton(lambda r: xnpv(r, values, dates), 0.0)
+        irr = scipy.optimize.newton(lambda r: xnpv(r, values, dates), 0.0)
     except RuntimeError:    # Failed to converge?
-        return scipy.optimize.brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+        irr =  scipy.optimize.brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+    if (max(dates) - min(dates)).days < 365:
+        irr = (1+ irr)**((max(dates) - min(dates)).days / 365.0) -1
+    return irr
 #    return dates
 
 def xnpv(rate, values, dates):
@@ -93,6 +124,9 @@ def xnpv(rate, values, dates):
     if rate <= -1.0:
         return float('inf')
     d0 = dates[0]    # or min(dates)
+#    if (max(dates) - min(dates)).days < 365:
+#        return sum([ vi / (1.0 + rate)**(di - d0).days for vi, di in zip(values, dates)])
+#    else:    
     return sum([ vi / (1.0 + rate)**((di - d0).days / 365.0) for vi, di in zip(values, dates)])
 
 @xw.func
