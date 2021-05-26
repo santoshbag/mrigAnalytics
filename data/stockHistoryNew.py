@@ -22,11 +22,11 @@ import csv
 
 datadir = os.path.dirname(__file__)
 processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
-input_dir = "F:\\NSEDATA"
-#input_dir = os.path.join(datadir,'..','..','data','input','cm')
+#input_dir = "F:\\NSEDATA"
+input_dir = os.path.join(datadir,'..','..','data','input','cm')
 processed_file_list = []
 df_list = []
-write_flag=True
+write_flag=False
 engine = mrigutilities.sql_engine()
 disable_sql = "alter table stock_history disable trigger return_trigger"
 enable_sql = "alter table stock_history enable trigger return_trigger"
@@ -64,12 +64,12 @@ with open(processed_files_path,'a+') as processed_file:
         if row:
             processed_file_list.append(row)
     processed_file_list = [f[0] for f in processed_file_list]
-#    print(processed_file_list)
+    print(processed_file_list)
 with open(processed_files_path,'a+') as processed_file:
     writer = csv.writer(processed_file,delimiter='\t')
     
-#    print("Exisiting List")
-#    print(processed_file_list)
+    print("Exisiting List")
+    print(processed_file_list)
     stockbhavlist = []
     indexfilelist = []
     for r,d,f in os.walk(input_dir):
