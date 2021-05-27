@@ -18,12 +18,13 @@ import urllib, zipfile,re
 from bs4 import BeautifulSoup
 from time import sleep
 import csv
+import numpy as np
 
 
 datadir = os.path.dirname(__file__)
 processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
 #input_dir = "F:\\NSEDATA"
-input_dir = os.path.join(datadir,'..','..','data','input','cm')
+input_dir = os.path.join(datadir,'..','..','data','input')
 processed_file_list = []
 df_list = []
 write_flag=False
@@ -44,13 +45,17 @@ csv_header_map = {'SYMBOL':'symbol',
               'TOTTRDVAL': 'turnover',	
               'TIMESTAMP': 'date',	
               'TOTALTRADES' : 'trades'}
-nifty_csv_header_map = {'Open':'open',	
-              'High':'high',	
-              'Low':'low',	
-              'Close': 'close',	
-              'Date':'date',	
-              'Shares Traded': 'volume',	
-              'Turnover (Rs. Cr)': 'turnover'}
+nifty_csv_header_map = {'Index Name':'symbol',	
+              'High Index Value':'high',
+              'Open Index Value':'open',	
+              'Low Index Value':'low',	
+              'Closing Index Value': 'close',	
+              'Index Date':'date',	
+              'Volume': 'volume',	
+              'Turnover (Rs. Cr.)': 'turnover',
+              'P/E':'pe',
+              'P/B':'pb',
+              'Div Yield': 'div_yield'}
 
 csv_header = [key for key in csv_header_map.keys()]
 nifty_csv_header = [key for key in nifty_csv_header_map.keys()]
@@ -73,414 +78,70 @@ with open(processed_files_path,'a+') as processed_file:
     stockbhavlist = []
     indexfilelist = []
     for r,d,f in os.walk(input_dir):
-        for folder in d:
-    #        if '24012020' in folder:
-            for r1,d1,f1 in os.walk(os.path.join(r,folder)):
-                for f12 in f1:
-                    if re.search("^cm.*zip",f12):
-                        stockbhavlist.append(os.path.join(r1,f12))
+#        for folder in d:
+#    #        if '24012020' in folder:
+#            for r1,d1,f1 in os.walk(os.path.join(r,folder)):
+#                for f12 in f1:
+#                    if re.search("^cm.*zip",f12):
+#                        stockbhavlist.append(os.path.join(r1,f12))
         for file in f:
-            if re.search("^NIFTY_50_.*csv",file):
-                print(os.path.join(r,file))
-                if os.path.join(r,file) not in processed_file_list:
-                    niftydata = pd.read_csv(os.path.join(r,file))
-                    niftydata = niftydata[nifty_csv_header]
-                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-                    niftydata['symbol'] = 'NIFTY_50'
-                    niftydata['series'] = 'IN'
-                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-                    niftydata.set_index('date',inplace=True)         
-                    print(niftydata) 
-                    if write_flag:
-                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-                        writer.writerow([os.path.join(r,file)])                              
-            if re.search("^NIFTY_500_.*csv",file):
-                print(os.path.join(r,file))
-                if os.path.join(r,file) not in processed_file_list:
-                    niftydata = pd.read_csv(os.path.join(r,file))
-                    niftydata = niftydata[nifty_csv_header]
-                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-                    niftydata['symbol'] = 'NIFTY_500'
-                    niftydata['series'] = 'IN'
-                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-                    niftydata.set_index('date',inplace=True)         
-                    print(niftydata) 
-                    if write_flag:
-                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-                        writer.writerow([os.path.join(r,file)])                              
-            if re.search("^NIFTY_NEXT_50_.*csv",file):
-                print(os.path.join(r,file))
-                if os.path.join(r,file) not in processed_file_list:
-                    niftydata = pd.read_csv(os.path.join(r,file))
-                    niftydata = niftydata[nifty_csv_header]
-                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-                    niftydata['symbol'] = 'NIFTY_NEXT_50'
-                    niftydata['series'] = 'IN'
-                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-                    niftydata.set_index('date',inplace=True)         
-                    print(niftydata) 
-                    if write_flag:
-                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-                        writer.writerow([os.path.join(r,file)])                              
-            if re.search("^NIFTY_MID_LIQ_.*csv",file):
-                print(os.path.join(r,file))
-                if os.path.join(r,file) not in processed_file_list:
-                    niftydata = pd.read_csv(os.path.join(r,file))
-                    niftydata = niftydata[nifty_csv_header]
-                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-                    niftydata['symbol'] = 'NIFTY_MID_LIQ'
-                    niftydata['series'] = 'IN'
-                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-                    niftydata.set_index('date',inplace=True)         
-                    print(niftydata) 
-                    if write_flag:
-                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_100_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_100'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_200_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_200'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_MIDCAP_150_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_MIDCAP_150'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_MIDCAP_100_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_MIDCAP_100'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_MIDCAP_50_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_MIDCAP_50'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_SMALLCAP_250_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_SMALLCAP_250'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_SMALLCAP_50_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_SMALLCAP_50'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_SMALLCAP_100_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_SMALLCAP_100'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_LargeMidcap_250_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_LargeMidcap_250'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_MIDSMALLCAP_400_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_MIDSMALLCAP_400'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_AUTO_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_AUTO'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_BANK_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_BANK'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_CONSUMER_DURABLES_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_CONSUMER_DURABLES'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_FIN_SERVICE_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_FIN_SERVICE'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_FMCG_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_FMCG'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_IT_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_IT'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_MEDIA_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_MEDIA'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_METAL_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_METAL'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_OIL_GAS_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_OIL_GAS'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_PHARMA_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_PHARMA'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_REALTY_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_REALTY'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_PSU_BANK_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_PSU_BANK'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
-#            if re.search("^NIFTY_PVT_BANK_.*csv",file):
-#                print(os.path.join(r,file))
-#                if os.path.join(r,file) not in processed_file_list:
-#                    niftydata = pd.read_csv(os.path.join(r,file))
-#                    niftydata = niftydata[nifty_csv_header]
-#                    niftydata = niftydata.rename(columns=nifty_csv_header_map)
-#                    niftydata['symbol'] = 'NIFTY_PVT_BANK'
-#                    niftydata['series'] = 'IN'
-#                    niftydata['turnover'] = niftydata['turnover'] * 10000000
-#                    niftydata.set_index('date',inplace=True)         
-#                    print(niftydata) 
-#                    if write_flag:
-#                        niftydata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                        writer.writerow([os.path.join(r,file)])                              
+            if re.search("^cm.*zip",file):
+                stockbhavlist.append(os.path.join(r,file))
+                print(file)
+            if re.search("^ind_close_all_.*csv",file):
+                indexfilelist.append(os.path.join(r,file))
+                print(indexfilelist)                
+#    print(stockbhavlist)
+
+    for zfile in stockbhavlist:
+       # print(zfile)
+        if zfile not in processed_file_list:
+#            print(zfile)
+            zf = zipfile.ZipFile(zfile)
+            csvfiles = zf.infolist()
+            for csvfile in csvfiles:
+                stocksdata = pd.read_csv(zf.open(csvfile))
+                stocksdata = stocksdata.replace({'-':None})                  
+                
+                stocksdata = stocksdata[csv_header]
+                stocksdata = stocksdata[stocksdata['SERIES']=='EQ']
+                stocksdata = stocksdata.rename(columns=csv_header_map)
+#                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+#                try:
+                stocksdata.apply(pd.to_numeric, errors='ignore')
+                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
+                stocksdata.set_index('date',inplace=True)
+                print(stocksdata.index)
+#                print(stocksdata.tail(10))
+                if write_flag:
+                    stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+                    writer.writerow([zfile])
+#                except:
+#                    pass
 #
-##    print(stockbhavlist)
-#
-#    for zfile in stockbhavlist:
-#       # print(zfile)
-#        if zfile not in processed_file_list:
-##            print(zfile)
-#            zf = zipfile.ZipFile(zfile)
-#            csvfiles = zf.infolist()
-#            for csvfile in csvfiles:
-#                stocksdata = pd.read_csv(zf.open(csvfile))
-#                stocksdata = stocksdata[csv_header]
-#                stocksdata = stocksdata[stocksdata['SERIES']=='EQ']
-#                stocksdata = stocksdata.rename(columns=csv_header_map)
-##                stocksdata.drop(['ISIN'],axis=1,inplace=True)
-##                try:
-#                stocksdata.set_index('date',inplace=True)
-#                if write_flag:
-#                    stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
-#                    writer.writerow([zfile])
-##                except:
-##                    pass
-#
+    for csvfile in indexfilelist:
+        print("csvfile "+csvfile)
+        indexdata = pd.read_csv(csvfile)
+        indexdata = indexdata.replace({'-':None})                  
+        indexdata = indexdata[nifty_csv_header]
+        indexdata = indexdata.rename(columns=nifty_csv_header_map)
+
+        indexdata['symbol'] = indexdata['symbol'].str.upper()   
+        indexdata['series'] ='IN'
+        indexdata = indexdata.apply(pd.to_numeric, errors='ignore')
+        indexdata['turnover'] = indexdata['turnover'] * 10000000
+        indexdata['date'] = pd.to_datetime(indexdata['date'])
+
+#                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+#                try:
+        indexdata.set_index('date',inplace=True)
+#        print(indexdata.index)
+        print(indexdata.tail(20))
+        if write_flag:
+            indexdata.to_sql('stock_history',engine, if_exists='append', index=True)
+            writer.writerow([csvfile])
+#                except:
+#                    pass
 #             
 engine.execute(enable_sql)             
 
