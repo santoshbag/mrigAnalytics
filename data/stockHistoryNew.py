@@ -61,6 +61,8 @@ csv_header = [key for key in csv_header_map.keys()]
 nifty_csv_header = [key for key in nifty_csv_header_map.keys()]
 stocksdata = pd.DataFrame()
 niftydata = pd.DataFrame()
+dtm = lambda x: datetime.date.strptime(str(x), "%d.%m.%Y")
+    
 with open(processed_files_path,'a+') as processed_file:
     processed_file.seek(0)
     reader = csv.reader(processed_file,delimiter='\t')
@@ -109,7 +111,8 @@ with open(processed_files_path,'a+') as processed_file:
 #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
 #                try:
                 stocksdata.apply(pd.to_numeric, errors='ignore')
-                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
+                stocksdata["date"] = stocksdata["date"].apply(dtm)
+#                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
                 stocksdata.set_index('date',inplace=True)
                 print(stocksdata.index)
 #                print(stocksdata.tail(10))
