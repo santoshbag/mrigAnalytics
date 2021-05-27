@@ -27,7 +27,7 @@ processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.cs
 input_dir = os.path.join(datadir,'..','..','data','input')
 processed_file_list = []
 df_list = []
-write_flag=True
+write_flag=False
 engine = mrigutilities.sql_engine()
 disable_sql = "alter table stock_history disable trigger return_trigger"
 enable_sql = "alter table stock_history enable trigger return_trigger"
@@ -61,7 +61,7 @@ csv_header = [key for key in csv_header_map.keys()]
 nifty_csv_header = [key for key in nifty_csv_header_map.keys()]
 stocksdata = pd.DataFrame()
 niftydata = pd.DataFrame()
-dtm = lambda x: datetime.date.strptime(str(x), "%d.%m.%Y")
+dtm = lambda x: datetime.datetime.strptime(str(x), "%d-%m-%Y")
     
 with open(processed_files_path,'a+') as processed_file:
     processed_file.seek(0)
@@ -111,8 +111,8 @@ with open(processed_files_path,'a+') as processed_file:
 #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
 #                try:
                 stocksdata.apply(pd.to_numeric, errors='ignore')
-                stocksdata["date"] = stocksdata["date"].apply(dtm)
-#                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
+#                stocksdata["date"] = stocksdata["date"].apply(dtm)
+                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
                 stocksdata.set_index('date',inplace=True)
 #                print(stocksdata.index)
                 print(stocksdata.tail(10))
@@ -133,7 +133,9 @@ with open(processed_files_path,'a+') as processed_file:
         indexdata['series'] ='IN'
         indexdata = indexdata.apply(pd.to_numeric, errors='ignore')
         indexdata['turnover'] = indexdata['turnover'] * 10000000
-        indexdata['date'] = pd.to_datetime(indexdata['date'])
+        indexdata["date"] = indexdata["date"].apply(dtm)
+
+#        indexdata['date'] = pd.to_datetime(indexdata['date'])
 
 #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
 #                try:
