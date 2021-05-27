@@ -27,7 +27,7 @@ processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.cs
 input_dir = os.path.join(datadir,'..','..','data','input')
 processed_file_list = []
 df_list = []
-write_flag=False
+write_flag=True
 engine = mrigutilities.sql_engine()
 disable_sql = "alter table stock_history disable trigger return_trigger"
 enable_sql = "alter table stock_history enable trigger return_trigger"
@@ -114,8 +114,8 @@ with open(processed_files_path,'a+') as processed_file:
                 stocksdata["date"] = stocksdata["date"].apply(dtm)
 #                stocksdata['date'] = pd.to_datetime(stocksdata['date'])
                 stocksdata.set_index('date',inplace=True)
-                print(stocksdata.index)
-#                print(stocksdata.tail(10))
+#                print(stocksdata.index)
+                print(stocksdata.tail(10))
                 if write_flag:
                     stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
                     writer.writerow([zfile])
@@ -139,7 +139,7 @@ with open(processed_files_path,'a+') as processed_file:
 #                try:
         indexdata.set_index('date',inplace=True)
 #        print(indexdata.index)
-        print(indexdata.tail(20))
+        print(indexdata.tail(10))
         if write_flag:
             indexdata.to_sql('stock_history',engine, if_exists='append', index=True)
             writer.writerow([csvfile])
