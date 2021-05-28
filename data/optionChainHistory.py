@@ -67,6 +67,8 @@ def oc_download(stock):
         timecounter = timecounter + 1
         if mu.is_connected():
             oc = stk.optionChain()
+            print("OC is")
+            print(oc)
         if mu.is_connected() or timecounter > 5:
             break
         else:
@@ -169,5 +171,5 @@ def oc_download_all(progressbar=True):
 
 #        
 if __name__ == '__main__':
-#    oc_download()
-    oc_download_all()
+    oc_download('SBIN')
+#    oc_download_all()
