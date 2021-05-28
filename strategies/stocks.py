@@ -152,10 +152,11 @@ class Stock():
         Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+
                    "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+
                    "symbol=UBL&instrument=OPTSTK&date=-&segmentLink=17&segmentLink=17")
-        Base_url = ("https://www1.nseindia.com/live_market/dynaContent/"+
+        Base_url = ("https://www.nseindia.com/live_market/dynaContent/"+
                     "live_watch/option_chain/optionKeys.jsp?segmentLink=17&instrument=OPTSTK"+
                     "&symbol=%s&date=%s")
-        
+        Base_url = ("https://www.nseindia.com/option-chain?segmentLink=17&instrument=OPTSTK"+
+                    "&symbol=%s&date=%s")        
         expiries = mu.get_futures_expiry(datetime.date.today(),datetime.date.today())
         
         option_chain = []
@@ -163,12 +164,14 @@ class Stock():
             for dt in expiries:
                 expdt = str(dt.day)+dt.strftime('%b').upper()+str(dt.year)
                 headers = {'User-Agent': 'Mozilla/5.0'} 
-                page = requests.get(Base_url %(self.symbol,expdt),headers=headers)
+                url = Base_url %(self.symbol,expdt)
+                print(url)
+                page = requests.get(url,headers=headers)
                 page.status_code
                 page.content
                 
                 soup = BeautifulSoup(page.content, 'html.parser')
-                #print(soup.prettify())
+#                print(soup.prettify())
                 
                 table_it = soup.find_all(class_="opttbldata")
                 table_cls_1 = soup.find_all(id="octable")
@@ -203,7 +206,7 @@ class Stock():
                         if i > 10:
                             col_list_fnl[i] = 'PUT_'+col_list_fnl[i]
                                                     
-                #print (col_list_fnl)          
+                print (col_list_fnl)          
                 
                 table_cls_2 = soup.find(id="octable")
                 all_trs = table_cls_2.find_all('tr')
@@ -243,7 +246,7 @@ class Stock():
             option_chain = pd.concat(option_chain)
         else:
             option_chain = pd.DataFrame()
-    #    print (optionchain)
+        print (option_chain)
         return option_chain
 
     def max_drawdown(self,window_days=29, period_months=12):

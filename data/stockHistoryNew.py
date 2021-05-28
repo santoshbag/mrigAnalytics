@@ -71,12 +71,12 @@ with open(processed_files_path,'a+') as processed_file:
         if row:
             processed_file_list.append(row)
     processed_file_list = [f[0] for f in processed_file_list]
-    print(processed_file_list)
+#    print(processed_file_list)
 with open(processed_files_path,'a+') as processed_file:
     writer = csv.writer(processed_file,delimiter='\t')
     
-    print("Exisiting List")
-    print(processed_file_list)
+#    print("Exisiting List")
+#    print(processed_file_list)
     stockbhavlist = []
     indexfilelist = []
     for r,d,f in os.walk(input_dir):
@@ -89,10 +89,10 @@ with open(processed_files_path,'a+') as processed_file:
         for file in f:
             if re.search("^cm.*zip",file):
                 stockbhavlist.append(os.path.join(r,file))
-                print(file)
+#                print(file)
             if re.search("^ind_close_all_.*csv",file):
                 indexfilelist.append(os.path.join(r,file))
-                print(indexfilelist)                
+#                print(indexfilelist)                
 #    print(stockbhavlist)
 
     for zfile in stockbhavlist:
@@ -102,6 +102,7 @@ with open(processed_files_path,'a+') as processed_file:
             zf = zipfile.ZipFile(zfile)
             csvfiles = zf.infolist()
             for csvfile in csvfiles:
+                print("Processing Equity File "+csvfile)
                 stocksdata = pd.read_csv(zf.open(csvfile))
                 stocksdata = stocksdata.replace({'-':None})                  
                 
@@ -115,36 +116,45 @@ with open(processed_files_path,'a+') as processed_file:
                 stocksdata['date'] = pd.to_datetime(stocksdata['date'])
                 stocksdata.set_index('date',inplace=True)
 #                print(stocksdata.index)
-                print(stocksdata.tail(10))
+#                print(stocksdata.tail(10))
                 if write_flag:
                     stocksdata.to_sql('stock_history',engine, if_exists='append', index=True)
+                    print("Equity Written to Database")
+                    print(stocksdata.tail(10))
                     writer.writerow([zfile])
+                else:
+                    print(stocksdata.tail(10))
 #                except:
 #                    pass
 #
     for csvfile in indexfilelist:
-        print("csvfile "+csvfile)
-        indexdata = pd.read_csv(csvfile)
-        indexdata = indexdata.replace({'-':None})                  
-        indexdata = indexdata[nifty_csv_header]
-        indexdata = indexdata.rename(columns=nifty_csv_header_map)
+        if csvfile not in processed_file_list:
+            print("Processing Index File "+csvfile)
+            indexdata = pd.read_csv(csvfile)
+            indexdata = indexdata.replace({'-':None})                  
+            indexdata = indexdata[nifty_csv_header]
+            indexdata = indexdata.rename(columns=nifty_csv_header_map)
+    
+            indexdata['symbol'] = indexdata['symbol'].str.upper()   
+            indexdata['series'] ='IN'
+            indexdata = indexdata.apply(pd.to_numeric, errors='ignore')
+            indexdata['turnover'] = indexdata['turnover'] * 10000000
+            indexdata["date"] = indexdata["date"].apply(dtm)
+    
+    #        indexdata['date'] = pd.to_datetime(indexdata['date'])
+    
+    #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+    #                try:
+            indexdata.set_index('date',inplace=True)
+    #        print(indexdata.index)
 
-        indexdata['symbol'] = indexdata['symbol'].str.upper()   
-        indexdata['series'] ='IN'
-        indexdata = indexdata.apply(pd.to_numeric, errors='ignore')
-        indexdata['turnover'] = indexdata['turnover'] * 10000000
-        indexdata["date"] = indexdata["date"].apply(dtm)
-
-#        indexdata['date'] = pd.to_datetime(indexdata['date'])
-
-#                stocksdata.drop(['ISIN'],axis=1,inplace=True)
-#                try:
-        indexdata.set_index('date',inplace=True)
-#        print(indexdata.index)
-        print(indexdata.tail(10))
-        if write_flag:
-            indexdata.to_sql('stock_history',engine, if_exists='append', index=True)
-            writer.writerow([csvfile])
+            if write_flag:
+                indexdata.to_sql('stock_history',engine, if_exists='append', index=True)
+                print("Indices Written to Database")
+                print(indexdata.tail(10))
+                writer.writerow([csvfile])
+            else:
+                print(indexdata.tail(10))                
 #                except:
 #                    pass
 #             
