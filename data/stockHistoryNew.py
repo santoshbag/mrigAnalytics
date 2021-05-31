@@ -120,7 +120,7 @@ with open(processed_files_path,'a+') as processed_file:
             zf = zipfile.ZipFile(zfile)
             csvfiles = zf.infolist()
             for csvfile in csvfiles:
-                print("Processing Equity File "+csvfile)
+                print("Processing Equity File "+str(csvfile))
                 stocksdata = pd.read_csv(zf.open(csvfile))
                 stocksdata = stocksdata.replace({'-':None})                  
                 
