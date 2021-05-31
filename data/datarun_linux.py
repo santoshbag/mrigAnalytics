@@ -79,7 +79,7 @@ def returns():
     engine = sql_engine()
     print("Populating Returns")
 #    engine.execute(calculate_returns_sql)
-    engine.execute(open(os.path.join(datadir,'..','sql_queries','returns_ver2.sql'),"r").read())
+    engine.execute(open(os.path.join(datadir,'..','sql_queries','returns_ver3.sql'),"r").read())
 
 def return_correlations():
 #    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
