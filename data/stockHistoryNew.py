@@ -57,7 +57,22 @@ nifty_csv_header_map = {'Index Name':'symbol',
               'P/B':'pb',
               'Div Yield': 'div_yield'}
 
+fo_csv_header_map = {'SYMBOL':'symbol',	
+              'EXPIRY_DT' : 'expiry',
+              'STRIKE_PR' : 'strike',
+              'OPTION_TYP' : 'option_type',
+              'OPEN':'open',	
+              'HIGH':'high',	
+              'LOW':'low',	
+              'CLOSE': 'close',	
+              'SETTLE_PR':'settle_price',	
+              'CONTRACTS':'contracts',	
+              'OPEN_INT': 'oi',	
+              'CHG_IN_OI': 'oi_change',	
+              'TIMESTAMP': 'date'}
+
 csv_header = [key for key in csv_header_map.keys()]
+fo_csv_header = [key for key in fo_csv_header_map.keys()]
 nifty_csv_header = [key for key in nifty_csv_header_map.keys()]
 stocksdata = pd.DataFrame()
 niftydata = pd.DataFrame()
@@ -79,6 +94,7 @@ with open(processed_files_path,'a+') as processed_file:
 #    print(processed_file_list)
     stockbhavlist = []
     indexfilelist = []
+    fobhavlist = []
     for r,d,f in os.walk(input_dir):
 #        for folder in d:
 #    #        if '24012020' in folder:
@@ -92,6 +108,8 @@ with open(processed_files_path,'a+') as processed_file:
 #                print(file)
             if re.search("^ind_close_all_.*csv",file):
                 indexfilelist.append(os.path.join(r,file))
+            if re.search("^fo.*zip",file):
+                fobhavlist.append(os.path.join(r,file))                
 #                print(indexfilelist)                
 #    print(stockbhavlist)
 
@@ -124,6 +142,38 @@ with open(processed_files_path,'a+') as processed_file:
                     writer.writerow([zfile])
                 else:
                     print(stocksdata.tail(10))
+#                except:
+#                    pass
+#
+
+    for zfile in fobhavlist:
+       # print(zfile)
+        if zfile not in processed_file_list:
+#            print(zfile)
+            zf = zipfile.ZipFile(zfile)
+            csvfiles = zf.infolist()
+            for csvfile in csvfiles:
+                print("Processing FO File "+str(csvfile))
+                fodata = pd.read_csv(zf.open(csvfile))
+                fodata = fodata.replace({'-':None})                  
+                
+                fodata = fodata[fo_csv_header]
+                fodata = fodata.rename(columns=fo_csv_header_map)
+#                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+#                try:
+                fodata.apply(pd.to_numeric, errors='ignore')
+#                stocksdata["date"] = stocksdata["date"].apply(dtm)
+                fodata['date'] = pd.to_datetime(fodata['date'])
+                fodata.set_index('date',inplace=True)
+#                print(stocksdata.index)
+#                print(stocksdata.tail(10))
+                if write_flag:
+                    fodata.to_sql('futures_options_history',engine, if_exists='append', index=True)
+                    print("FO Written to Database")
+                    print(fodata.tail(10))
+                    writer.writerow([zfile])
+                else:
+                    print(fodata.tail(10))
 #                except:
 #                    pass
 #
