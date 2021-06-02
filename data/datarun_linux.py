@@ -18,14 +18,14 @@ import goldprice as gp
 import crudeoilprices as cp
 import yieldcurve as yc
 import exchangeratesHistory as fx
-import stockHistory as sh
-import nseIndexHistory as inx
+import stockHistoryNew as shnew
+#import nseIndexHistory as inx
 import totalreturnindicesHistory as tri
 import optionChainHistory as och
 import stockScreener as ss
 import optionHistory as oh
 #import webserver_load as wl
-import Bhavcopy as bc
+#import Bhavcopy as bc
 
 today = date.today()
 
@@ -47,6 +47,8 @@ except:
 print(startdate)
 print(enddate)
 print(alldata)
+datadir = os.path.dirname(__file__)
+
 def mf_codes():   
     if today.strftime('%A') == 'Thursday':
         import mutual_funds as mf
@@ -79,7 +81,7 @@ def returns():
     engine = sql_engine()
     print("Populating Returns")
 #    engine.execute(calculate_returns_sql)
-    engine.execute(open(os.path.join(datadir,'..','sql_queries','returns_ver2.sql'),"r").read())
+    engine.execute(open(os.path.join(datadir,'..','sql_queries','returns_ver3.sql'),"r").read())
 
 def return_correlations():
 #    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
@@ -157,7 +159,8 @@ if (len(alldata) > 0):
             pass
         try:
             print("BHAVCOPY")
-            bc.bhavcopy_download()
+            shnew.stockHistoryNew_download()
+#            bc.bhavcopy_download()
         except:
             pass
         try:
@@ -233,7 +236,8 @@ if (len(alldata) > 0):
     if '3' in alldata:
         try:
             print("BHAVCOPY")
-            bc.bhavcopy_download()
+            shnew.stockHistoryNew_download()
+#            bc.bhavcopy_download()
         except:
             pass
     if '4' in alldata:
