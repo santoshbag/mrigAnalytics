@@ -15,13 +15,16 @@ import datetime, dateutil.relativedelta
 import pandas as pd
 import numpy as np
 #import matplotlib.pyplot as plt
-import statsmodels.api as sm
-import research.math as rm
+#import statsmodels.api as sm
+#import research.math as rm
 import stockstats as ss
 import requests
 import instruments.termstructure as rates
 from bs4 import BeautifulSoup
 from pandas.tseries.offsets import BDay
+
+import json
+from pandas.io.json import json_normalize
 
 
 
@@ -248,6 +251,7 @@ class Stock():
             option_chain = pd.DataFrame()
         print (option_chain)
         return option_chain
+
 
     def max_drawdown(self,window_days=29, period_months=12):
 
