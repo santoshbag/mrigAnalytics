@@ -1414,86 +1414,90 @@ def covered_call(budget=1000000,live=False):
     symbols = list(symbols.symbol)
 #    print(symbols)
     OC_COLS = ['Symbol','Underlying','Lot','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
-#    symbols = ['ICICIBANK','HDFCBANK','AMBUJACEM']
+    symbols = ['ICICIBANK','HDFCBANK','AMBUJACEM']
     calls = []
     errormsg = ""
     for symbol in symbols:
         errormsg = errormsg + " "+symbol+"\n"
-        try:
-            stock = st.Stock(symbol)
-            stockquote = stock.quote['lastPrice']
+#        try:
+        stock = st.Stock(symbol)
+        stockquote = stock.quote['lastPrice']
+        print(stockquote)
 #            drawdown = stock.avg_drawdown()
-            if live:
-                stock_oc = stock.optionChain()
-            else:
-                stock_oc = mu.get_stored_option_chain(symbol)
-            if not stock_oc.empty:
-    #            stock_oc = stock_oc[OC_COLS[3:]]
-                errormsg = errormsg + "OC Downloaded \n "
-                stock_oc = stock_oc.apply(pd.to_numeric,errors='coerce')
-                # PCR OI test
-                PCR,IVSKEW = 1,1
-                if stock_oc['CALL_OI'].sum() != 0:
-                    PCR = stock_oc['PUT_OI'].sum()/stock_oc['CALL_OI'].sum()
-                # IV SKEW TEST
-                if stock_oc['PUT_IV'].sum() != 0:
-                    IVSKEW = stock_oc['CALL_IV'].sum()/stock_oc['PUT_IV'].sum()
-                
-    #            if (PCR > 0.7 and IVSKEW > 0.8): 
-                if (PCR > 0 and IVSKEW > 0): 
-                    errormsg = errormsg + "PCR and IVSKEW test passed \n "
-                    strikes = sorted(set(list(stock_oc['Strike_Price'])))
-                    strike_pts = abs(strikes[2]-strikes[3])
-                    atmstrike = mu.closestmatch(stockquote,
-                                                strikes,
-                                                strike_pts)
-                    strike1,strike2,strike3 = atmstrike,atmstrike,atmstrike
-                    strike2,strike3 = strike2 + strike_pts,strike3 + strike_pts
-                    stock_oc = stock_oc.dropna()
-                    valid_expiries = sorted(set(stock_oc.index))
-#                    print(valid_expiries)
-                    for d in valid_expiries:
-                        if d < minexpiry:
+#            if live:
+        stock_oc = mu.optionChainHistorical([symbol])
+#            else:
+#                stock_oc = mu.get_stored_option_chain(symbol)
+        if not stock_oc.empty:
+#            stock_oc = stock_oc[OC_COLS[3:]]
+            errormsg = errormsg + "OC Downloaded \n "
+            stock_oc = stock_oc.apply(pd.to_numeric,errors='ignore')
+#            print(stock_oc.tail(3))    
+
+            # PCR OI test
+            PCR,IVSKEW = 1,1
+            if stock_oc['openInterest_Call'].sum() != 0:
+                PCR = stock_oc['openInterest_Put'].sum()/stock_oc['openInterest_Call'].sum()
+                print('PCR '+str(PCR))
+            # IV SKEW TEST
+#                if stock_oc['PUT_IV'].sum() != 0:
+#                    IVSKEW = stock_oc['CALL_IV'].sum()/stock_oc['PUT_IV'].sum()
+            
+#            if (PCR > 0.7 and IVSKEW > 0.8): 
+            if (PCR > 0 and IVSKEW > 0): 
+                errormsg = errormsg + "PCR and IVSKEW test passed \n "
+                strikes = sorted(set(list(stock_oc['strikePrice'])))
+                strike_pts = abs(strikes[2]-strikes[3])
+                atmstrike = mu.closestmatch(stockquote,
+                                            strikes,
+                                            strike_pts)
+                strike1,strike2,strike3 = atmstrike,atmstrike,atmstrike
+                strike2,strike3 = strike2 + strike_pts,strike3 + strike_pts
+                stock_oc = stock_oc.dropna()
+                valid_expiries = sorted(set(stock_oc.index))
+#                print(valid_expiries)
+                for d in valid_expiries:
+                    if d < minexpiry:
 #                            print("removing -> "+str(d))
-                            valid_expiries.remove(d)
-                    #STRIKES FILTER
+                        valid_expiries.remove(d)
+                #STRIKES FILTER
 #                    print(valid_expiries)
-                    if len(valid_expiries) > 0:
-                        errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
+                if len(valid_expiries) > 0:
+                    errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
 #                        print(valid_expiries[0])
-                        optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],atmstrike)
-        #                print(optionquote)
-                        marketLot = optionquote['marketLot']
-                        if (float(marketLot)*stockquote) <= budget:
-                            try:
-                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == strike1) |
-                                                    (stock_oc['Strike_Price'] == strike2) |
-                                                    (stock_oc['Strike_Price'] == strike3)]
-                                
-                                #EXPIRY FILTER
-                                
-                                stock_oc = stock_oc.loc[valid_expiries]
-                                
-                                # OPEN INTEREST FILTER
-                                
-                                stock_oc = stock_oc[stock_oc['CALL_OI'] >= 500]
-                                
-                                # YIELD FILTER
-                                
-                                stock_oc = stock_oc[stock_oc['CALL_LTP']/stockquote >= 0.03]
-                                stock_oc = stock_oc[OC_COLS[3:]]
-                                stock_oc['Symbol'] = symbol
-                                stock_oc['Lot'] = marketLot
-                                stock_oc['Underlying'] = stockquote
-        #                        stock_oc['MaxDrawdown'] = drawdown
-                                stock_oc = stock_oc.reindex(columns=OC_COLS)
-                                calls.append(stock_oc)
-                                errormsg = errormsg + " Final OC Accepted \n"
-        #                        print(stock_oc)
-                            except:
-                                pass
-        except:
-            pass
+                    optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],atmstrike)
+#                    print(optionquote)
+                    marketLot = optionquote['marketLot']
+                    if (float(marketLot)*stockquote) <= budget:
+#                        try:
+                        stock_oc = stock_oc[(stock_oc['strikePrice'] == strike1) |
+                                            (stock_oc['strikePrice'] == strike2) |
+                                            (stock_oc['strikePrice'] == strike3)]
+                        
+                        #EXPIRY FILTER
+                        
+                        stock_oc = stock_oc.loc[valid_expiries]
+                        
+                        # OPEN INTEREST FILTER
+                        
+                        stock_oc = stock_oc[stock_oc['openInterest_Call'] >= 500]
+                        
+                        # YIELD FILTER
+                        
+                        stock_oc = stock_oc[stock_oc['lastPrice_Call']/stockquote >= 0.03]
+#                        stock_oc = stock_oc[OC_COLS[3:]]
+                        stock_oc['symbol'] = symbol
+                        stock_oc['Lot'] = marketLot
+                        stock_oc['Underlying'] = stockquote
+#                        stock_oc['MaxDrawdown'] = drawdown
+#                                stock_oc = stock_oc.reindex(columns=OC_COLS)
+                        calls.append(stock_oc)
+                        errormsg = errormsg + " Final OC Accepted \n"
+    #                        print(stock_oc)
+#                        except:
+#                            pass
+#    except:
+#            pass
     if len(calls) > 0:
         calls = pd.concat(calls)
         if (time.localtime().tm_hour > 17):
@@ -1509,7 +1513,7 @@ def covered_call(budget=1000000,live=False):
     else:
         calls = pd.DataFrame()
 
-#    print(calls)
+    print(calls)
     return [calls,errormsg]
 
 
@@ -2000,6 +2004,6 @@ if __name__ == '__main__':
 #      momentum()
 #      growth_income()
 #      top_mf_holdings()
-#    covered_call()
+    covered_call()
 #   bull_put_spread(live=True)
-   bear_call_spread(live=True,seclist=['NIFTY 50'],im=.05)
+#   bear_call_spread(live=True,seclist=['NIFTY 50'],im=.05)

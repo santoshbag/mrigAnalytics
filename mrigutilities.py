@@ -696,7 +696,7 @@ def getZerodhaChgs(tran_type='EQ_D',qty=0,buy=0,sell=0):
     
     return [charges,brokerage,stt_ctt_chgs,exch_chgs,gst_chgs,sebi_chgs]
 
-def optionChainHistorical(symbol_list,expiry_list,db='localhost'):
+def optionChainHistorical(symbol_list,expiry_list=None,db='localhost'):
     option_chain = []
     """
     
@@ -728,8 +728,9 @@ Index(['askPrice_Call', 'askQty_Call', 'bidQty_Call', 'bidprice_Call',
     if not op_df.empty:
         op_df.drop(['open','high','low'],axis=1,inplace=True)
         op_df.rename(columns=column_map,inplace=True)
-        op_df = op_df[op_df.symbol.isin (symbol_list)] 
-        op_df = op_df[op_df.expiryDate.isin (expiry_list)]
+        op_df = op_df[op_df.symbol.isin (symbol_list)]
+        if expiry_list != None:
+            op_df = op_df[op_df.expiryDate.isin (expiry_list)]
         op_df_ce = op_df[op_df['option_type'] == 'CE']
         op_df_pe = op_df[op_df['option_type'] == 'PE']
         op_df = pd.merge(op_df_ce,op_df_pe,on=['strikePrice'],suffixes=['_Call','_Put'])
@@ -754,7 +755,7 @@ if __name__ == '__main__':
     expiries_i = [datetime.date(2021,6,3),datetime.date(2021,6,10)]
     expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
 #    oc = optionChainLive([('NIFTY','I')],expiries_i)
-    oc = optionChainHistorical(['BANKNIFTY','SBIN'],expiries_i+expiries_e)
+    oc = optionChainHistorical(['BANKNIFTY'])#,expiries_i+expiries_e)
 #    oc.sort_values(['expiryDate'],axis=0,inplace=True)
     oc.to_csv('oc_live.csv')        
     print(oc.columns)
