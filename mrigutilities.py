@@ -299,20 +299,22 @@ def getStockData(symbol, start_date, end_date=None, last=False,db='localhost'):
 
 def getStockQuote(symbol):
     stockQuote = {}
-#    try:
-#        stockQuote = nsepy.get_quote(symbol)
-#    except:
-#        pass
+    try:
+        stockQuote = nsepy.get_quote(symbol)
+    except:
+        pass
 #    print(stockQuote)
     if len(stockQuote) <= 0:
 #        print("not live")
-        sql = "select * from live where symbol='%s' order by date desc limit 1"
+        sql = "select * from stock_history where symbol='%s' order by date desc limit 1"
         engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
         stockQuote = pd.read_sql(sql % (symbol), engine)
         if not stockQuote.empty:
             stockQuote.drop('date', axis=1, inplace=True)
-            stockQuote = stockQuote.to_dict()
-            stockQuote = json.loads(stockQuote['metadata'][0])
+            stockQuote.rename(columns={'close_adj' : 'lastPrice'}, inplace=True)
+            stockQuote = stockQuote.to_dict(orient='records')
+            stockQuote = stockQuote[0]
+#            stockQuote = json.loads(stockQuote)
 #            for key in stockQuote.keys():
 #                stockQuote[key] = stockQuote[key][0]
 #            stockQuote['lastPrice'] = stockQuote['quote']
@@ -368,14 +370,14 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPT
     return stockOptionQuote
 
 
-def closestmatch(x, arr, diff):
+def closestmatch(x, arr, diff,accuracy=50):
     pivot = int(len(arr) / 2)
-    if abs(arr[pivot] - x) <= diff:
+    if (abs(arr[pivot] - x) <= diff or accuracy == 0):
         return arr[pivot]
     if x < arr[pivot]:
-        return closestmatch(x, arr[:pivot], diff)
+        return closestmatch(x, arr[:pivot], diff,accuracy -1)
     if x > arr[pivot]:
-        return closestmatch(x, arr[pivot:], diff)
+        return closestmatch(x, arr[pivot:], diff,accuracy -1)
 
 
 def max_stock_drawdown(symbol, window_days=29, period_months=12):
@@ -750,13 +752,20 @@ Index(['askPrice_Call', 'askQty_Call', 'bidQty_Call', 'bidprice_Call',
     
     return option_chain
 
+def marketLot(symbol):
+        engine = sql_engine()
+        lot = engine.execute("select lot from futures_option_lots where symbol='"+symbol+"' limit 1").fetchall()[0][0]
+        
+        return int(lot)
+
 if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
     expiries_i = [datetime.date(2021,6,3),datetime.date(2021,6,10)]
     expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
 #    oc = optionChainLive([('NIFTY','I')],expiries_i)
-    oc = optionChainHistorical(['BANKNIFTY'])#,expiries_i+expiries_e)
+#    oc = optionChainHistorical(['BANKNIFTY'])#,expiries_i+expiries_e)
 #    oc.sort_values(['expiryDate'],axis=0,inplace=True)
-    oc.to_csv('oc_live.csv')        
-    print(oc.columns)
-    print(oc.tail(10))
+#    oc.to_csv('oc_live.csv')        
+#    print(oc.columns)
+#    print(oc.tail(10))
+    print(getStockQuote('ZEEL'))
