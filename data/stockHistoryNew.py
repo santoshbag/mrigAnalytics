@@ -132,6 +132,7 @@ def stockHistoryNew_download():
                     stocksdata.apply(pd.to_numeric, errors='ignore')
     #                stocksdata["date"] = stocksdata["date"].apply(dtm)
                     stocksdata['date'] = pd.to_datetime(stocksdata['date'])
+                    stocksdata['close_adj'] = stocksdata['close'] 
                     stocksdata.set_index('date',inplace=True)
     #                print(stocksdata.index)
     #                print(stocksdata.tail(10))
@@ -187,6 +188,7 @@ def stockHistoryNew_download():
         
                 indexdata['symbol'] = indexdata['symbol'].str.upper()   
                 indexdata['series'] ='IN'
+                indexdata['close_adj'] = indexdata['close']
                 indexdata = indexdata.apply(pd.to_numeric, errors='ignore')
                 indexdata['turnover'] = indexdata['turnover'] * 10000000
                 indexdata["date"] = indexdata["date"].apply(dtm)

@@ -1582,8 +1582,8 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                 bps_oc = pd.DataFrame()
 #                stock_oc = stock_oc[OC_COLS[5:]]
                 errormsg = errormsg + "OC Downloaded | "
-                stock_oc = stock_oc.apply(pd.to_numeric,errors='coerce')
-                stock_oc = stock_oc.dropna()
+#                stock_oc = stock_oc.apply(pd.to_numeric,errors='coerce')
+#                stock_oc = stock_oc.dropna()
                 # PCR OI test
                 PCR,IVSKEW = 1,1
 #                if stock_oc['CALL_OI'].sum() != 0:
@@ -1596,7 +1596,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                 if (PCR > 0 and IVSKEW > 0): 
                     errormsg = errormsg + "PCR and IVSKEW test passed | "
                     strikes = sorted(set(list(stock_oc['strikePrice'])))
-                    print(stock_oc)
+#                    print(stock_oc)
                     print(strikes)
                     errormsg = errormsg + "Strikes -> " + str(strikes) +"\n"
                     
@@ -1770,158 +1770,158 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,
         for symbol in symbols:
     #        print(symbol)
             errormsg = errormsg + " {"+symbol+"\n"
-            try:
-                if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
-                    stock = st.Index(symbol)
-                    instrument='OPTIDX'
-                    stockquote = "10000" # some initial value as Index quote is not available
-                    symbol = mrigstatics.INDEX_MAP_FOR_OC[symbol]
-                else:    
-                    stock = st.Stock(symbol)
-                    stockquote = stock.quote['lastPrice']
-                stockquote = float(str(stockquote).replace(',',''))
-    #            drawdown = stock.avg_drawdown()
+#            try:
+            if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
+                stock = st.Index(symbol)
+                instrument='OPTIDX'
+                stockquote = "10000" # some initial value as Index quote is not available
+                symbol = mrigstatics.INDEX_MAP_FOR_OC[symbol]
+            else:    
+                stock = st.Stock(symbol)
+                stockquote = stock.quote['lastPrice']
+            stockquote = float(str(stockquote).replace(',',''))
+#            drawdown = stock.avg_drawdown()
 #                if live:
-                stock_oc =  mu.optionChainHistorical([symbol])
+            stock_oc =  mu.optionChainHistorical([symbol])
 #                else:
 #                    stock_oc = mu.get_stored_option_chain(symbol)
-    #            print(stock_oc[OC_COLS[3:]])
-                if not stock_oc.empty:
-                    bcs_oc = pd.DataFrame()
+#            print(stock_oc[OC_COLS[3:]])
+            if not stock_oc.empty:
+                bcs_oc = pd.DataFrame()
 #                    stock_oc = stock_oc[OC_COLS[5:]]
-    #                print(stock_oc)
-                    errormsg = errormsg + "OC Downloaded \n "
-                    stock_oc = stock_oc.apply(pd.to_numeric,errors='coerce')
-                    stock_oc = stock_oc.dropna()
-                    # PCR OI test
-     
-                    PCR,IVSKEW = 1,1
-    #                if stock_oc['CALL_OI'].sum() != 0:
-    #                    PCR = stock_oc['PUT_OI'].sum()/stock_oc['CALL_OI'].sum()
-    #                # IV SKEW TEST
-    #                if stock_oc['PUT_IV'].sum() != 0:
-    #                    IVSKEW = stock_oc['CALL_IV'].sum()/stock_oc['PUT_IV'].sum()
-                    
-        #            if (PCR > 0.7 and IVSKEW > 0.8): 
-                    if (PCR > 0 and IVSKEW > 0): 
-                        errormsg = errormsg + "PCR and IVSKEW test passed \n "
-                        strikes = sorted(set(list(stock_oc['Strike_Price'])))
-                        errormsg = errormsg + "Strikes -> " + str(strikes) +"\n"
-                        strike_pts = abs(strikes[2]-strikes[3])
-                        errormsg = errormsg + "Strike Points -> " + str(strike_pts) + "\n"
-                        l_strike = stockquote+int(stockquote*0.1/strike_pts)*strike_pts
-    #                    print(l_strike)
-                        l_strike = mu.closestmatch(l_strike,
-                                                    strikes,
-                                                    strike_pts)
-                        errormsg = errormsg + "Closest Strike -> " + str(l_strike) + "\n"
-    #                    print(l_strike)
-                        l_strike1,h_strike2,h_strike3 = l_strike,l_strike,l_strike
-                        h_strike2,h_strike3 = h_strike2 + strike_pts,h_strike3 + strike_pts
-                        errormsg = errormsg + "strikes -> " + str([l_strike,h_strike2,h_strike3]) + "\n"
-                        valid_expiries = sorted(set(stock_oc.index))
-                        errormsg = errormsg + " Expiries  -> "+ str(valid_expiries) + "\n"
-     
-    #-------------EXPIRY FILTER                   
-                        #print(valid_expiries)
-                        for d in valid_expiries:
-                            if d > maxexpiry:
-    #                            print("removing -> "+str(d))
-                                valid_expiries.remove(d)
-    
-    
-    #                    print(valid_expiries)
-                        if len(valid_expiries) > 0:
-                            errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
-    #                        print(valid_expiries[0])
-    #                        print([symbol,valid_expiries[0],l_strike1])
-                            optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],l_strike1,instrument=instrument)
-    #                        print(optionquote)
-                            if ('marketLot' in optionquote.keys()):
-                                marketLot = optionquote['marketLot']
-                                marketLot = float(str(marketLot).replace(',',''))
-                                errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
-                            else:
-                                errormsg = errormsg + "market lot failed \n"
-                            if ('underlyingValue' in optionquote.keys()):
-                                stockquote = optionquote['underlyingValue']
-                                stockquote = float(str(stockquote).replace(',',''))
-                                errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
-                            else:
-                                errormsg = errormsg + "underlyingValue failed \n"
-                            #l_ltp = optionquote['lastPrice']
-    ##-------------STRIKES FILTER
-    #"""                  
-    #<Logic Comment>
-    #----- l_ltp is is the price of call with lowest strike l_strike1---------
-    #</Logic Comment>
-    #"""                      
-                            l_ltp = stock_oc[stock_oc['strikePrice'] == l_strike1].loc[valid_expiries[0]]['lastPrice_Call']
-    #                        print(l_ltp)
-                            errormsg = errormsg + "l_ltp -> " + str(l_ltp) + "\n"
-                            if (marketLot*stockquote) <= budget:
-                                try:
-                                    #print(stock_oc)
-    #"""
-    #<Logic Comment>                                
-    # -------Selecting Options where (l_ltp- call_price) / (L_strike - call_strike) > 10%
-    #</Logic Comment>                                
-    #"""
-                                    stock_oc = stock_oc[((l_ltp -stock_oc['lastPrice_Call'])/abs(l_strike1 - stock_oc['strikePrice']) >=im)] 
-    
-    #                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
-    #                                                    (stock_oc['Strike_Price'] == h_strike2) |
-    #                                                    (stock_oc['Strike_Price'] == h_strike3)]
-                                    
-                                    if len(stock_oc) > 0:
-                                        errormsg = errormsg + "initial margin test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                                    else:
-                                        errormsg = errormsg + "initial margin test failed \n"
-                                    
-                                    #EXPIRY FILTER
-    #                                print(stock_oc)
-                                    stock_oc = stock_oc.loc[valid_expiries]
-                                    if len(stock_oc) > 0:
-                                        errormsg = errormsg + "expiry filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                                    else:
-                                        errormsg = errormsg + "expiry filter test failed \n"
-                                    
-                                    
-                                    
-                                    # OPEN INTEREST FILTER , OI more than 500
-                                    
-                                    stock_oc = stock_oc[stock_oc['openInterest_Call'] >= desired_OI]
-                                    if len(stock_oc) > 0:
-                                        errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                                    else:
-                                        errormsg = errormsg + "OI > 500 filter test failed \n"
-    
-                                    
-                                    # YIELD FILTER
-                                    
-                                    bcs_oc = stock_oc
-                                    bcs_oc['Lower_Strike'] = l_strike1
-                                    bcs_oc['Lower_Strike_LTP'] = l_ltp
-    
-    #                                stock_oc = stock_oc[stock_oc['CALL_LTP']/stockquote >= 0.03]
-    #                                stock_oc = stock_oc[OC_COLS[3:]]
-                                    bcs_oc['Symbol'] = symbol
-                                    bcs_oc['Lot'] = marketLot
-                                    bcs_oc['Underlying'] = stockquote
-                                            
-            #                        stock_oc['MaxDrawdown'] = drawdown
-#                                    bcs_oc = bcs_oc.reindex(columns=OC_COLS)
-    #                                stock_oc.sort_values(by='Strike_Price',ascending=0)
-                                    if(len(bcs_oc) > 0):
-                                        calls.append(bcs_oc)
-                                        errormsg = errormsg + " Final OC Accepted \n"
-            #                        print(stock_oc)
-                                except:
-                                    pass
+#                print(stock_oc)
+                errormsg = errormsg + "OC Downloaded \n "
+#                stock_oc = stock_oc.apply(pd.to_numeric,errors='coerce')
+#                stock_oc = stock_oc.dropna()
+                # PCR OI test
+ 
+                PCR,IVSKEW = 1,1
+#                if stock_oc['CALL_OI'].sum() != 0:
+#                    PCR = stock_oc['PUT_OI'].sum()/stock_oc['CALL_OI'].sum()
+#                # IV SKEW TEST
+#                if stock_oc['PUT_IV'].sum() != 0:
+#                    IVSKEW = stock_oc['CALL_IV'].sum()/stock_oc['PUT_IV'].sum()
+                
+    #            if (PCR > 0.7 and IVSKEW > 0.8): 
+                if (PCR > 0 and IVSKEW > 0): 
+                    errormsg = errormsg + "PCR and IVSKEW test passed \n "
+                    strikes = sorted(set(list(stock_oc['strikePrice'])))
+                    errormsg = errormsg + "Strikes -> " + str(strikes) +"\n"
+                    strike_pts = abs(strikes[2]-strikes[3])
+                    errormsg = errormsg + "Strike Points -> " + str(strike_pts) + "\n"
+                    l_strike = stockquote+int(stockquote*0.1/strike_pts)*strike_pts
+#                    print(l_strike)
+                    l_strike = mu.closestmatch(l_strike,
+                                                strikes,
+                                                strike_pts)
+                    errormsg = errormsg + "Closest Strike -> " + str(l_strike) + "\n"
+#                    print(l_strike)
+                    l_strike1,h_strike2,h_strike3 = l_strike,l_strike,l_strike
+                    h_strike2,h_strike3 = h_strike2 + strike_pts,h_strike3 + strike_pts
+                    errormsg = errormsg + "strikes -> " + str([l_strike,h_strike2,h_strike3]) + "\n"
+                    valid_expiries = sorted(set(stock_oc.index))
+                    errormsg = errormsg + " Expiries  -> "+ str(valid_expiries) + "\n"
+ 
+#-------------EXPIRY FILTER                   
+                    #print(valid_expiries)
+                    for d in valid_expiries:
+                        if d > maxexpiry:
+#                            print("removing -> "+str(d))
+                            valid_expiries.remove(d)
+
+
+#                    print(valid_expiries)
+                    if len(valid_expiries) > 0:
+                        errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
+#                        print(valid_expiries[0])
+#                        print([symbol,valid_expiries[0],l_strike1])
+                        optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],l_strike1,instrument=instrument)
+#                        print(optionquote)
+                        if ('marketLot' in optionquote.keys()):
+                            marketLot = optionquote['marketLot']
+                            marketLot = float(str(marketLot).replace(',',''))
+                            errormsg = errormsg + "market lot  -> " + str(marketLot) + "\n"
                         else:
-                            errormsg = errormsg + " valid expiry test failed \n"            
-            except:
-                pass
+                            errormsg = errormsg + "market lot failed \n"
+                        if ('underlyingValue' in optionquote.keys()):
+                            stockquote = optionquote['underlyingValue']
+                            stockquote = float(str(stockquote).replace(',',''))
+                            errormsg = errormsg + "underlyingValue  -> " + str(stockquote) + "\n"
+                        else:
+                            errormsg = errormsg + "underlyingValue failed \n"
+                        #l_ltp = optionquote['lastPrice']
+##-------------STRIKES FILTER
+#"""                  
+#<Logic Comment>
+#----- l_ltp is is the price of call with lowest strike l_strike1---------
+#</Logic Comment>
+#"""                      
+                        l_ltp = stock_oc[stock_oc['strikePrice'] == l_strike1].loc[valid_expiries[0]]['lastPrice_Call']
+#                        print(l_ltp)
+                        errormsg = errormsg + "l_ltp -> " + str(l_ltp) + "\n"
+                        if (marketLot*stockquote) <= budget:
+#                            try:
+                            #print(stock_oc)
+#"""
+#<Logic Comment>                                
+# -------Selecting Options where (l_ltp- call_price) / (L_strike - call_strike) > 10%
+#</Logic Comment>                                
+#"""
+                            stock_oc = stock_oc[((l_ltp -stock_oc['lastPrice_Call'])/abs(l_strike1 - stock_oc['strikePrice']) >=im)] 
+
+#                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
+#                                                    (stock_oc['Strike_Price'] == h_strike2) |
+#                                                    (stock_oc['Strike_Price'] == h_strike3)]
+                            
+                            if len(stock_oc) > 0:
+                                errormsg = errormsg + "initial margin test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                            else:
+                                errormsg = errormsg + "initial margin test failed \n"
+                            
+                            #EXPIRY FILTER
+#                                print(stock_oc)
+                            stock_oc = stock_oc.loc[valid_expiries]
+                            if len(stock_oc) > 0:
+                                errormsg = errormsg + "expiry filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                            else:
+                                errormsg = errormsg + "expiry filter test failed \n"
+                            
+                            
+                            
+                            # OPEN INTEREST FILTER , OI more than 500
+                            
+                            stock_oc = stock_oc[stock_oc['openInterest_Call'] >= desired_OI]
+                            if len(stock_oc) > 0:
+                                errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                            else:
+                                errormsg = errormsg + "OI > 500 filter test failed \n"
+
+                            
+                            # YIELD FILTER
+                            
+                            bcs_oc = stock_oc
+                            bcs_oc['Lower_Strike'] = l_strike1
+                            bcs_oc['Lower_Strike_LTP'] = l_ltp
+
+#                                stock_oc = stock_oc[stock_oc['CALL_LTP']/stockquote >= 0.03]
+#                                stock_oc = stock_oc[OC_COLS[3:]]
+                            bcs_oc['Symbol'] = symbol
+                            bcs_oc['Lot'] = marketLot
+                            bcs_oc['Underlying'] = stockquote
+                                    
+    #                        stock_oc['MaxDrawdown'] = drawdown
+#                                    bcs_oc = bcs_oc.reindex(columns=OC_COLS)
+#                                stock_oc.sort_values(by='Strike_Price',ascending=0)
+                            if(len(bcs_oc) > 0):
+                                calls.append(bcs_oc)
+                                errormsg = errormsg + " Final OC Accepted \n"
+    #                        print(stock_oc)
+#                            except:
+#                                pass
+                    else:
+                        errormsg = errormsg + " valid expiry test failed \n"            
+#            except:
+#                pass
             errormsg = errormsg + "}"
         if len(calls) > 0:
             calls = pd.concat(calls)
@@ -1952,6 +1952,8 @@ def long_iron_butterfly(budget=1000000,live=False):
     bps = bull_put_spread(budget=1000000,live=False)
     
     lib = pd.merge(bcs[0],bps[0],on=['Symbol'], how='inner')
+    
+    print(lib)
     
 
 
@@ -1996,6 +1998,7 @@ def stock_fut_data(symbol='NIFTY 50'):
     return stock_fut_data
         
 if __name__ == '__main__':
+    
 #    big_money_zack()
 #    top_mf_smallcap_holdings(3)
 #    top_mf_largecap_holdings()
@@ -2010,5 +2013,6 @@ if __name__ == '__main__':
 #      growth_income()
 #      top_mf_holdings()
 #    covered_call()
-   bull_put_spread()
-#   bear_call_spread(live=True,seclist=['NIFTY 50'],im=.05)
+#    bull_put_spread(seclist=['ADANIENT'])
+#    bear_call_spread()
+    long_iron_butterfly()
