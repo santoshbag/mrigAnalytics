@@ -23,6 +23,7 @@ import csv
 def stockHistoryNew_download():
     datadir = os.path.dirname(__file__)
     processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
+    today = datetime.date.today()
     #input_dir = "F:\\NSEDATA"
     input_dir = os.path.join(datadir,'..','..','data','input')
     processed_file_list = []
@@ -165,6 +166,7 @@ def stockHistoryNew_download():
                     fodata.apply(pd.to_numeric, errors='ignore')
     #                stocksdata["date"] = stocksdata["date"].apply(dtm)
                     fodata['date'] = pd.to_datetime(fodata['date'])
+                    fodata['add_mod_date'] = today
                     fodata.set_index('date',inplace=True)
     #                print(stocksdata.index)
     #                print(stocksdata.tail(10))
