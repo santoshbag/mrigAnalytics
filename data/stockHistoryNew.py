@@ -24,7 +24,7 @@ def stockHistoryNew_download():
     datadir = os.path.dirname(__file__)
     processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
     today = datetime.date.today()
-    #input_dir = "F:\\NSEDATA"
+#    input_dir = "F:\\NSEDATA"
     input_dir = os.path.join(datadir,'..','..','data','input')
     processed_file_list = []
 #    df_list = []
@@ -71,6 +71,10 @@ def stockHistoryNew_download():
                   'OPEN_INT': 'oi',	
                   'CHG_IN_OI': 'oi_change',	
                   'TIMESTAMP': 'date'}
+
+#                date	instrument	instrument_type	series	long_short	oi
+
+    fo_oi_header = ['oi_date','client','instrument',	'instrument_type',	'series',	'long_short',	'oi']   
     
     csv_header = [key for key in csv_header_map.keys()]
     fo_csv_header = [key for key in fo_csv_header_map.keys()]
@@ -96,6 +100,8 @@ def stockHistoryNew_download():
         stockbhavlist = []
         indexfilelist = []
         fobhavlist = []
+        fo_oilist = []
+        
         for r,d,f in os.walk(input_dir):
     #        for folder in d:
     #    #        if '24012020' in folder:
@@ -110,7 +116,10 @@ def stockHistoryNew_download():
                 if re.search("^ind_close_all_.*csv",file):
                     indexfilelist.append(os.path.join(r,file))
                 if re.search("^fo.*zip",file):
-                    fobhavlist.append(os.path.join(r,file))                
+                    fobhavlist.append(os.path.join(r,file))
+                if re.search("^fao_participant_oi_.*csv",file):
+                    fo_oilist.append(os.path.join(r,file))
+                    
     #                print(indexfilelist)                
     #    print(stockbhavlist)
     
@@ -211,7 +220,43 @@ def stockHistoryNew_download():
                     print(indexdata.tail(10))                
     #                except:
     #                    pass
-    #             
+    #   
+            
+
+        for csvfile in fo_oilist:
+            if csvfile not in processed_file_list:
+                fooilist = []
+                print("Processing fo_oi File "+csvfile)
+#                date	instrument	instrument_type	series	long_short	oi
+                date = datetime.datetime.strptime(csvfile[-12:][:-4],"%d%m%Y").date()
+                fo_oi = csv.reader(open(csvfile))
+                for row in fo_oi:
+                    fooilist.append([row[0],'futures','','IN','long',row[1]])
+                    fooilist.append([row[0],'futures','','IN','short',row[2]])
+                    fooilist.append([row[0],'futures','','EQ','long',row[3]])
+                    fooilist.append([row[0],'futures','','EQ','short',row[4]])
+                    fooilist.append([row[0],'option','ce','IN','long',row[5]])
+                    fooilist.append([row[0],'option','pe','IN','long',row[6]])
+                    fooilist.append([row[0],'option','ce','IN','short',row[7]])
+                    fooilist.append([row[0],'option','pe','IN','short',row[8]])
+                    fooilist.append([row[0],'option','ce','EQ','long',row[9]])
+                    fooilist.append([row[0],'option','pe','EQ','long',row[10]])
+                    fooilist.append([row[0],'option','ce','EQ','long',row[11]])
+                    fooilist.append([row[0],'option','pe','EQ','long',row[12]])
+                
+                fooilist = pd.DataFrame(fooilist[24:][:-12],columns=fo_oi_header[1:])
+                fooilist['oi_date'] = date
+                fooilist.set_index('oi_date',inplace=True)
+
+    
+                if write_flag:
+                    fooilist.to_sql('fo_oi_participants',engine, if_exists='append', index=True)
+                    print("OI Written to Database")
+                    print(fooilist.tail(10))
+                    writer.writerow([csvfile])
+                else:
+                    print(fooilist.tail(10))                
+    #                except:         
     engine.execute(enable_sql)             
 
 #print(df_list[2])    
