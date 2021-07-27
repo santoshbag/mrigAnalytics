@@ -57,18 +57,18 @@ SELECT 'GOLD' as symbol,
 )
 );
 
-delete from daily_returns;
+#delete from daily_returns;
 
 delete from TEMP_DAILY_RETURNS t1 using TEMP_DAILY_RETURNS t2 
 where t1.id > t2.id and t1.date = t2.date and t1.symbol = t2.symbol;
 
-insert into daily_returns (symbol, date, price, daily_arithmetic_returns,daily_log_returns)
-(
-  select distinct symbol, date, price, daily_arithmetic_returns,daily_log_returns 
-  from TEMP_DAILY_RETURNS
-);
+#insert into daily_returns (symbol, date, price, daily_arithmetic_returns,daily_log_returns)
+#(
+#  select distinct symbol, date, price, daily_arithmetic_returns,daily_log_returns 
+#  from TEMP_DAILY_RETURNS
+#);
 
-delete from daily_returns where daily_arithmetic_returns is null;
+#delete from daily_returns where daily_arithmetic_returns is null;
 
 #drop table TEMP_DAILY_RETURNS;
 
