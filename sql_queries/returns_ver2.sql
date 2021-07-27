@@ -42,7 +42,7 @@ UNION
     to_number(co.price,'9999999.99') as price,
     to_number(co.price,'9999999.99') / lag(to_number(co.price,'9999999.99'), 1) OVER (PARTITION BY co.crude_benchmark ORDER BY co.value_date) - 1::numeric AS daily_arithmetic_returns,
     ln(to_number(co.price,'9999999.99') / lag(to_number(co.price,'9999999.99'), 1) OVER (PARTITION BY co.crude_benchmark ORDER BY co.value_date)) AS daily_log_returns
-   FROM crudeoil_prices co where co.price <> '' and co.crude_benchmark='BRENT'
+   FROM crudeoil_prices co where co.price  ~ '^[0-9\.]+$'  and co.crude_benchmark='BRENT'
    ORDER BY co.crude_benchmark, co.value_date
 )  
 UNION
@@ -52,7 +52,7 @@ SELECT 'GOLD' as symbol,
     to_number(gp.price,'9999999.99') as price,
     to_number(gp.price,'9999999.99') / lag(to_number(gp.price,'9999999.99'), 1) OVER (ORDER BY gp.value_date) - 1::numeric AS daily_arithmetic_returns,
     ln(to_number(gp.price,'9999999.99') / lag(to_number(gp.price,'9999999.99'), 1) OVER (ORDER BY gp.value_date)) AS daily_log_returns
-   FROM gold_prices gp where gp.price <> ''
+   FROM gold_prices gp where gp.price  ~ '^[0-9\.]+$' 
   ORDER BY gp.value_date
 )
 );
