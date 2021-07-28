@@ -49,17 +49,17 @@ def gold_download_new():
     datadir = os.path.dirname(__file__)
 
     
-    file = os.path.join(datadir,'..','..','data','input','Prices.xlsx')
+    file = os.path.join(datadir,'..','..','data','input','Prices.xls')
 #    file = "F:\\NSEDATA\\Daily\\Prices.xlsx"
     
     today = datetime.date.today()
 
-    dfs = read_excel(file,sheetname='Daily',skiprows=8,parse_cols='D:E')
+    dfs = read_excel(file,sheet_name='Daily',skiprows=8,usecols='D:E')
     
     if not dfs.empty:
         dfs['download_date'] = today
         dfs = dfs.rename(columns={np.nan : 'price','Name':'value_date'})
-        dfs.set_index('value_date',inplace='True')
+        dfs.set_index('value_date',inplace=True)
         
         sql = 'delete from gold_prices'
         engine.execute(sql)
