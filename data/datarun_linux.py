@@ -223,10 +223,10 @@ if (len(alldata) > 0):
             returns()
         except:
             pass
-#        try:    
-#            return_correlations()
-#        except:
-#            pass
+        try:    
+            return_correlations()
+        except:
+            pass
     if '2' in alldata:
         try:
             print("NAVS")
