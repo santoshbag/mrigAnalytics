@@ -54,6 +54,9 @@ def gold_download_new():
     
     today = datetime.date.today()
 
+#Windows adjustment
+#    dfs = read_excel(file,sheetname='Daily',skiprows=8,parse_cols='D:E')
+# Linux adjustment
     dfs = read_excel(file,sheet_name='Daily',skiprows=8,usecols='D:E')
     
     if not dfs.empty:
