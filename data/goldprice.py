@@ -50,7 +50,7 @@ def gold_download_new():
 
     
     file = os.path.join(datadir,'..','..','data','input','Prices.xls')
-#    file = "F:\\NSEDATA\\Daily\\Prices.xls"
+#    file = "F:\\NSEDATA\\Daily\\Prices.xlsx"
     
     today = datetime.date.today()
 
