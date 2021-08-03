@@ -957,6 +957,7 @@ def mrigxl_stored_strategies(name=None):
 def mrigxl_stockquote(symbol):
     stk = stocks.Stock(symbol)
     quote = stk.quote['lastPrice']
+    quote = float(quote.replace(',',''))
     return quote
 
 @xw.func

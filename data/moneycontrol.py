@@ -380,7 +380,7 @@ def get_MCQtrly_Results(symbol=None):
                     successful_download.append(sym)
                 except:
                     pass
-            
+#            print(qtrly_results_dict)
             print("Downloaded Qtrly Results for "+str(len(set(successful_download)))+ " of "+ str(len(symbollist))+" stocks")
         except:
             pass
@@ -1009,7 +1009,7 @@ if __name__ == '__main__':
 #    get_MCRatios()
 #    populate_ratios_table()
 #    get_MCQtrly_Results()
-    #get_MCQtrly_Results("MS24:marutisuzukiindia")
+    get_MCQtrly_Results("MS24:marutisuzukiindia")
 #    get_BalanceSheet()
 
 #    get_ProfitLossStatement()
@@ -1017,4 +1017,4 @@ if __name__ == '__main__':
 #    get_CashFLowStatement()
     #get_OutShares_NSE()
 #    get_CorporateActions()
-    get_NSELive()
+#    get_NSELive()

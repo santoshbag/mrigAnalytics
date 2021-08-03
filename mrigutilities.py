@@ -301,6 +301,8 @@ def getStockQuote(symbol):
     stockQuote = {}
     try:
         stockQuote = nsepy.get_quote(symbol)
+        if ('data' in stockQuote.keys()):
+            stockQuote = stockQuote['data'][0]
     except:
         pass
 #    print(stockQuote)
@@ -341,6 +343,7 @@ def getStockQuote(symbol):
             stockQuote['momentum'] = momentum
         except:
             pass
+        # print(stockQuote['lastPrice'])
     return stockQuote
 
 
@@ -768,4 +771,4 @@ if __name__ == '__main__':
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
-    print(getStockQuote('ZEEL'))
+    print(getStockQuote('SGBAUG28V'))

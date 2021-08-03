@@ -32,7 +32,7 @@ class Stock():
     def __init__(self,name):
         self.symbol = name
         self.quote = mu.getStockQuote(name)
-#        print(self.quote)
+        # print(self.quote['lastPrice'])
         metadata = mu.getSecMasterData(name)
         if 'industry' in metadata.keys():
             self.industry = metadata['industry']
@@ -620,9 +620,9 @@ def stock_adjust():
     engine.execute(enable_sql)
 
 if __name__ == '__main__':
-    nifty = Stock('SBIN')
+    nifty = Stock('SGBAUG28V')
 #    print(nifty.quote)
 #    nifty.get_ratios()
-    nifty.optionChain()
+    # nifty.optionChain()
     
 #    print(niftyoc)
