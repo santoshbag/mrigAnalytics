@@ -85,6 +85,38 @@ def mrigxl_getStockData(symbol,start_date,end_date=None,last=True,db='localhost'
         return stock_df
     else:
         return 0
+    
+    
+@xw.func
+# @xw.ret(expand='table', transpose=False)
+def mrigxl_getStockOptionQuote(symbol,expiry,strike, opt_type='CE',db='localhost'):
+    
+    quote = mu.getStockOptionQuote(symbol,expiry,strike,opt_type)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    if 'lastPrice' in quote.keys():
+        return quote['lastPrice']
+    else:
+        return -1
+
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getIndexOptionQuote(symbol,expiry,strike, opt_type='CE',db='localhost'):
+    
+    quote = mu.getIndexOptionQuote(symbol,expiry,strike,opt_type)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    if 'lastPrice' in quote.keys():
+        return quote['lastPrice']
+    else:
+        return -1
+    
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getIndexQuote(symbol):
+    
+    quote = mu.getIndexQuote(symbol)
+    return quote
+
+    
 @xw.func
 #@xw.ret(expand='table', transpose=False)
 @xw.arg('investments', pd.DataFrame, index=False, header=True)

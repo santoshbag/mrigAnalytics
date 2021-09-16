@@ -1518,7 +1518,7 @@ def covered_call(budget=1000000,live=False):
     return [calls,errormsg]
 
 
-def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localhost',stored=False):
+def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localhost',stored=False,time_to_expiry_wks=4):
     """ 
     BULL PUT SPREAD.
     
@@ -1530,11 +1530,21 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                 im : numeric, initial margin for viability, defaults to 0.10
                 
     """
+    
+    nifty50_scrips = ['NTPC','BHARTIARTL','COALINDIA','ONGC','TITAN','HCLTECH',
+                  'SBIN','POWERGRID','INDUSINDBK','TATAMOTORS','TCS','HINDALCO',
+                  'ADANIPORTS','INFY','UPL','LT','DIVISLAB','ICICIBANK','HEROMOTOCO',
+                  'IOC','HDFCLIFE','TECHM','SHREECEM','EICHERMOT','BAJAJ-AUTO',
+                  'DRREDDY','M&M','KOTAKBANK','JSWSTEEL','RELIANCE','HINDUNILVR',
+                  'TATASTEEL','MARUTI','BAJAJFINSV','WIPRO','HDFCBANK','SUNPHARMA',
+                  'BAJFINANCE','SBILIFE','ITC','HDFC','AXISBANK','ASIANPAINT','CIPLA',
+                  'GRASIM','ULTRACEMCO','NESTLEIND','BRITANNIA','BPCL','TATACONSUM']
+    
     if not stored:
-        maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
+        maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=time_to_expiry_wks)
         marketLot = 50    # default lot
         desired_OI = 20000
-        #Stock Filter Criteria
+        #Stock Filter Criteria 
         #1. Return for past 8 weeks is positive
         #2. Average Daily Volume >= 500000
         #3. Remove Penny stocks
@@ -1549,7 +1559,10 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                    where adtv >= 5000000 and pr > 0 "
             symbols = pd.read_sql(sql,engine)
             symbols = list(symbols.symbol)
-            symbols = symbols + ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']
+            symbols = list(set().union(symbols,nifty50_scrips))
+            print('SYMBOLS ARE')
+            print(symbols)
+            # symbols = symbols + ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']
         else:
             symbols = seclist
     #    return_sql = "select * from daily_returns dr where dr.date > (now() - interval '1 year')" #in ( select date from daily_returns where symbol = 'NIFTY 50' and price is not null and date > (now() - interval '1 year'))"      
@@ -1561,7 +1574,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
         for symbol in symbols:
             print(symbol)
             errormsg = errormsg + " {"+symbol+"\n"
-#            try:
+            # try:
             if symbol in ['NIFTY 50', 'NIFTY IT', 'NIFTY BANK']:
                 stock = st.Index(symbol)
                 instrument='OPTIDX'
@@ -1574,7 +1587,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
             errormsg = errormsg + " "+str(stockquote)+"|"
 #            drawdown = stock.avg_drawdown()
 #                if live:
-            stock_oc =  mu.optionChainHistorical([symbol])
+            stock_oc =  mu.optionChainHistorical([symbol],db=dbhost)
 #                else:
 #                    stock_oc = mu.get_stored_option_chain(symbol)
 #            print(stock_oc[OC_COLS[3:]])
@@ -1597,7 +1610,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                     errormsg = errormsg + "PCR and IVSKEW test passed | "
                     strikes = sorted(set(list(stock_oc['strikePrice'])))
 #                    print(stock_oc)
-                    print(strikes)
+                    # print(strikes)
                     errormsg = errormsg + "Strikes -> " + str(strikes) +"\n"
                     
                     strike_pts = abs(strikes[2]-strikes[3])
@@ -1618,13 +1631,15 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                         if d > maxexpiry:
 #                            print("removing -> "+str(d))
                             valid_expiries.remove(d)
+                            # d = d.strftime('%Y-%m-%d')
                     #STRIKES FILTER
-                    #print(valid_expiries)
+                    # print(valid_expiries)
 
-                    if len(valid_expiries) > 0:
-                        errormsg = errormsg + " valid expiry of "+ str(valid_expiries) + "\n"
-#                        print(valid_expiries[0])
-                        optionquote = mu.getStockOptionQuote(symbol,valid_expiries[0],h_strike1,'PE')
+                    # if len(valid_expiries) > 0:
+                    for expiryDt in valid_expiries:
+                        errormsg = errormsg + " valid expiry of "+ str(expiryDt) + "\n"
+                        # print(list(valid_expiries))
+                        optionquote = mu.getStockOptionQuote(symbol,expiryDt,h_strike1,'PE')
 #                        print(optionquote)
                         if ('marketLot' in optionquote.keys()):
                             marketLot = optionquote['marketLot']
@@ -1640,69 +1655,83 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
                         else:
                             errormsg = errormsg + "underlyingValue failed \n"
 
-#                        h_ltp = optionquote['lastPrice']
-                        h_ltp = stock_oc[stock_oc['strikePrice'] == h_strike1].loc[valid_expiries[0]]['lastPrice_Put']
+                        # h_ltp = stock_oc[stock_oc['strikePrice'] == h_strike1].loc[valid_expiries[0]]['lastPrice_Put']
+                        h_ltp = -1
+                        try:
+                            h_ltp = stock_oc[stock_oc['strikePrice'] == h_strike1].filter(items = [expiryDt] , axis=0)['lastPrice_Put'].values[0]
+                            h_ltp = float(str(optionquote['lastPrice']).replace(',',''))                        
+                        except:
+                            pass
                         errormsg = errormsg + "h_ltp -> " + str(h_ltp) + "\n"
-                        if (marketLot*stockquote) <= budget:
-#                            try:
-#                                print(stock_oc[OC_COLS[3:]])
-#                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
-#                                                    ((h_ltp - stock_oc['PUT_LTP'])/abs(h_strike1 - stock_oc['Strike_Price']) >=0.10)] 
-                            stock_oc = stock_oc[((h_ltp - stock_oc['lastPrice_Put'])/abs(h_strike1 - stock_oc['strikePrice']) >=im)] 
-                            if len(stock_oc) > 0:
-                                errormsg = errormsg + "initial margin test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                            else:
-                                errormsg = errormsg + "initial margin test failed \n"
-#                                if not stock_oc.empty:
-#                                    errormsg = errormsg + "10% yield test passed | "
-
-#                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
-#                                                    (stock_oc['Strike_Price'] == h_strike2) |
-#                                                    (stock_oc['Strike_Price'] == h_strike3)]
-                            
-                            #EXPIRY FILTER
-                            
-                            stock_oc = stock_oc.loc[valid_expiries]
-                            if len(stock_oc) > 0:
-                                errormsg = errormsg + "expiry filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                            else:
-                                errormsg = errormsg + "expiry filter test failed \n"
-
-                            # OPEN INTEREST FILTER
-                            
-                            stock_oc = stock_oc[stock_oc['openInterest_Put'] >= desired_OI]
-                            if len(stock_oc) > 0:
-                                errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
-                            else:
-                                errormsg = errormsg + "OI > 500 filter test failed \n"
-
-                            bps_oc = stock_oc
-                            bps_oc['Higher_Strike'] = h_strike1
-                            bps_oc['Higher_Strike_LTP'] = h_ltp
-                            # YIELD FILTER
-                            
-#                                stock_oc = stock_oc[stock_oc['CALL_LTP']/stockquote >= 0.03]
-#                                stock_oc = stock_oc[OC_COLS[3:]]
-#                                stock_oc['Symbol'] = symbol
-#                                stock_oc['Lot'] = marketLot
-#                                stock_oc['Underlying'] = stockquote
-                            bps_oc['Symbol'] = symbol
-                            bps_oc['Lot'] = marketLot
-                            bps_oc['Underlying'] = stockquote
-                                    
-    #                        stock_oc['MaxDrawdown'] = drawdown
-#                                    bps_oc = bps_oc.reindex(columns=OC_COLS)
-#                                stock_oc.sort_values(by='Strike_Price',ascending=0)
-                            if(len(bps_oc) > 0):
-                                calls.append(bps_oc)
-                                errormsg = errormsg + " Final OC Accepted \n"
-    #                        print(stock_oc)
-#                            except:
-#                                pass
-                    else:
-                        errormsg = errormsg + " valid expiry test failed \n"            
-#            except:
-#                pass
+                        if (h_ltp > -1):
+                            stock_oc['Higher_Strike'] = h_strike1
+                            stock_oc['Higher_Strike_LTP'] = h_ltp
+                            if (marketLot*stockquote) <= budget:
+    #                            try:
+    #                                print(stock_oc[OC_COLS[3:]])
+    #                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
+    #                                                    ((h_ltp - stock_oc['PUT_LTP'])/abs(h_strike1 - stock_oc['Strike_Price']) >=0.10)] 
+                                stock_oc['im'] = (h_ltp - stock_oc['lastPrice_Put'])/abs(h_strike1 - stock_oc['strikePrice']) 
+                                stock_oc = stock_oc[stock_oc['im'] >=im] 
+                                # print(stock_oc[['lastPrice_Put','strikePrice','Higher_Strike','Higher_Strike_LTP','im']])
+                                if len(stock_oc) > 0:
+                                    errormsg = errormsg + "initial margin test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                                else:
+                                    errormsg = errormsg + "initial margin test failed \n"
+    #                                if not stock_oc.empty:
+    #                                    errormsg = errormsg + "10% yield test passed | "
+    
+    #                                stock_oc = stock_oc[(stock_oc['Strike_Price'] == h_strike1) |
+    #                                                    (stock_oc['Strike_Price'] == h_strike2) |
+    #                                                    (stock_oc['Strike_Price'] == h_strike3)]
+                                
+                                #EXPIRY FILTER
+                                
+                                stock_oc = stock_oc.loc[stock_oc.index.intersection([expiryDt])]
+                                # print(stock_oc.index)
+                                # stock_oc = stock_oc.filter(items = valid_expiries , axis=0)
+                                if len(stock_oc) > 0:
+                                    errormsg = errormsg + "expiry filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                                else:
+                                    errormsg = errormsg + "expiry filter test failed \n"
+    
+                                # OPEN INTEREST FILTER
+                                
+                                stock_oc = stock_oc[stock_oc['openInterest_Put'] >= desired_OI]
+                                if len(stock_oc) > 0:
+                                    errormsg = errormsg + "OI > 500 filter test passed. OC_length -> " + str(len(stock_oc)) + "\n"
+                                else:
+                                    errormsg = errormsg + "OI > 500 filter test failed \n"
+    
+                                bps_oc = stock_oc
+                                bps_oc['Higher_Strike'] = h_strike1
+                                bps_oc['Higher_Strike_LTP'] = h_ltp
+                                # YIELD FILTER
+                                
+    #                                stock_oc = stock_oc[stock_oc['CALL_LTP']/stockquote >= 0.03]
+    #                                stock_oc = stock_oc[OC_COLS[3:]]
+    #                                stock_oc['Symbol'] = symbol
+    #                                stock_oc['Lot'] = marketLot
+    #                                stock_oc['Underlying'] = stockquote
+                                bps_oc['Symbol'] = symbol
+                                bps_oc['Lot'] = marketLot
+                                bps_oc['Underlying'] = stockquote
+                                bps_oc['Max_Profit'] = (bps_oc['Higher_Strike_LTP'] - bps_oc['lastPrice_Put']) * bps_oc['Lot']
+                                bps_oc['Max_Loss'] = (bps_oc['strikePrice'] - bps_oc['Higher_Strike'])* bps_oc['Lot'] + bps_oc['Max_Profit']
+                                bps_oc['Risk_Reward'] = abs(bps_oc['Max_Loss']/bps_oc['Max_Profit'])        
+        #                        stock_oc['MaxDrawdown'] = drawdown
+    #                                    bps_oc = bps_oc.reindex(columns=OC_COLS)
+    #                                stock_oc.sort_values(by='Strike_Price',ascending=0)
+                                if(len(bps_oc) > 0):
+                                    calls.append(bps_oc)
+                                    errormsg = errormsg + " Final OC Accepted \n"
+        #                        print(stock_oc)
+    #                            except:
+    #                                pass
+                        # else:
+                        #     errormsg = errormsg + " valid expiry test failed \n"            
+            # except:
+            #     pass
             errormsg = errormsg + "}"
         if len(calls) > 0:
             calls = pd.concat(calls)
@@ -1727,7 +1756,7 @@ def bull_put_spread(budget=1000000,live=False,im=0.10,seclist=[],dbhost='localho
     print(errormsg)
     return [calls,errormsg]
 
-def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,dbhost='localhost'):
+def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,dbhost='localhost',time_to_expiry_wks=4):
     """ 
     BEAR CALL SPREAD.
     
@@ -1740,7 +1769,7 @@ def bear_call_spread(budget=1000000,live=False, im=0.10,seclist=[],stored=False,
                 seclist : stock tickers for trades for selected tickers, defaults to []
     """
     if not stored:
-        maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=4)
+        maxexpiry = today + dateutil.relativedelta.relativedelta(weeks=time_to_expiry_wks)
         marketLot = 50    # default market lot
         desired_OI = 20000
         OC_COLS = ['Symbol','Underlying','Lot','Lower_Strike','Lower_Strike_LTP','Strike_Price','CALL_LTP','CALL_OI','CALL_BidQty','CALL_BidPrice','CALL_AskPrice','CALL_AskQty']#,'MaxDrawdown']
@@ -2013,6 +2042,6 @@ if __name__ == '__main__':
 #      growth_income()
 #      top_mf_holdings()
 #    covered_call()
-#    bull_put_spread(seclist=['ADANIENT'])
+    bull_put_spread(seclist=['GAIL'],im=0.0, dbhost='SIRIUS',time_to_expiry_wks=8)
 #    bear_call_spread()
-    long_iron_butterfly()
+    # long_iron_butterfly()

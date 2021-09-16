@@ -263,6 +263,24 @@ def getIndexData(symbol, start_date, end_date,db='localhost'):
     #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     return index_df
 
+def getOptionData(symbol, start_expirydate, end_expirydate,db='localhost'):
+    sql = "select * from futures_options_history where option_type in ('PE','CE') and expiry >='" + start_expirydate.strftime('%Y-%m-%d') \
+          + "' and expiry <'" + end_expirydate.strftime('%Y-%m-%d') \
+          + "' and symbol='" \
+          + symbol + "'"
+
+    engine = sql_engine(dbhost=db)
+    option_df = pd.read_sql(sql, engine)
+    if not option_df.empty:
+        for i in range(0, len(option_df['date']) - 1):
+            option_df.iloc[i]['date'] = datetime.datetime.combine(option_df.iloc[i]['date'], datetime.time())
+        option_df.date = pd.DatetimeIndex(option_df.date)
+        option_df.set_index('date', inplace=True)
+        # for i in range(0,len(stock_df.index)-1):
+        #   stock_df.index[i] = datetime.datetime.combine(stock_df.index[i], datetime.time())
+
+    #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    return option_df
 
 def getStockData(symbol, start_date, end_date=None, last=False,db='localhost'):
     
@@ -372,6 +390,30 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPT
         stockOptionQuote['momentum'] = momentum
     return stockOptionQuote
 
+def getIndexOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPTIDX'):
+    stockOptionQuote = {}
+    sql = "select * from live where symbol='%s' and expiry='%s' and strike='%s' and option_type='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
+    stockOptionQuote = pd.read_sql(sql % (symbol, expiry.strftime('%Y-%m-%d'), str(strike), option_type), engine)
+    if not stockOptionQuote.empty:
+        stockOptionQuote.set_index('symbol', inplace=True)
+    else:
+        stockOptionQuote = nsepy.get_quote(symbol=quote(symbol, safe=''),
+                                           expiry=expiry, strike=strike,
+                                           option_type=option_type,
+                                           instrument=instrument)
+#        print(stockOptionQuote)
+        if ('data' in stockOptionQuote.keys()):
+            stockOptionQuote = stockOptionQuote['data'][0]
+        momentum = 0
+        for i in range(1, 10):
+            try:
+                momentum = (stockOptionQuote['buyPrice' + str(i)] * stockOptionQuote['buyQuantity' + str(i)])
+                - (stockOptionQuote['sellPrice' + str(i)] * stockOptionQuote['sellQuantity' + str(i)])
+            except:
+                pass
+        stockOptionQuote['momentum'] = momentum
+    return stockOptionQuote
 
 def closestmatch(x, arr, diff,accuracy=50):
     pivot = int(len(arr) / 2)
@@ -748,6 +790,30 @@ Index(['askPrice_Call', 'askQty_Call', 'bidQty_Call', 'bidprice_Call',
         op_df.sort_values(by=['symbol','expiryDate','strikePrice'], inplace=True)
         op_df.set_index('expiryDate',inplace=True)
         option_chain = op_df
+        
+        ## Populate with latest prices
+        
+        # op_df.reset_index(inplace=True)
+        
+        # for i in op_df.index:
+        #     expiry = op_df.loc[i]['expiryDate']
+        #     scrip = op_df.loc[i]['symbol']
+        #     strikeP = op_df.loc[i]['strikePrice']
+        #     call_ltp = getStockOptionQuote(scrip,expiry,strikeP,'CE')
+        #     # print(call_ltp)
+        #     put_ltp = getStockOptionQuote(scrip,expiry,strikeP,'PE')
+        #     # print(put_ltp)
+        #     try:
+        #         op_df.loc[i,'lastPrice_Call'] = call_ltp['lastPrice']
+        #     except:
+        #         pass
+        #     try:
+        #         op_df.loc[i,'lastPrice_Put'] = put_ltp['lastPrice']
+        #     except:
+        #         pass
+        # op_df.set_index('expiryDate',inplace=True)
+        # option_chain = op_df
+        
         # for i in range(0,len(stock_df.index)-1):
         #   stock_df.index[i] = datetime.datetime.combine(stock_df.index[i], datetime.time())
 
@@ -763,7 +829,7 @@ def marketLot(symbol):
 
 if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
-    expiries_i = [datetime.date(2021,6,3),datetime.date(2021,6,10)]
+    expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
     expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
 #    oc = optionChainLive([('NIFTY','I')],expiries_i)
 #    oc = optionChainHistorical(['BANKNIFTY'])#,expiries_i+expiries_e)
@@ -771,4 +837,7 @@ if __name__ == '__main__':
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
-    print(getStockQuote('SGBAUG28V'))
+    exp = datetime.date(2021,10,28)
+    strk = 17500
+    # print(getIndexOptionQuote('NIFTY', exp, strk))
+    print(getIndexQuote('NIFTY 50'))
