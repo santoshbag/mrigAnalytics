@@ -39,10 +39,10 @@ def get_MCNews():
         
         recos = pandas.DataFrame(re,columns=["date","title","description","type"])
         engine = mrigutilities.sql_engine()
-#        try:
-#            recos.to_sql('media',engine, if_exists='append', index=False)
-#        except:
-#            pass
+        try:
+            recos.to_sql('media',engine, if_exists='append', index=False)
+        except:
+            pass
         print(recos)            
     return recos
 
