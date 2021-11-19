@@ -66,6 +66,7 @@ def short_trend():
 
 #        print(stock_df)
         print(oc_df.sort_index(ascending=False))
+        oc_df.to_csv('ocdf.csv')
     return oc_df
    
 if __name__ == '__main__':

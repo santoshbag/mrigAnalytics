@@ -70,16 +70,18 @@ def get_ETNews():
         
         recos = pandas.DataFrame(re,columns=["date","title","description","type"])
         engine = mrigutilities.sql_engine()
-        try:
-            recos.to_sql('media',engine, if_exists='append', index=False)
-        except:
-            pass
+        # try:
+        #     recos.to_sql('media',engine, if_exists='append', index=False)
+        # except:
+        #     pass
+        print(recos)
             
         print("News download finished\n")
+        return recos
     
 if __name__ == '__main__':
-    get_MCNews()        
-    
+    # get_MCNews()        
+    get_ETNews()
  
     
     

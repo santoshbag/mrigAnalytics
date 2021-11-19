@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import scipy.optimize
 from datetime import date
-
+import nsepy
 
 @xw.func
 @xw.arg('isinlist', ndim=1, transpose=True)
@@ -74,17 +74,33 @@ def mrigxl_getMFNAV1(reference_date, isinlist=None,db='localhost'):
     
 @xw.func
 #@xw.ret(expand='table', transpose=False)
-def mrigxl_getStockData(symbol,start_date,end_date=None,last=True,db='localhost'):
+def mrigxl_getStockData(symbol,start_date,end_date=None,last=True,db='localhost',alldata=True):
     
     stock_df = mu.getStockData(symbol,start_date,end_date,last,db=db)
 #    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
     if not stock_df.empty:
-        stock_df = stock_df['close']
+        if not alldata:
+            stock_df = stock_df['close']
         if end_date is None:
             stock_df = list(stock_df.head(1).values)
         return stock_df
     else:
         return 0
+    
+    
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getOptionData(symbol,strike,start_date,end_date=None,db='localhost'):
+    
+    stock_df = mu.getOptionData(symbol,start_date,end_date,db=db)
+#    nav_df = [list(nav_df.loc[ind]) for ind in nav_df.index]
+    if not stock_df.empty:
+        stock_df = stock_df[stock_df['strike'] == strike]
+        return stock_df
+    else:
+        return 0
+    
+        
     
     
 @xw.func
@@ -116,7 +132,14 @@ def mrigxl_getIndexQuote(symbol):
     quote = mu.getIndexQuote(symbol)
     return quote
 
-    
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getStockQuote(symbol,id='lastPrice'):    
+    stockQuote = nsepy.get_quote(symbol)
+    if ('data' in stockQuote.keys()):
+        stockQuote = stockQuote['data'][0][id]
+    return stockQuote
+
 @xw.func
 #@xw.ret(expand='table', transpose=False)
 @xw.arg('investments', pd.DataFrame, index=False, header=True)

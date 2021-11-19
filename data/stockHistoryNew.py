@@ -101,6 +101,7 @@ def stockHistoryNew_download():
         indexfilelist = []
         fobhavlist = []
         fo_oilist = []
+        trade_list = []
         
         for r,d,f in os.walk(input_dir):
     #        for folder in d:
@@ -119,7 +120,8 @@ def stockHistoryNew_download():
                     fobhavlist.append(os.path.join(r,file))
                 if re.search("^fao_participant_oi_.*csv",file):
                     fo_oilist.append(os.path.join(r,file))
-                    
+                if re.search("^trade_.*csv",file):
+                    trade_list.append(os.path.join(r,file))                    
     #                print(indexfilelist)                
     #    print(stockbhavlist)
     
@@ -255,7 +257,32 @@ def stockHistoryNew_download():
                     print(fooilist.tail(10))
                     writer.writerow([csvfile])
                 else:
-                    print(fooilist.tail(10))                
+                    print(fooilist.tail(10))
+                    
+        for csvfile in trade_list:
+            if csvfile not in processed_file_list:
+                print("Processing Trade File "+csvfile)
+                trades = pd.read_csv(csvfile)
+                trades = indexdata.replace({'-':None})  
+                trades['trade_id'] = trades.trade_id.astype('str') 
+                trades['order_id'] = trades.order_id.astype('str')
+                trades['trade_date'] = pd.to_datetime(trades['trade_date'])
+                # indexdata = indexdata[nifty_csv_header]
+                # indexdata = indexdata.rename(columns=nifty_csv_header_map)
+
+        #        indexdata['date'] = pd.to_datetime(indexdata['date'])
+        
+        #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+        #                try:
+        #        print(indexdata.index)
+    
+                if write_flag:
+                    trades.to_sql('trade_history',engine, if_exists='append', index=False)
+                    print("Trades Written to Database")
+                    print(trades.tail(10))
+                    writer.writerow([csvfile])
+                else:
+                    print(trades.tail(10))                      
     #                except:         
     engine.execute(enable_sql)             
 
