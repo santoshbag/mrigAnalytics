@@ -263,7 +263,7 @@ def stockHistoryNew_download():
             if csvfile not in processed_file_list:
                 print("Processing Trade File "+csvfile)
                 trades = pd.read_csv(csvfile)
-                trades = indexdata.replace({'-':None})  
+                trades = trades.replace({'-':None})  
                 trades['trade_id'] = trades.trade_id.astype('str') 
                 trades['order_id'] = trades.order_id.astype('str')
                 trades['trade_date'] = pd.to_datetime(trades['trade_date'])
