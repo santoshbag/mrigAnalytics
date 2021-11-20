@@ -267,6 +267,7 @@ def stockHistoryNew_download():
                 trades['trade_id'] = trades.trade_id.astype('str') 
                 trades['order_id'] = trades.order_id.astype('str')
                 trades['trade_date'] = pd.to_datetime(trades['trade_date'])
+                trades.drop(['order_execution_time'],axis=1,inplace=True)
                 # indexdata = indexdata[nifty_csv_header]
                 # indexdata = indexdata.rename(columns=nifty_csv_header_map)
 
