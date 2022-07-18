@@ -132,6 +132,23 @@ def mrigxl_getIndexQuote(symbol):
     quote = mu.getIndexQuote(symbol)
     return quote
 
+    
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getIndexFuturesQuote(symbol,exp,id='lastPrice'):
+    
+    quote = mu.getIndexFuturesQuote(symbol,exp)
+    quote = quote[id]
+    return quote
+
+@xw.func
+#@xw.ret(expand='table', transpose=False)
+def mrigxl_getStockFuturesQuote(symbol,exp,id='lastPrice'):
+    
+    quote = mu.getStockFuturesQuote(symbol,exp)
+    quote = quote[id]
+    return quote
+
 @xw.func
 #@xw.ret(expand='table', transpose=False)
 def mrigxl_getStockQuote(symbol,id='lastPrice'):    

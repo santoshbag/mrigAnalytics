@@ -18,7 +18,9 @@ def navall_download():
 #    mfNavHistory_path = "F:\Mrig Analytics\Development\data\mfNAVAllHistory.csv"
     datadir = os.path.dirname(__file__)
     mfNavHistory_path = os.path.join(datadir,'..','..','data','mfNAVAllHistory.csv')
+    mfISINFilter_path = os.path.join(datadir,'..','..','data','mfISINFilter.csv')
     mfNavHistory = open(mfNavHistory_path,"a+")
+    mfISINFilter = open(mfISINFilter_path,"a+")
     
     engine = mrigutilities.sql_engine()
     

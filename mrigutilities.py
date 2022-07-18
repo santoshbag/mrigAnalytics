@@ -390,6 +390,32 @@ def getStockOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPT
         stockOptionQuote['momentum'] = momentum
     return stockOptionQuote
 
+def getStockFuturesQuote(symbol, expiry, instrument='FUTSTK'):
+    stockOptionQuote = {}
+    sql = "select * from live where symbol='%s' and expiry='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
+    stockOptionQuote = pd.read_sql(sql % (symbol, expiry.strftime('%Y-%m-%d')), engine)
+    if not stockOptionQuote.empty:
+        stockOptionQuote.set_index('symbol', inplace=True)
+    else:
+        stockOptionQuote = nsepy.get_quote(symbol=quote(symbol, safe=''),
+                                           expiry=expiry,
+                                           instrument=instrument)
+#        print(stockOptionQuote)
+        if ('data' in stockOptionQuote.keys()):
+            stockOptionQuote = stockOptionQuote['data'][0]
+        momentum = 0
+        for i in range(1, 10):
+            try:
+                momentum = (stockOptionQuote['buyPrice' + str(i)] * stockOptionQuote['buyQuantity' + str(i)])
+                - (stockOptionQuote['sellPrice' + str(i)] * stockOptionQuote['sellQuantity' + str(i)])
+            except:
+                pass
+        stockOptionQuote['momentum'] = momentum
+    return stockOptionQuote
+
+
+
 def getIndexOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPTIDX'):
     stockOptionQuote = {}
     sql = "select * from live where symbol='%s' and expiry='%s' and strike='%s' and option_type='%s' order by date desc limit 1"
@@ -401,6 +427,31 @@ def getIndexOptionQuote(symbol, expiry, strike, option_type='CE',instrument='OPT
         stockOptionQuote = nsepy.get_quote(symbol=quote(symbol, safe=''),
                                            expiry=expiry, strike=strike,
                                            option_type=option_type,
+                                           instrument=instrument)
+#        print(stockOptionQuote)
+        if ('data' in stockOptionQuote.keys()):
+            stockOptionQuote = stockOptionQuote['data'][0]
+        momentum = 0
+        for i in range(1, 10):
+            try:
+                momentum = (stockOptionQuote['buyPrice' + str(i)] * stockOptionQuote['buyQuantity' + str(i)])
+                - (stockOptionQuote['sellPrice' + str(i)] * stockOptionQuote['sellQuantity' + str(i)])
+            except:
+                pass
+        stockOptionQuote['momentum'] = momentum
+    return stockOptionQuote
+
+
+def getIndexFuturesQuote(symbol, expiry, instrument='FUTIDX'):
+    stockOptionQuote = {}
+    sql = "select * from live where symbol='%s' and expiry='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
+    stockOptionQuote = pd.read_sql(sql % (symbol, expiry.strftime('%Y-%m-%d')), engine)
+    if not stockOptionQuote.empty:
+        stockOptionQuote.set_index('symbol', inplace=True)
+    else:
+        stockOptionQuote = nsepy.get_quote(symbol=quote(symbol, safe=''),
+                                           expiry=expiry,
                                            instrument=instrument)
 #        print(stockOptionQuote)
         if ('data' in stockOptionQuote.keys()):
@@ -837,7 +888,7 @@ if __name__ == '__main__':
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
-    exp = datetime.date(2021,10,28)
+    exp = datetime.date(2022,2,4)
     strk = 17500
-    # print(getIndexOptionQuote('NIFTY', exp, strk))
-    print(getIndexQuote('NIFTY 50'))
+    print(getIndexOptionQuote('NIFTY', exp, strk))
+    #print(getStockQuote('AXISBANK'))
