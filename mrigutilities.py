@@ -5,7 +5,11 @@ Created on Thu May 17 15:13:11 2018
 @author: Santosh Bag
 """
 import csv
+import os
+import sys
+
 import pandas as pd
+import numpy as np
 #from pandas.compat import StringIO
 from io import StringIO
 from collections import deque
@@ -21,6 +25,20 @@ from random import choice
 import string
 import json
 from pandas.io.json import json_normalize
+import math
+import yfinance
+from mpl_finance import candlestick_ohlc
+import matplotlib.dates as mpl_dates
+import matplotlib.pyplot as plt
+
+import kite.kite_trade as zkite
+
+import scipy.stats as si
+from scipy import optimize
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+
 
 def get_last_row(csv_filename, lines=1):
     with open(csv_filename, 'r') as f:
@@ -878,10 +896,195 @@ def marketLot(symbol):
         
         return int(lot)
 
+'''
+------Fractals
+A fractal is a candlestick pattern made by 5 candles. The third candle has the lowest low price, 
+the previous candles have decreasing lows and the next candles have increasing lows. 
+By this pattern, the low of the third candle is the support level. The same concept
+ applies to resistance levels, where the third candle has the highest high of the five ones.
+
+------Windows Shifting Method 
+we take a window of 9 candles (illustrated by the yellow box) and find the maximum of the 
+candles within the window. Then, shift the window up a candle (the green box) and find
+the maximum of the candles within the window. Do the same until you have shifted 5 times.
+If the candle with the highest value remains the same throughout the steps, we have 
+a pivot point.
+ 
+Result - Each level is a tuple whose first element is the index of the signal candle and the
+second element is the price value. 
+ 
+'''
+
+def getLevels(name,startdate=(datetime.date.today() - datetime.timedelta(days=365)),
+              enddate=datetime.date.today(),
+              method='fractal'):
+    ticker = yfinance.Ticker(name)
+    start, end = startdate.strftime('%Y-%m-%d') , enddate.strftime('%Y-%m-%d')
+    df = ticker.history(interval="1d",start=start, end=end)
+    df['Date'] = pd.to_datetime(df.index)
+    df['Date'] = df['Date'].apply(mpl_dates.date2num)
+    df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
+    
+    s =  np.mean(df['High'] - df['Low'])
+    
+    def isFarFromLevel(l):
+       return np.sum([abs(l-x) < s  for x in levels]) == 0
+   
+    def isSupport(df,i):
+      support = df['Low'][i] < df['Low'][i-1]  and df['Low'][i] < df['Low'][i+1] and df['Low'][i+1] < df['Low'][i+2] and df['Low'][i-1] < df['Low'][i-2]
+      return support
+
+    def isResistance(df,i):
+      resistance = df['High'][i] > df['High'][i-1]  and df['High'][i] > df['High'][i+1] and df['High'][i+1] > df['High'][i+2] and df['High'][i-1] > df['High'][i-2]
+      return resistance
+
+    if method == 'fractal':
+    
+        levels = []
+        for i in range(2,df.shape[0]-2):
+          if isSupport(df,i):
+            l = df['Low'][i]
+            if isFarFromLevel(l):
+              levels.append((i,round(l)))
+          elif isResistance(df,i):
+            l = df['High'][i]
+            if isFarFromLevel(l):
+              levels.append((i,round(l)))
+    else:
+        levels = []
+        max_list = []
+        min_list = []
+            # to make sure the new level area does not exist already
+        def is_far_from_level(value, levels, df):    
+          ave =  np.mean(df['High'] - df['Low'])    
+          return np.sum([abs(value-level)<ave for _,level in levels])==0
+        for i in range(5, len(df)-5):
+          # taking a window of 9 candles
+          high_range = df['High'][i-5:i+4]
+          current_max = high_range.max()
+          # if we find a new maximum value, empty the max_list 
+          if current_max not in max_list:
+            max_list = []
+          max_list.append(current_max)
+          # if the maximum value remains the same after shifting 5 times
+          if len(max_list)==5 and is_far_from_level(current_max,levels,df):
+              # levels.append((high_range.idxmax(), current_max))
+              levels.append((i, round(current_max)))
+
+          low_range = df['Low'][i-5:i+5]
+          current_min = low_range.min()
+          if current_min not in min_list:
+            min_list = []
+          min_list.append(current_min)
+          if len(min_list)==5 and is_far_from_level(current_min,levels,df):
+            # levels.append((low_range.idxmin(), current_min))
+            levels.append((i, round(current_min)))
+            
+    return [levels,df]
+    
+
+def bs_price(S,K,T,sigma,r=0.05,opt='CE'):
+    # print( 'S  ---> '+str(S)+'   K  ---> '+str(K)+'   T  ---> '+str(T))
+    if (opt == 'FUT'):
+        return 0
+    else:
+        d1=(np.log(S/K)+(r+0.5*sigma**2)*T)/(sigma*np.sqrt(T))
+        d2=d1-(sigma*np.sqrt(T))
+        if opt == 'CE':
+            BSprice = S*si.norm.cdf(d1,0,1)-K*np.exp(-r*T)*si.norm.cdf(d2,0,1)
+        else:
+            BSprice = K*np.exp(-r*T)*si.norm.cdf(-d2,0,1) - S*si.norm.cdf(-d1,0,1)
+    return BSprice
+
+def bs_delta(S,K,T,sigma,r=0.05,opt='CE'):
+    # print( 'S  ---> '+str(S)+'   K  ---> '+str(K)+'   T  ---> '+str(T))
+    if (opt == 'FUT'):
+        return 1
+    else:
+        d1=(np.log(S/K)+(r+0.5*sigma**2)*T)/(sigma*np.sqrt(T))
+        d2=d1-(sigma*np.sqrt(T))
+        if opt == 'CE':
+            delta = si.norm.cdf(d1,0,1)
+        else:
+            delta = si.norm.cdf(d1,0,1) - 1
+    return delta
+
+def bs_theta(S,K,T,sigma,r=0.05,opt='CE'):
+    # print( 'S  ---> '+str(S)+'   K  ---> '+str(K)+'   T  ---> '+str(T))
+    if (opt == 'FUT'):
+        return 0
+    else:
+        d1=(np.log(S/K)+(r+0.5*sigma**2)*T)/(sigma*np.sqrt(T))
+        d2=d1-(sigma*np.sqrt(T))
+        N_d1 = np.exp(-(d1**2)/2)/np.sqrt(2*math.pi)
+        # print(N_d1)
+        if opt == 'CE':
+            theta = (-(S * sigma * N_d1) / (2 * np.sqrt(T)) 
+             - r * K * np.exp(-r * T) * si.norm.cdf(d2,0,1)) / 365
+        else:
+            theta = (-(S * sigma * N_d1) / (2 * np.sqrt(T)) 
+             + r * K * np.exp(-r * T) * si.norm.cdf(-d2,0,1)) / 365
+    return theta
+
+
+def impVol(S,K,T,option_price,r=0.05,opt='CE'):
+    def diff(sigma):
+        return bs_price(S, K, T, sigma,r,opt) - option_price
+    if (opt == 'FUT'):
+        return 0
+    else:
+        vol = -1
+        try:
+            vol = optimize.brentq(diff,0.0001,100,maxiter=1000)
+            # print('Vol -->'+str(vol))
+        except:
+            pass
+    return vol
+
+
+def find_atm(spot,strike_diff):
+    # diff = 2.5
+    divisor = strike_diff
+    cnt = 1
+    while divisor%5 != 0:
+        divisor *= cnt
+        cnt += 1
+
+    a1 = int(round(spot/divisor)*divisor/divisor)*divisor
+    atm = a1
+    if abs(spot-atm-strike_diff) < strike_diff/2:
+        atm += strike_diff
+    return atm
+
+def getKiteSession():
+    # datadir = os.path.dirname(__file__)
+    # settings_files_path = os.path.join(datadir,"settings.json")
+    # file = open(settings_files_path)
+    # enctoken = json.load(file)
+    # token = enctoken["encauth"]
+
+    engine = sql_engine()
+    auth = pd.read_sql("select token from auth where vendor='zerodha'",engine)
+    token = auth['token'].values[0]
+    # print(token)
+    session = zkite.KiteApp(enctoken=token)
+    quote = session.quote('NSE:NIFTY 50')
+    if quote is not None:
+        print('connection active')
+    else:
+        print('no connection')
+        session = None
+    # if session is not None:
+    #     print(token)
+    return session
+
+
+
+
 if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
-    expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
-    expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
+    # expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
+    # expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
 #    oc = optionChainLive([('NIFTY','I')],expiries_i)
 #    oc = optionChainHistorical(['BANKNIFTY'])#,expiries_i+expiries_e)
 #    oc.sort_values(['expiryDate'],axis=0,inplace=True)
@@ -889,6 +1092,19 @@ if __name__ == '__main__':
 #    print(oc.columns)
 #    print(oc.tail(10))
     exp = datetime.date(2022,2,4)
-    strk = 17500
-    print(getIndexOptionQuote('NIFTY', exp, strk))
+    # strk = 17500
+    # print(getIndexOptionQuote('NIFTY', exp, strk))
     #print(getStockQuote('AXISBANK'))
+    
+    # levels1 = getLevels('TATAMOTORS.NS', exp)
+    # levels2 = getLevels('TATAMOTORS.NS', exp,method='window')
+    # print(levels1)
+    # print(levels2)
+
+    iv = impVol(44039, 41500, 22/365,2690 ,opt='CE')
+    delta = bs_delta(44039, 41500, 22/365, iv,opt='CE')
+
+    theta = bs_theta(44039, 41500, 22/365, iv,opt='CE')
+    print(iv)
+    print(delta)
+    print(theta)
