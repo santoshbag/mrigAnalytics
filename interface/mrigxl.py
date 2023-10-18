@@ -22,7 +22,7 @@ import instruments.options as options
 import instruments.capsfloors as capsfloors
 import instruments.index as index
 import instruments.qlMaps as qlMaps
-from pywintypes import Time
+# from pywintypes import Time
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -734,9 +734,8 @@ def bondAnalytics(bondHandle):
     
     return bond.NPV()
 
-@xw.func
-def mrigxl_ratePlot(objectid,location,sheet=None,pltname=None):
-    
+
+def ratePlot(curveobj, pltname=None):
     MINI_SIZE = 6
     SMALL_SIZE = 8
     MEDIUM_SIZE = 10
@@ -744,18 +743,81 @@ def mrigxl_ratePlot(objectid,location,sheet=None,pltname=None):
 
     bg_color = 'dimgray'
     fg_color = 'white'
-    border='yellow'
-    
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=MINI_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
-    plt.rcParams['savefig.facecolor']=bg_color
-    plt.rcParams['savefig.edgecolor']=border
+    border = 'yellow'
 
+    plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=SMALL_SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=MINI_SIZE)  # legend fontsize
+    plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
+    plt.rcParams['savefig.facecolor'] = bg_color
+    plt.rcParams['savefig.edgecolor'] = border
+
+    curve = curveobj
+
+        # basecurve = curve.getBaseCurve()
+    #    sht = xw.Book.caller().sheets.active
+    fig = plt.figure(figsize=(5, 2), facecolor=bg_color, edgecolor=border)
+    fig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold', color=fg_color)
+    # fig.patch.set_facecolor('tab:gray')
+
+    rate_ax = fig.add_subplot(111)
+    fig.subplots_adjust(top=0.85)
+
+    rate_ax.set_xlabel('Years', color=fg_color)
+    rate_ax.set_ylabel('Rates', color=fg_color)
+    rate_ax.patch.set_facecolor(bg_color)
+
+    disc_ax = rate_ax.twinx()
+    disc_ax.set_ylabel('Discount Factors', color=fg_color)
+
+    rate_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    rate_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    rate_ax.grid(which='major', color=fg_color)
+    for spine in rate_ax.spines.values():
+        spine.set_color(fg_color)
+
+    disc_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    disc_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    disc_ax.grid(which='minor', color=fg_color)
+    for spine in disc_ax.spines.values():
+        spine.set_color(fg_color)
+
+    start = curve.getReferenceDate()
+    forwardstart = start + datetime.timedelta(days=180)
+    dates = [start + datetime.timedelta(days=180 * i) for i in range(0, 80)]
+    tenors = [datetime.timedelta(days=180 * i) / datetime.timedelta(days=360) for i in range(0, 80)]
+    discounts = curve.getDiscountFactor(dates)
+    # baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+    forwards = [curve.getForwardRate(forwardstart, forwardstart + datetime.timedelta(days=180 * i)) for i in
+                range(0, 80)]
+    zeroes = [curve.getZeroRate(start + datetime.timedelta(days=180 * i)) for i in range(0, 80)]
+    rate_ax.plot(tenors[1:], zeroes[1:], "yellow", label="Spot")
+    rate_ax.plot(tenors[1:], forwards[1:], "maroon", label="6M Forward")
+    # plt.legend(bbox_to_anchor=(0.60, 0.30))
+    disc_ax.plot(tenors[1:], discounts[1:], 'C6', label="Discount Factors")
+
+    # start, end = ax.get_ylim()
+    # stepsize = (end - start - 0.005)/5
+    # ax.yaxis.set_ticks(np.arange(start-2*stepsize, end+stepsize, stepsize))
+
+    plt.autoscale()
+    plt.tight_layout()
+
+    rate_ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))
+
+    # disc_ax.legend(loc='lower')
+    disc_ax.legend(bbox_to_anchor=(0.60, 0.30))
+    rate_ax.legend(bbox_to_anchor=(0.40, 0.30))
+    # plt.legend([rate_ax,disc_ax])
+    return fig
+    # return 'Plotted with years=10'
+
+
+@xw.func
+def mrigxl_ratePlot(objectid, location, sheet=None, pltname=None):
 
     curve = objectmap[objectid]
     if sheet == None:
@@ -763,69 +825,111 @@ def mrigxl_ratePlot(objectid,location,sheet=None,pltname=None):
     else:
         sht = xw.Book.caller().sheets[sheet]
 
-    if pltname ==None:
-        pltname = "PLOT_"+objectid
-    #basecurve = curve.getBaseCurve()
-#    sht = xw.Book.caller().sheets.active
-    fig = plt.figure(figsize=(5,2), facecolor=bg_color, edgecolor=border)
-    fig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
-    #fig.patch.set_facecolor('tab:gray')
-    
-    rate_ax = fig.add_subplot(111)
-    fig.subplots_adjust(top=0.85)
+    if pltname == None:
+        pltname = "PLOT_" + objectid
 
-    rate_ax.set_xlabel('Years',color=fg_color)
-    rate_ax.set_ylabel('Rates',color=fg_color)
-    rate_ax.patch.set_facecolor(bg_color)
-    
-    disc_ax = rate_ax.twinx()
-    disc_ax.set_ylabel('Discount Factors',color=fg_color)
-    
-    rate_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-    rate_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-    rate_ax.grid(which='major',color=fg_color)
-    for spine in rate_ax.spines.values():
-        spine.set_color(fg_color)
+    fig = ratePlot(curve,pltname)
 
-    disc_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-    disc_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-    disc_ax.grid(which='minor',color=fg_color)
-    for spine in disc_ax.spines.values():
-        spine.set_color(fg_color)
-
-    
-    start = curve.getReferenceDate()
-    forwardstart = start + datetime.timedelta(days=180)
-    dates = [start+datetime.timedelta(days=180*i) for i in range(0,80)]
-    tenors = [datetime.timedelta(days=180*i)/datetime.timedelta(days=360) for i in range(0,80)] 
-    discounts = curve.getDiscountFactor(dates)
-    #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
-    forwards = [curve.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
-    zeroes = [curve.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
-    rate_ax.plot(tenors[1:],zeroes[1:],"yellow",label="Spot")
-    rate_ax.plot(tenors[1:],forwards[1:],"maroon",label="6M Forward")
-    #plt.legend(bbox_to_anchor=(0.60, 0.30))
-    disc_ax.plot(tenors[1:],discounts[1:],'C6',label="Discount Factors")
-
-    #start, end = ax.get_ylim()
-    #stepsize = (end - start - 0.005)/5
-    #ax.yaxis.set_ticks(np.arange(start-2*stepsize, end+stepsize, stepsize))
-
-    plt.autoscale()
-    plt.tight_layout()
-
-    rate_ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))
-
-    #disc_ax.legend(loc='lower')
-    disc_ax.legend(bbox_to_anchor=(0.60, 0.30))
-    rate_ax.legend(bbox_to_anchor=(0.40, 0.30))
-    #plt.legend([rate_ax,disc_ax])
-    sht.pictures.add(fig, 
-                     name=pltname, 
+    sht.pictures.add(fig,
+                     name=pltname,
                      update=True,
                      left=sht.range(location).left,
                      top=sht.range(location).top)
-    #return 'Plotted with years=10'
+    # return 'Plotted with years=10'
+
+
+# @xw.func
+# def mrigxl_ratePlot(objectid,location,sheet=None,pltname=None):
+#
+#     MINI_SIZE = 6
+#     SMALL_SIZE = 8
+#     MEDIUM_SIZE = 10
+#     BIGGER_SIZE = 12
+#
+#     bg_color = 'dimgray'
+#     fg_color = 'white'
+#     border='yellow'
+#
+#     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+#     plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+#     plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
+#     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+#     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+#     plt.rc('legend', fontsize=MINI_SIZE)    # legend fontsize
+#     plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
+#     plt.rcParams['savefig.facecolor']=bg_color
+#     plt.rcParams['savefig.edgecolor']=border
+#
+#
+#     curve = objectmap[objectid]
+#     if sheet == None:
+#         sht = xw.Book.caller().sheets.active
+#     else:
+#         sht = xw.Book.caller().sheets[sheet]
+#
+#     if pltname ==None:
+#         pltname = "PLOT_"+objectid
+#     #basecurve = curve.getBaseCurve()
+# #    sht = xw.Book.caller().sheets.active
+#     fig = plt.figure(figsize=(5,2), facecolor=bg_color, edgecolor=border)
+#     fig.suptitle(pltname, fontsize=SMALL_SIZE, fontweight='bold',color=fg_color)
+#     #fig.patch.set_facecolor('tab:gray')
+#
+#     rate_ax = fig.add_subplot(111)
+#     fig.subplots_adjust(top=0.85)
+#
+#     rate_ax.set_xlabel('Years',color=fg_color)
+#     rate_ax.set_ylabel('Rates',color=fg_color)
+#     rate_ax.patch.set_facecolor(bg_color)
+#
+#     disc_ax = rate_ax.twinx()
+#     disc_ax.set_ylabel('Discount Factors',color=fg_color)
+#
+#     rate_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+#     rate_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+#     rate_ax.grid(which='major',color=fg_color)
+#     for spine in rate_ax.spines.values():
+#         spine.set_color(fg_color)
+#
+#     disc_ax.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+#     disc_ax.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+#     disc_ax.grid(which='minor',color=fg_color)
+#     for spine in disc_ax.spines.values():
+#         spine.set_color(fg_color)
+#
+#
+#     start = curve.getReferenceDate()
+#     forwardstart = start + datetime.timedelta(days=180)
+#     dates = [start+datetime.timedelta(days=180*i) for i in range(0,80)]
+#     tenors = [datetime.timedelta(days=180*i)/datetime.timedelta(days=360) for i in range(0,80)]
+#     discounts = curve.getDiscountFactor(dates)
+#     #baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+#     forwards = [curve.getForwardRate(forwardstart,forwardstart+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#     zeroes = [curve.getZeroRate(start+datetime.timedelta(days=180*i)) for i in range(0,80)]
+#     rate_ax.plot(tenors[1:],zeroes[1:],"yellow",label="Spot")
+#     rate_ax.plot(tenors[1:],forwards[1:],"maroon",label="6M Forward")
+#     #plt.legend(bbox_to_anchor=(0.60, 0.30))
+#     disc_ax.plot(tenors[1:],discounts[1:],'C6',label="Discount Factors")
+#
+#     #start, end = ax.get_ylim()
+#     #stepsize = (end - start - 0.005)/5
+#     #ax.yaxis.set_ticks(np.arange(start-2*stepsize, end+stepsize, stepsize))
+#
+#     plt.autoscale()
+#     plt.tight_layout()
+#
+#     rate_ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter('{0:.2%}'.format))
+#
+#     #disc_ax.legend(loc='lower')
+#     disc_ax.legend(bbox_to_anchor=(0.60, 0.30))
+#     rate_ax.legend(bbox_to_anchor=(0.40, 0.30))
+#     #plt.legend([rate_ax,disc_ax])
+#     sht.pictures.add(fig,
+#                      name=pltname,
+#                      update=True,
+#                      left=sht.range(location).left,
+#                      top=sht.range(location).top)
+#     #return 'Plotted with years=10'
 
 
 @xw.func

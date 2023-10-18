@@ -7,6 +7,8 @@ Created on Thu May 24 14:41:11 2018
 This module downloads yield curves for different currencies.
 """
 import sys,os
+import time
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import requests
@@ -28,34 +30,37 @@ def get_yieldCurve(currency="INR"):
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        yield_table_num = {'INR':4,
-                           'USD':4,
-                           'GBP':4}
+        yield_table_num = {'INR':0,
+                           'USD':0,
+                           'GBP':0}
         
-        price_table_num = {'INR':6,
-                           'USD':6,
-                           'GBP':6}
+        price_table_num = {'INR':7,
+                           'USD':7,
+                           'GBP':7}
         
         curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
-        curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
-        curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
+        # print(curve_date)
+        # curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
+        # curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
+        curve_date = datetime.date(2023,9,27)
         tables = soup.find_all("table")
-        
+        # print(tables[0])
         
         yield_heads = tables[yield_table_num[currency]].find_all('th')
+        # print(yield_heads)
         yield_table_cols = [col.text for col in yield_heads]
         yield_table_cols = ['ResidualMaturity','Yield','Chg 1M','Chg 6M']
-#        print(yield_table_cols)
+        # print(yield_table_cols)
                 
         for row in tables[yield_table_num[currency]].find_all('tr'):
             cells = row.find_all('td')
-            yield_table.append([str(cell.text).strip().replace("%","") for cell in cells][1:5])
+            yield_table.append([str(cell.text).strip().replace("%","") for cell in cells])
             
-        
+        # print(yield_table)
         price_heads = tables[price_table_num[currency]].find_all('th')
         price_table_cols = [col.text for col in price_heads]
         price_table_cols.pop(3)
-#        print(price_table_cols)
+        # print(price_table_cols)
         
         for row in tables[price_table_num[currency]].find_all('tr'):
             cells = row.find_all('td')
@@ -74,12 +79,24 @@ def get_yieldCurve(currency="INR"):
                 dupindex.append(price_table.index(items))
         for dups in dupindex:
             price_table.pop(dups)
-        
-    #    print(yield_table)
+
+        year = datetime.date.today().year
+        month = yield_table[0][-1].split(' ')[1]
+        month = int(time.strptime(month, '%b').tm_mon)
+        # print(month + 1)
+        day = int(yield_table[0][-1].split(' ')[0])
+        curve_date = datetime.date(year, month, day)
+
+        y= []
+        for item in yield_table:
+            y.append(item[1:5])
+        yield_table = y
         yield_table = pandas.DataFrame(yield_table,columns=mrigutilities.get_finalColumns(yield_table_cols))
+
         yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
         yield_table.insert(0,column='curvedate',value=curve_date)
         yield_table.insert(1,column='curve',value=currency)
+        # print(yield_table)
         price_table = pandas.DataFrame(price_table[1:-1],columns=mrigutilities.get_finalColumns(price_table_cols[1:]))
         price_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
         price_table.insert(0,column='curvedate',value=curve_date)
@@ -88,7 +105,7 @@ def get_yieldCurve(currency="INR"):
         yield_table = yield_table.merge(price_table,how='left',on=['curvedate','curve','tenor','yield'])
         
         s.close()
-    print(yield_table)        
+    # print(yield_table)
     return yield_table
 
 def INR_CCIL_ZCYC(date=None):
@@ -137,10 +154,12 @@ def yield_download():
         yield_table.to_csv(yieldCurveHistory,index=False,header=headerAbsent)
         yield_table = yield_table.drop("timestamp",axis=1)
         yield_table = mrigutilities.clean_df_db_dups(yield_table,'yieldcurve',engine,dup_cols=["curvedate","curve","tenor"])[0]
-        try:
-            yield_table.to_sql('yieldcurve',engine, if_exists='append', index=False)
-        except:
-            pass
+        yield_table = yield_table[['curvedate', 'curve', 'tenor', 'yield', 'Change1M_Value_1M_ago','Change6M_Value_6M_ago', '0_per', '1_per', '3_per', '5_per','7_per', '9_per']]
+        print(yield_table)
+        # try:
+        yield_table.to_sql('yieldcurve',engine, if_exists='append', index=False)
+        # except:
+        #     pass
     yieldCurveHistory.close()
     print("Yield Curves download finished\n")
     

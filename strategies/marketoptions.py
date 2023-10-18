@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 import mrigutilities as mu
-import datetime, dateutil.relativedelta
+import datetime, dateutil
 import pandas as pd
 import instruments.options as options
 import instruments.termstructure as ts
@@ -22,15 +22,16 @@ option_type_map = {'PE':'Put European',
                    'CA':'Call American'}
 
 symbol_map = {'NIFTY 50': 'NIFTY'}
-
+today = datetime.date.today()
 class MarketOptions():
     def __init__(self,symbol,strike,expiry,option_type):
         self.symbol = symbol
         self.strike = strike
         self.expiry = expiry
         self.option_type = option_type
-        self.underlying = mu.getStockQuote(symbol)
+        self.underlying = mu.price(symbol)
         self.analytics = None
+        self.oh = pd.DataFrame()
 
         args = {'option_name':self.symbol+"_"+self.expiry.strftime('%d%b')+"_"+str(self.strike)+"_"+self.option_type,
                 'underlying_name':self.symbol,
@@ -91,7 +92,7 @@ class MarketOptions():
         
         return self.oh
 
-    def valuation(self,ltp):
+    def valuation(self,ltp,spot=None,rate=None,vol=None):
         
         """
         Option Greeks and Graphs--------------------------------------------------------------
@@ -123,17 +124,18 @@ class MarketOptions():
             today = engine.execute("select curvedate from yieldcurve where curve='INR' order by curvedate desc limit 1").fetchall()[0][0]
         except:
             pass
-        self.discount_curve = ts.SpotZeroYieldCurve('INR',today)
+        # self.discount_curve = ts.SpotZeroYieldCurve('INR',today)
+        self.discount_curve = ts.FlatForwardYieldCurve(today,0.06)
         self.discount_curve.setupCurve(args)
     
         """
         Set Flat Volatility Curve
         """    
-        spotVol = 0.10
+        spotVol = 0.30
         try:
             nse_vol = engine.execute("select nse_vol from stock_history where symbol='"+self.symbol+"' order by date desc limit 1").fetchall()
             nse_vol = nse_vol[0][0]
-            print(nse_vol)
+            # print(nse_vol)
             if nse_vol:
                 spotVol = float(nse_vol)
         except:
@@ -182,7 +184,7 @@ class MarketOptions():
         Set self.option Valuation and get Results
         """    
         self.valuation_method = 'Black Scholes'
-        self.underlying_spot = self.underlying['lastPrice']
+        self.underlying_spot = self.underlying
         
         self.option.valuation(self.underlying_spot,
                          self.discount_curve,
@@ -195,6 +197,7 @@ class MarketOptions():
             price = float(str(ltp))
             try:
                 spotVol = self.option.getImpliedVol(price)
+                print('Implied Vol --> '+ str(spotVol))
             except:
                 pass
         elif not self.oh.empty:
@@ -204,12 +207,12 @@ class MarketOptions():
                 price = float(str(close[0]))
                 try:
                     spotVol = self.option.getImpliedVol(price)
+                    print('Implied Vol --> ' + str(spotVol))
                 except:
                     pass
         self.ltp = price
             
             
-        print(spotVol)            
         args = {'day_count':'30-360',
                 'calendar': 'India',
                 'spot_vols':spotVol,
@@ -236,30 +239,66 @@ class MarketOptions():
         self.analytics = self.option.getAnalytics()
         return self.analytics
     
-    def scenario_analysis(self,scenario=None):
-        if not scenario:
-            if self.analytics:
-                return self.analytics
-            else:
-                return self.valuation("-")
-        
-        spot = scenario['spot']
-        self.option.valuation(spot,
-                 self.discount_curve,
-                 self.volatility_curve,
-                 self.dividend_curve,
-                 self.valuation_method)
-        
-        result = self.option.getAnalytics()
-        
+    def scenario_analysis(self,scenario=['SPOT']):
+        # if not scenario:
+        #     if self.analytics:
+        #         return self.analytics
+        #     else:
+        #         return self.valuation("-")
+        #
+        # spot = scenario['spot']
+
+        val_date = today
+        result = []
+        print('Underlying -->'+ str(self.underlying))
+        if 'TIME' in scenario:
+            result = []
+            step = max(1,int((self.expiry - today).days/100))
+            while  val_date <= self.expiry:
+                # print(val_date)
+            # for spotprice in range(245,275):
+            #     print(spotprice)
+                self.option.valuation(self.underlying,
+                         self.discount_curve,
+                         self.volatility_curve,
+                         self.dividend_curve,
+                         self.valuation_method,
+                          eval_date=val_date)
+                res = self.option.getAnalytics()
+                # print(res)
+                result.append([val_date,res['NPV']])
+                val_date = val_date + datetime.timedelta(days=step)
+            result = pd.DataFrame(result,columns=['date','price'])
+
+        if 'SPOT' in scenario:
+            result = []
+            scale = 0.05
+            first = int(self.underlying*(1-scale))
+            last = int(self.underlying*(1+scale))
+            step = max(1,int((last-first)/100))
+
+            for spotprice in range(first,last,step):
+                # print(spotprice)
+                self.option.valuation(spotprice,
+                         self.discount_curve,
+                         self.volatility_curve,
+                         self.dividend_curve,
+                         self.valuation_method)
+                res = self.option.getAnalytics()
+                # print(res)
+                result.append([spotprice,res['NPV']])
+            result = pd.DataFrame(result,columns=['spot','price'])
+
         return result
     
 if __name__ == '__main__':
-    expiry = datetime.date(2019,3,28)
-    dish = MarketOptions('DISHTV',36,expiry,'PE')
-    dish.get_price_vol()
-    print(dish.oh)
-    res = dish.valuation('-')
-    print(res)    
-    res = dish.valuation(3.6)
-    print(res)    
+    expiry = datetime.date(2023,10,26)
+    dish = MarketOptions('NIFTY 50',20000,expiry,'PE')
+    # dish.get_price_vol()
+    # print(dish.oh)
+    res = dish.valuation(382)
+    # print(res)
+    res = dish.scenario_analysis()
+    print(res)
+    res = dish.scenario_analysis(['TIME'])
+    print(res)

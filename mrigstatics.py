@@ -78,6 +78,9 @@ WGB_YIELD_URL = {'INR': 'http://www.worldgovernmentbonds.com/country/india/',
                  'USD': 'http://www.worldgovernmentbonds.com/country/united-states/',
                  'GBP': 'http://www.worldgovernmentbonds.com/country/united-kingdom/'}
 
+US_TREASURY_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve&field_tdr_date_value='
+US_TREASURY_XML_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value='
+
 CCIL_INR_ZCYC_URL = {'INR' : 'https://www.ccilindia.com/RiskManagement/SecuritiesSegment/Lists/Tenor%20Wise%20Zero%20Coupon%20Yield/Attachments/2419/Tenor-wise%20Zero%20Coupon%20Yields%20Sheet%2019072019.xls'}
 
 CURVE_LIST = ['INR','USD','GBP']

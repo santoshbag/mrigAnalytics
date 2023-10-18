@@ -135,6 +135,26 @@ class KiteApp:
                                      data=params, headers=self.headers).json()["data"]["order_id"]
         return order_id
 
+    '''
+    @santosh bag
+    order margin replication using KiteConnect API implementation
+    '''
+    def order_margins(self,variety, exchange, tradingsymbol, transaction_type, quantity, product, order_type, price=None,
+                    validity=None, disclosed_quantity=None, trigger_price=None, squareoff=None, stoploss=None,
+                    trailing_stoploss=None, tag=None):
+        params = locals()
+        del params["self"]
+        for k in list(params.keys()):
+            if params[k] is None:
+                del params[k]
+        # order_margin = self.session.post(f"{self.root_url}/margins/orders",
+        #                              data=params, headers=self.headers).json()["data"]
+
+        print(params)
+        order_margin = self.session.post(f"{self.root_url}/margins/orders",
+                                         data=params, headers=self.headers).json()
+        return order_margin
+
     def modify_order(self, variety, order_id, parent_order_id=None, quantity=None, price=None, order_type=None,
                      trigger_price=None, validity=None, disclosed_quantity=None):
         params = locals()

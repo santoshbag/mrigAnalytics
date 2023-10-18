@@ -12,12 +12,14 @@ import datetime  # import date, timedelta
 import pandas as pd  # import DataFrame
 # from sqlalchemy import create_engine
 import mrigutilities
+import mriggraphics as mg
 import zipfile, re
 import yfinance as yf
 # from bs4 import BeautifulSoup
 # from time import sleep
 import csv
 import research.screener_TA as sta
+import numpy as np
 
 import tkinter as tk
 from tkinter import ttk
@@ -60,6 +62,68 @@ class tradingDB():
 
         return price
 
+    def level_analysis(self,scrip):
+        m_expiry1 = mrigutilities.last_thursday_of_month(datetime.date.today())
+        m_expiry2 = mrigutilities.last_thursday_of_month(m_expiry1 + datetime.timedelta(days=30))
+        m_expiry3 = mrigutilities.last_thursday_of_month(m_expiry2 + datetime.timedelta(days=30))
+        today = datetime.date.today()
+        expiry_list = [m_expiry1, m_expiry2, m_expiry3]
+
+        if ('NIFTY' in scrip):
+            days = (3 - today.weekday() + 7) % 7
+            expiry1 = today + datetime.timedelta(days=days)
+            expiry2 = expiry1 + datetime.timedelta(days=7)
+            expiry3 = expiry2 + datetime.timedelta(days=7)
+            expiry4 = expiry3 + datetime.timedelta(days=7)
+            expiry_list = [expiry1, expiry2, expiry3,expiry4]
+            # print(expiry_list)
+
+        if ('BANKNIFTY' in scrip):
+            expiry_list = []
+            days = (2 - today.weekday() + 7) % 7
+            expiry1 = today + datetime.timedelta(days=days)
+            expiry_list.append(m_expiry1) if ((m_expiry1 - expiry1).days == 1) else expiry_list.append(expiry1)
+            expiry2 = expiry1 + datetime.timedelta(days=7)
+            expiry_list.append(m_expiry1) if ((m_expiry1 - expiry2).days == 1) else expiry_list.append(expiry2)
+            expiry3 = expiry2 + datetime.timedelta(days=7)
+            expiry_list.append(m_expiry1) if ((m_expiry1 - expiry3).days == 1) else expiry_list.append(expiry3)
+            # m_expiry = m_expiry1 if ((m_expiry1 - expiry3) == 1) else expiry3
+            expiry4 = expiry3 + datetime.timedelta(days=7)
+            expiry_list.append(m_expiry1) if ((m_expiry1 - expiry4).days == 1) else expiry_list.append(expiry4)
+            # m_expiry = m_expiry1 if ((m_expiry1 - expiry4) == 1) else expiry4
+            # expiry_list = [expiry1, expiry2, expiry3,expiry4,m_expiry1]
+
+
+        # scrip = ['TATAPOWER', 'BANKNIFTY']
+        oc = mrigutilities.kite_OC(scrip, expiry_list)
+        # print(set(oc['expiry']))
+        oc.reset_index(inplace=True)
+        oi_tree = oc
+        pcr = None
+        # for expiry in sorted(set(list(oc['expiry'])), reverse=True):
+        for expiry in expiry_list:
+            print( expiry_list[0])
+            ce_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'CE') & (oc['expiry'] == expiry)][
+                'oi'].sum()
+            pe_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'PE') & (oc['expiry'] == expiry)][
+                'oi'].sum()
+            oi_tree['oi_ce' + str(expiry)] = oc.loc[(oc['tradingsymbol'].str[-2:] == 'CE') & (
+                        oc['expiry'] == expiry), 'oi'] / ce_oi_sum if ce_oi_sum else 0
+            oi_tree['oi_pe' + str(expiry)] = -oc.loc[(oc['tradingsymbol'].str[-2:] == 'PE') & (
+                        oc['expiry'] == expiry), 'oi'] / pe_oi_sum if pe_oi_sum else 0
+            pcr = pe_oi_sum/ce_oi_sum if (expiry == expiry_list[0]) else pcr
+        oi_tree.fillna(0, inplace=True)
+
+        max_pain_oc = oc[oc['expiry'] == expiry_list[0]]
+        last_price = self.kite_object.getQuoteLive(scrip[0])['last_price']
+
+        max_pain_oc['itm x oi'] = max_pain_oc[['strike', 'tradingsymbol', 'oi']].apply(
+            lambda x: max(last_price - x['strike'], 0) * x['oi'] if (x['tradingsymbol'][-2:] == 'CE') else max(
+                x['strike'] - last_price, 0) * x['oi'], axis=1)
+        max_pain_oc = max_pain_oc.groupby(by=['strike'], as_index=False)['itm x oi'].sum().fillna(0).round()
+        max_pain = max_pain_oc.sort_values(['itm x oi'], ascending=False).head(1)['strike'].values[0]
+
+        return [oi_tree,pcr,max_pain]
 
     def __num_pos(self,s):
         return re.search(r"\d", s).start()
@@ -221,6 +285,11 @@ class tradingDB():
             lambda x: x['qty'] * x['avg_price'] if (x['qty'] < 0 and x['type'] != 'FUT') else 0, axis=1)
         positions['curr_liab'] = positions[['type', 'qty', 'ltp']].apply(
             lambda x: x['qty'] * x['ltp'] if (x['qty'] < 0 and x['type'] != 'FUT') else 0, axis=1)
+        positions['wtd_strike'] = positions[['type', 'qty', 'strike', 'avg_price']].apply(
+            lambda x: np.absolute(x['qty'] * x['strike']) if (x['type'] != 'FUT') else np.absolute(
+                x['qty'] * x['avg_price']), axis=1)
+        positions['abs_qty'] = np.absolute(positions['qty'])
+
         positions['max_profit'] = positions['orig_liab'].apply(lambda x: -x if (x < 0) else 'infinite')
 
         positions['max_loss'] = positions[['type', 'qty', 'avg_price', 'orig_liab']].apply(
@@ -259,16 +328,29 @@ class tradingDB():
               .reindex(df1.columns, axis=1)
               .fillna('')
               .sort_values(['scrip', 'l_s'], ascending=True, ignore_index=True))
+
+        scrips = set(list(df['scrip']))
+        df['pivot_strike'] = 0
+        for scrip in scrips:
+            df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long')), 'pivot_strike'] = \
+            df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_strike'].sum() / \
+            df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum()
+            df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short')), 'pivot_strike'] = \
+            df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_strike'].sum() / \
+            df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum()
+
         # df.set_index('scrip',inplace=True)
         # print(positions.groupby(by=['scrip']).sum()[['qty','orig_liab','curr_liab','delta','theta','pnl']])
 
         # df.loc[df['l_s'] == '',['strike']] = ''
         # for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl']:
         #     df[col] = df[col].map('{:,.0f}'.format)
+        for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl', 'pivot_strike']:
+            df[col] = df[col].map('{:,.0f}'.format)
+        df.loc[df['pivot_strike'] == '0', 'pivot_strike'] = ''
+        df.drop(columns=['wtd_strike', 'abs_qty'], axis=1, inplace=True)
 
         return [positions, df]
-
-
 
 
     def showDB(self,flag=False, diagnostic=False):
@@ -386,6 +468,67 @@ class tradingDB():
         if diagnostic:
             print(df)
         return positions
+
+    def market_snapshot(self):
+        scrips = ['NIFTY 50','NIFTY BANK', 'INDIA VIX']
+        kitecodemap = pd.read_csv('kitensecodes.csv')
+        scrips = [kitecodemap[kitecodemap['tradingsymbol'] == scrip]['instrument_token'].values[0] for scrip in scrips]
+        to_date = datetime.date.today()
+        from_date = to_date - datetime.timedelta(days=70)
+        hist_data = []
+        graph_obj = []
+        for token in scrips:
+            data = self.kite_object.getHistorical(token, from_date, to_date, 'day')
+            hist_data.append(data[data.columns[:-1]])
+            ticker = kitecodemap[kitecodemap['instrument_token'] == token]['tradingsymbol'].values[0]
+            graph_obj.append(mg.candlestick_plot(ticker,data[data.columns[:-1]]))
+
+        current_month = datetime.date.strftime(datetime.date.today(), '%b')
+        next_month = datetime.date.strftime(datetime.date.today() + datetime.timedelta(days=31), '%b')
+        current_year = datetime.date.strftime(datetime.date.today(), '%y')
+        crude = 'CRUDEOIL' + current_year + current_month.upper() + 'FUT'
+        usdinr = 'USDINR' + current_year + current_month.upper() + 'FUT'
+        gold = 'GOLD' + current_year + current_month.upper() + 'FUT'
+
+        ins = self.kite_object.getInstruments(exchange='CDS')
+        # usdinr = ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['tradingsymbol']
+        # if not (usdinr in ins['tradingsymbol']):
+        #     usdinr = 'USDINR' + current_year + next_month.upper() + 'FUT'
+        #
+        # usdinr_token = ins[ins['tradingsymbol'] == usdinr]['instrument_token'].values[0]
+        usdinr_token = str(ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+
+        ins = self.kite_object.getInstruments(exchange='MCX')
+        # print(crude)
+        # print(crude in ins['tradingsymbol'])
+        #
+        # if not (crude in ins['tradingsymbol']):
+        #     crude = 'CRUDEOIL' + current_year + next_month.upper() + 'FUT'
+        # crude_token = ins[ins['tradingsymbol'] == crude]['instrument_token'].values[0]
+        crude_token = str(ins[(ins['name'] == 'CRUDEOIL') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+
+        ins = self.kite_object.getInstruments(exchange='MCX')
+        # print(gold)
+        # print(gold in ins['tradingsymbol'])
+        # if not (gold in ins['tradingsymbol']):
+        #     gold = 'GOLD' + current_year + next_month.upper() + 'FUT'
+        # print(gold)
+        # gold_token = ins[ins['tradingsymbol'] == gold]['instrument_token'].values[0]
+        gold_token = str(ins[(ins['name'] == 'GOLD') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+
+        data = self.kite_object.getHistorical(usdinr_token, from_date, to_date, 'day')
+        hist_data.append(data[data.columns[:-1]])
+        graph_obj.append(mg.candlestick_plot(usdinr, data[data.columns[:-1]]))
+
+        data = self.kite_object.getHistorical(crude_token, from_date, to_date, 'day')
+        hist_data.append(data[data.columns[:-1]])
+        graph_obj.append(mg.candlestick_plot(crude, data[data.columns[:-1]]))
+
+        data = self.kite_object.getHistorical(gold_token, from_date, to_date, 'day')
+        hist_data.append(data[data.columns[:-1]])
+        graph_obj.append(mg.candlestick_plot(gold, data[data.columns[:-1]]))
+
+        return [graph_obj,hist_data]
 
 
 

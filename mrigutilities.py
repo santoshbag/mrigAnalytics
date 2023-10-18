@@ -30,6 +30,7 @@ import yfinance
 from mpl_finance import candlestick_ohlc
 import matplotlib.dates as mpl_dates
 import matplotlib.pyplot as plt
+import yfinance as yf
 
 import kite.kite_trade as zkite
 
@@ -918,7 +919,7 @@ second element is the price value.
 def getLevels(name,startdate=(datetime.date.today() - datetime.timedelta(days=365)),
               enddate=datetime.date.today(),
               method='fractal'):
-    ticker = yfinance.Ticker(name)
+    ticker = yf.Ticker(name)
     start, end = startdate.strftime('%Y-%m-%d') , enddate.strftime('%Y-%m-%d')
     df = ticker.history(interval="1d",start=start, end=end)
     df['Date'] = pd.to_datetime(df.index)
@@ -1078,7 +1079,59 @@ def getKiteSession():
     #     print(token)
     return session
 
+def kite_OC(scrips=['NIFTY'],expiry=None):
+    session = getKiteSession()
+    ins = session.instruments(exchange='NFO')
+    if expiry is None:
+        expiry = [last_thursday_of_month(datetime.date.today())]
+    inspd = pd.DataFrame(ins)
+    # inspd = inspd[(inspd['name'] == scrip) & (inspd['expiry'] == expiry) & (inspd['strike'] >= 18000) & (inspd['strike'] <= 20500) ][['tradingsymbol','strike']]
+    # inspd = inspd[inspd['name'].isin(scrip)]
+    # # print(inspd)
+    # inspd = inspd[inspd['expiry'].isin(expiry)]
+    # print(inspd)
+    # inspd = inspd[(inspd['strike'] > 0)][['tradingsymbol', 'strike','expiry']]
 
+
+    inspd = inspd[(inspd['name'].isin(scrips)) & (inspd['expiry'].isin(expiry)) & (inspd['strike'] > 0)][['name','tradingsymbol', 'strike','expiry']]
+    inspd['tradingsymbol'] = 'NFO:' + inspd['tradingsymbol']
+    inspd.set_index('tradingsymbol', inplace=True)
+    inslist= []
+    for scrip in scrips:
+        for exp in expiry:
+            inslist_i = list(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)].index)
+            inslist.append(inslist_i[int(len(inslist_i) / 2 - len(inslist_i) / 4):int(len(inslist_i) / 2 + len(inslist_i) / 4)])
+    qt = session.quote(instruments=inslist)
+    oc = pd.DataFrame(qt).T
+    oc.index.name = 'tradingsymbol'
+    oc1 = oc.merge(inspd, on='tradingsymbol')[['name','strike', 'oi', 'volume', 'last_price','expiry']]
+    return oc1
+
+
+def price(scrip):
+    price = None
+    yahoo_map = {'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK'}
+    yahooid = scrip + '.NS'
+    if (scrip == 'NIFTY' or scrip == 'BANKNIFTY'):
+        yahooid = yahoo_map[scrip]
+    if len(yahooid) > 0:
+        if yahooid is not None:
+            try:
+                price = yf.download(yahooid, period='1d').Close.values[0]
+            except:
+                None
+
+    return price
+
+def price_steps(price):
+    if price <=100:
+        return 2
+    elif price <= 500:
+        return 5
+    elif price <= 1000:
+        return 10
+    else:
+        return 50
 
 
 if __name__ == '__main__':
@@ -1091,8 +1144,10 @@ if __name__ == '__main__':
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
-    exp = datetime.date(2022,2,4)
-    # strk = 17500
+    expiry1 = last_thursday_of_month(datetime.date.today())
+    expiry2 = last_thursday_of_month(expiry1 + datetime.timedelta(days=30))
+    expiry3 = last_thursday_of_month(expiry2 + datetime.timedelta(days=30))
+# strk = 17500
     # print(getIndexOptionQuote('NIFTY', exp, strk))
     #print(getStockQuote('AXISBANK'))
     
@@ -1101,10 +1156,8 @@ if __name__ == '__main__':
     # print(levels1)
     # print(levels2)
 
-    iv = impVol(44039, 41500, 22/365,2690 ,opt='CE')
-    delta = bs_delta(44039, 41500, 22/365, iv,opt='CE')
-
-    theta = bs_theta(44039, 41500, 22/365, iv,opt='CE')
-    print(iv)
-    print(delta)
-    print(theta)
+    scrip = ['TATAPOWER','TATAMOTORS']
+    oc = kite_OC(scrip,[expiry1,expiry2,expiry3])
+    oc.reset_index(inplace=True)
+    print(oc[oc['name'] == scrip[0]])
+    print(oc[oc['name'] == scrip[1]])

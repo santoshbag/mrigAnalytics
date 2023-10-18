@@ -249,7 +249,17 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
         spotCurveHandle = ql.YieldTermStructureHandle(self.spotCurve)
         return spotCurveHandle
     
-
+    # def getForwardCurve(self,forwardDate):
+    #     start = self.curve.getReferenceDate()
+    #     period = (forwardDate - start).days
+    #     forwardstart = start + datetime.timedelta(days=period)
+    #     dates = [start + datetime.timedelta(days=period * i) for i in range(1, 80)]
+    #     tenors = [datetime.timedelta(days=period * i) / datetime.timedelta(days=360) for i in range(1, 80)]
+    #     discounts = self.curve.getDiscountFactor(dates)
+    #     # baseforwards = [basecurve.getForwardRate(start,start+datetime.timedelta(days=180*i)) for i in range(0,20)]
+    #     forwards = [self.curve.getForwardRate(forwardstart, forwardstart + datetime.timedelta(days=period * i)) for i in
+    #                 range(1, 80)]
+    #     forwardCurve = ql.ForwardCurve(dates,forwards,)
 class FlatForwardYieldCurve(YieldCurveTermStructure):
     """
     Flat Forward Yield class to generate constant yield term structure
@@ -271,7 +281,7 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
         self.shiftparameter = setupparams['shiftparameter']
         print(setupparams)
         self.flat_ts = ql.FlatForward(qlMaps.qlDates(self.reference_date),
-                                              self.flat_rate,
+                                              ql.QuoteHandle(ql.SimpleQuote(self.flat_rate)),
                                               self.day_count,
                                               self.compounding,
                                               self.compounding_frequency)
@@ -297,14 +307,17 @@ class FlatDividendYieldCurve(YieldCurveTermStructure):
         self.day_count = ql.Thirty360()
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
+        self.compounding = ql.Compounded
+        self.compounding_frequency = ql.Annual
+        self.setupCurve(None)
 
     def setupCurve(self,setupparams):
-        self.day_count = setupparams['day_count']
-        self.calendar = setupparams['calendar']
-        self.compounding = setupparams['compounding']
-        self.compounding_frequency = setupparams['compounding_frequency']
+        # self.day_count = setupparams['day_count']
+        # self.calendar = setupparams['calendar']
+        # self.compounding = setupparams['compounding']
+        # self.compounding_frequency = setupparams['compounding_frequency']
         self.flat_ts = ql.FlatForward(qlMaps.qlDates(self.reference_date),
-                                              self.flat_rate,
+                                              ql.QuoteHandle(ql.SimpleQuote(self.flat_rate)),
                                               self.day_count,
                                               self.compounding,
                                               self.compounding_frequency)
@@ -336,15 +349,17 @@ class FlatVolatilityCurve(Volatilty):
         self.day_count = ql.Thirty360()
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
+        self.setupCurve(None)
 
     def setupCurve(self,setupparams):
-        self.spot_vols = setupparams['spot_vols'] #List, a 2D array of dates and spot rates
-        self.day_count = setupparams['day_count']
-        self.calendar = setupparams['calendar']
-        self.vol_ts = ql.BlackConstantVol(qlMaps.qlDates(self.reference_date),
-                                     self.calendar,
-                                     self.flat_vol,
-                                     self.day_count)
+        # self.spot_vols = setupparams['spot_vols'] #List, a 2D array of dates and spot rates
+        # self.day_count = setupparams['day_count']
+        # self.calendar = setupparams['calendar']
+        # self.vol_ts = ql.BlackConstantVol(qlMaps.qlDates(self.reference_date),
+        #                              self.calendar,
+        #                              self.flat_vol,
+        #                              self.day_count)
+        self.vol_ts = ql.BlackConstantVol(0, self.calendar,ql.QuoteHandle(ql.SimpleQuote(self.flat_vol)), self.day_count)
         self.vol_ts_handle = ql.BlackVolTermStructureHandle(self.vol_ts)
         
     def getCurve(self):

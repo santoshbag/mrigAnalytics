@@ -44,6 +44,10 @@ class kite_account:
         engine.execute(sql)
         self.session = mu.getKiteSession()
 
+    def getInstruments(self,exchange):
+        instruments = self.session.instruments(exchange=exchange)
+        return pd.DataFrame(instruments)
+
     def getPositions(self):
         positions = self.session.positions()
 
@@ -52,3 +56,15 @@ class kite_account:
         # print(positions.columns)
         # print(positions.head(1).to_string())
         return positions
+
+    def getQuoteLive(self,scrip):
+        sec = scrip
+        if scrip == 'NIFTY':
+            sec = 'NIFTY 50'
+        elif scrip == 'BANKNIFTY':
+            sec = 'NIFTY BANK'
+        return pd.DataFrame(self.session.quote('NSE:'+sec))['NSE:'+sec]
+
+    def getHistorical(self,token,from_date,to_date,interval):
+        data = self.session.historical_data(token,from_date,to_date,interval)
+        return pd.DataFrame(data)
