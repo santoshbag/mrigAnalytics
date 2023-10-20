@@ -486,9 +486,9 @@ class tradingDB():
         current_month = datetime.date.strftime(datetime.date.today(), '%b')
         next_month = datetime.date.strftime(datetime.date.today() + datetime.timedelta(days=31), '%b')
         current_year = datetime.date.strftime(datetime.date.today(), '%y')
-        crude = 'CRUDEOIL' + current_year + current_month.upper() + 'FUT'
-        usdinr = 'USDINR' + current_year + current_month.upper() + 'FUT'
-        gold = 'GOLD' + current_year + current_month.upper() + 'FUT'
+        # crude = 'CRUDEOIL' + current_year + current_month.upper() + 'FUT'
+        # usdinr = 'USDINR' + current_year + current_month.upper() + 'FUT'
+        # gold = 'GOLD' + current_year + current_month.upper() + 'FUT'
 
         ins = self.kite_object.getInstruments(exchange='CDS')
         # usdinr = ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['tradingsymbol']
@@ -496,7 +496,9 @@ class tradingDB():
         #     usdinr = 'USDINR' + current_year + next_month.upper() + 'FUT'
         #
         # usdinr_token = ins[ins['tradingsymbol'] == usdinr]['instrument_token'].values[0]
-        usdinr_token = str(ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+        usdinr_token = list(ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['instrument_token'])
+        usdinr = list(ins[(ins['name'] == 'USDINR') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['tradingsymbol'])
+
 
         ins = self.kite_object.getInstruments(exchange='MCX')
         # print(crude)
@@ -505,7 +507,9 @@ class tradingDB():
         # if not (crude in ins['tradingsymbol']):
         #     crude = 'CRUDEOIL' + current_year + next_month.upper() + 'FUT'
         # crude_token = ins[ins['tradingsymbol'] == crude]['instrument_token'].values[0]
-        crude_token = str(ins[(ins['name'] == 'CRUDEOIL') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+        # crude_token = str(ins[(ins['name'] == 'CRUDEOIL') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+        crude_token = list(ins[(ins['name'] == 'CRUDEOIL') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['instrument_token'])
+        crude = list(ins[(ins['name'] == 'CRUDEOIL') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['tradingsymbol'])
 
         ins = self.kite_object.getInstruments(exchange='MCX')
         # print(gold)
@@ -514,17 +518,45 @@ class tradingDB():
         #     gold = 'GOLD' + current_year + next_month.upper() + 'FUT'
         # print(gold)
         # gold_token = ins[ins['tradingsymbol'] == gold]['instrument_token'].values[0]
-        gold_token = str(ins[(ins['name'] == 'GOLD') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(1)['instrument_token'].values[0])
+        gold_token = list(ins[(ins['name'] == 'GOLD') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['instrument_token'])
+        gold = list(ins[(ins['name'] == 'GOLD') & (ins['instrument_type'] == 'FUT')].sort_values(by='expiry').head(2)['tradingsymbol'])
 
-        data = self.kite_object.getHistorical(usdinr_token, from_date, to_date, 'day')
+        data = None
+        try:
+            data = self.kite_object.getHistorical(usdinr_token[0], from_date, to_date, 'day')
+            usdinr = usdinr[0]
+        except:
+            pass
+        if (data is None):
+            data = self.kite_object.getHistorical(usdinr_token[1], from_date, to_date, 'day')
+            usdinr = usdinr[1]
         hist_data.append(data[data.columns[:-1]])
         graph_obj.append(mg.candlestick_plot(usdinr, data[data.columns[:-1]]))
 
-        data = self.kite_object.getHistorical(crude_token, from_date, to_date, 'day')
+        data = None
+        try:
+            data = self.kite_object.getHistorical(crude_token[0], from_date, to_date, 'day')
+            crude = crude[0]
+        except:
+            pass
+        if (data is None):
+            data = self.kite_object.getHistorical(crude_token[1], from_date, to_date, 'day')
+            crude = crude[1]
+
+        # data = self.kite_object.getHistorical(crude_token, from_date, to_date, 'day')
         hist_data.append(data[data.columns[:-1]])
         graph_obj.append(mg.candlestick_plot(crude, data[data.columns[:-1]]))
 
-        data = self.kite_object.getHistorical(gold_token, from_date, to_date, 'day')
+        data = None
+        try:
+            data = self.kite_object.getHistorical(gold_token[0], from_date, to_date, 'day')
+            gold = gold[0]
+        except:
+            pass
+        if (data is None):
+            data = self.kite_object.getHistorical(gold_token[1], from_date, to_date, 'day')
+            gold = gold[1]
+        # data = self.kite_object.getHistorical(gold_token, from_date, to_date, 'day')
         hist_data.append(data[data.columns[:-1]])
         graph_obj.append(mg.candlestick_plot(gold, data[data.columns[:-1]]))
 
