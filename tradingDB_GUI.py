@@ -27,10 +27,12 @@ import tradingDB as tdb
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import strategies.marketoptions as mo
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 NavigationToolbar2Tk)
+import tkcalendar
 
 from PIL import Image, ImageTk
 
@@ -720,32 +722,18 @@ def showDB(flag=False,diagnostic=False):
         print(df)    
     return positions
 
-    
 def option_screen():
-    # create the main window
-    win_option = tk.Tk()
-    win_option.title("Option Analytics and Greeks")
+    def all_children(window):
+        _list = window.winfo_children()
 
-    win_option.geometry("1000x900")
-    
-    win_lFrame0 = tk.LabelFrame(win_option,pady=10)
-    win_lFrame0.pack()
-    
-    label0 = tk.Label(win_lFrame0,text="Option Analytics and Greeks",
-                      font=('Poppins bold', 16))
-    label0.pack()
-    
-    win_lFrame1 = tk.LabelFrame(win_option,pady=10)
-    win_lFrame1.pack()
-    win_lFrame2 = tk.Frame(win_option,pady=10)
-    win_lFrame2.pack()
+        for item in _list:
+            if item.winfo_children():
+                _list.extend(item.winfo_children())
 
-    label1 = tk.Label(win_lFrame1,text="Option Entry",
-                      font=('Poppins bold', 16))
-    label1.pack()
+        return _list
 
     scrip_var = tk.StringVar()
-    call_put = ['CALL','PUT']
+    call_put = ['CALL', 'PUT']
     spot_var = tk.StringVar()
     type_var = tk.StringVar()
     type_var.set('CALL')
@@ -753,79 +741,196 @@ def option_screen():
     cmp_var = tk.StringVar()
     vol_var = tk.StringVar()
     rate_var = tk.StringVar()
+    expiry_var = tkcalendar.DateEntry()
 
-    scrip_label = tk.Label(win_lFrame1,text = 'SCRIP', font=('calibre',10,'normal'))
-    scrip_label.pack(side = tk.LEFT)
-    scrip_entry = tk.Entry(win_lFrame2,textvariable = scrip_var, font=('calibre',10,'normal'))
-    scrip_entry.pack(side = tk.LEFT)
+    def analyze():
+        # global scrip_var
+        # global expiry
+        # global spot_var
+        # global type_var
+        # global strike_var
+        # global cmp_var
+        # global vol_var
+        # global rate_var
 
-    spot_label = tk.Label(win_lFrame1,text = 'SPOT', font=('calibre',10,'normal'))
-    spot_label.pack(side = tk.LEFT)
-    spot_entry = tk.Entry(win_lFrame2,textvariable = spot_var, font=('calibre',10,'normal'))
-    spot_entry.pack(side = tk.LEFT)
+        print('scrip -- >', scrip_var.get())
+        print('spot -- >', spot_var.get())
+        print('expiry -- >', expiry_var.get_date())
 
-    type_label = tk.Label(win_lFrame1,text = 'TYPE', font=('calibre',10,'normal'))
-    type_label.pack(side = tk.LEFT)
-    type_entry = tk.OptionMenu(win_lFrame2, type_var, *call_put,)
-    type_entry.pack(side = tk.LEFT)
-    
-    strike_label = tk.Label(win_lFrame1,text = 'STRIKE', font=('calibre',10,'normal'))
-    strike_label.pack(side = tk.LEFT)
+        print('type -- >', type_var.get())
+        print('strike -- >', strike_var.get())
+        print('ccmp -- >', cmp_var.get())
+        print('vol -- >', vol_var.get())
+        print('rate -- >', rate_var.get())
 
-    strike_entry = tk.Entry(win_lFrame2,textvariable = strike_var, font=('calibre',10,'normal'))
-    strike_entry.pack(side = tk.LEFT)
+        widget_list = all_children(win_lFrame2)
+        for item in widget_list:
+            print('item deleting')
+            item.pack_forget()
 
-    rate_label = tk.Label(win_lFrame1,text = 'RATE', font=('calibre',10,'normal'))
-    rate_label.pack(side = tk.LEFT)
-    rate_entry = tk.Entry(win_lFrame2,textvariable = rate_var, font=('calibre',10,'normal'))
-    rate_entry.pack(side = tk.LEFT)
+        # expiry = datetime.datetime.strptime(expiry_var.get_date(),'%Y-%m-%d').date()
+        ce_pe = 'CE' if type_var.get() == 'CALL' else 'PE'
+        cmp = float(cmp_var.get()) if len(cmp_var.get()) > 0 else 0
+        spot = float(spot_var.get()) if len(spot_var.get()) > 0 else 0
+        scrip = scrip_var.get()
+        strike = float(strike_var.get())
 
-    vol_label = tk.Label(win_lFrame1,text = 'VOL', font=('calibre',10,'normal'))
-    vol_label.pack(side = tk.LEFT)
-    vol_entry = tk.Entry(win_lFrame2,textvariable = vol_var, font=('calibre',10,'normal'))
-    vol_entry.pack(side = tk.LEFT)
-    
-    cmp_label = tk.Label(win_lFrame1,text = 'CMP', font=('calibre',10,'normal'))
-    cmp_label.pack(side = tk.LEFT)
-    cmp_entry = tk.Entry(win_lFrame2,textvariable = cmp_var, font=('calibre',10,'normal'))
-    cmp_entry.pack(side = tk.LEFT)    
-    
-    
-    option_button = tk.Button(win_lFrame1, text="Analyze", 
-                            font=('Poppins bold', 16), padx=10,pady=5,
-                            command=analyze)
+        op = mo.MarketOptions(scrip, strike, expiry_var.get_date(), ce_pe)
+        res = op.valuation(cmp)
+
+        for key in res.keys():
+            tk.Label(win_lFrame2, text=key + ' -- >' + str(round(res[key], 2)), font=('calibre', 10, 'normal'),
+                     padx=10).pack()
+
+        res = pd.DataFrame()
+        scenarios = ['SPOT']
+        res = op.scenario_analysis(scenarios)
+        fig = Figure(figsize=(5, 4), dpi=100)
+        ax = fig.add_subplot(111)
+
+        res.plot(x=res.columns[0], y='price', ax=ax, grid=(True, 'r'), title=scenarios[0] + ' Scenarios')
+
+        canvas = FigureCanvasTkAgg(fig, master=win_lFrame2)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+
+        # canvas.get_tk_widget().grid(row=0, column=0)
+
+
+    # win_option = tk.Tk()
+    win_option = tk.Toplevel()
+    win_option.title("Option Analytics and Greeks")
+
+    win_option.geometry("1000x900")
+
+    win_lFrame0 = tk.LabelFrame(win_option, pady=10)
+    win_lFrame0.pack()
+
+    label0 = tk.Label(win_lFrame0, text="Option Analytics and Greeks",
+                      font=('Poppins bold', 16))
+    label0.pack()
+
+    win_lFrame1 = tk.LabelFrame(win_option, pady=10, bg='cyan')
+    win_lFrame1.pack()
+
+    win_lFrame2 = tk.LabelFrame(win_option, pady=10, bg='cyan')
+    win_lFrame2.pack()
+
+    label1 = tk.Label(win_lFrame1, text="Option Entry",
+                      font=('Poppins bold', 16), bg='cyan')
+    label1.pack()
+
+
+
+    pad_x = 5
+    scripFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    scripFrame.pack(side=tk.LEFT)
+    scrip_label = tk.Label(scripFrame, text='SCRIP', font=('calibre', 10, 'normal'), padx=10, width=8)
+    scrip_label.pack(side=tk.TOP)
+
+    typeFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    typeFrame.pack(side=tk.LEFT)
+    type_label = tk.Label(typeFrame, text='TYPE', font=('calibre', 10, 'normal'), padx=10, width=8)
+    type_label.pack(side=tk.TOP)
+
+    expiryFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    expiryFrame.pack(side=tk.LEFT)
+    expiry_label = tk.Label(expiryFrame, text='EXPIRY', font=('calibre', 10, 'normal'), padx=10, width=8)
+    expiry_label.pack(side=tk.TOP)
+
+    spotFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    spotFrame.pack(side=tk.LEFT)
+    spot_label = tk.Label(spotFrame, text='SPOT', font=('calibre', 10, 'normal'), padx=10, width=8)
+    spot_label.pack(side=tk.TOP)
+
+    strikeFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    strikeFrame.pack(side=tk.LEFT)
+    strike_label = tk.Label(strikeFrame, text='STRIKE', font=('calibre', 10, 'normal'), padx=10, width=8)
+    strike_label.pack(side=tk.TOP)
+
+    rateFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    rateFrame.pack(side=tk.LEFT)
+    rate_label = tk.Label(rateFrame, text='RATE', font=('calibre', 10, 'normal'), padx=10, width=8)
+    rate_label.pack(side=tk.TOP)
+
+    volFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    volFrame.pack(side=tk.LEFT)
+    vol_label = tk.Label(volFrame, text='VOL', font=('calibre', 10, 'normal'), padx=10, width=8)
+    vol_label.pack(side=tk.TOP)
+
+    cmpFrame = tk.Frame(win_lFrame1, padx=pad_x, bg='cyan')
+    cmpFrame.pack(side=tk.LEFT)
+    cmp_label = tk.Label(cmpFrame, text='CMP', font=('calibre', 10, 'normal'), padx=10, width=8)
+    cmp_label.pack(side=tk.TOP)
+
+    # blanklabel = tk.Label(win_lFrame1,text=" ")
+
+    # blanklabel.pack()
+    # cmp_label1 = tk.Label(win_lFrame1,text = 'CMP', font=('calibre',10,'normal'),padx=10)
+    # cmp_label1.pack(side = tk.LEFT)
+
+    scrip_var.set("NIFTY")
+    scrip = ['NIFTY', 'BANKNIFTY'] + sorted(set(ms.NIFTY_100))
+    scrip_options = tk.OptionMenu(scripFrame, scrip_var, *scrip)
+    # level_options = ttk.Combobox( lFrame1 , textvariable=level_option_clicked , values=level_option_items)
+
+    scrip_options.config(font=('calibre', 10))
+    scripFrame.nametowidget(scrip_options.menuname).config(font=('calibre', 10))
+    # scrip_options = tk.Entry(scripFrame,textvariable = scrip_var, font=('calibre',10,'normal'),width=12)
+    scrip_options.pack(side=tk.BOTTOM)
+
+    spot_entry = tk.Entry(spotFrame, textvariable=spot_var, font=('calibre', 10, 'normal'), width=12)
+    spot_entry.pack(side=tk.BOTTOM)
+
+    type_entry = tk.OptionMenu(typeFrame, type_var, *call_put, )
+    typeFrame.nametowidget(type_entry.menuname).config(font=('calibre', 10))
+    type_entry.pack(side=tk.BOTTOM)
+
+    # expiry = Calendar(expiryFrame, selectmode = 'day',
+    #                year = datetime.date.today().year, month = datetime.date.today().month,
+    #                day = datetime.date.today().day)
+
+    # expiry.pack(pady = 20)
+
+    expiry_var = tkcalendar.DateEntry(expiryFrame, date_pattern='mm/dd/yyyy', locale='en_US')
+    expiry_var.pack()
+
+    strike_entry = tk.Entry(strikeFrame, textvariable=strike_var, font=('calibre', 10, 'normal'), width=12)
+    strike_entry.pack(side=tk.BOTTOM)
+
+    rate_entry = tk.Entry(rateFrame, textvariable=rate_var, font=('calibre', 10, 'normal'), width=12)
+    rate_entry.pack(side=tk.BOTTOM)
+
+    vol_entry = tk.Entry(volFrame, textvariable=vol_var, font=('calibre', 10, 'normal'), width=12)
+    vol_entry.pack(side=tk.BOTTOM)
+
+    cmp_entry = tk.Entry(cmpFrame, textvariable=cmp_var, font=('calibre', 10, 'normal'), width=12)
+    cmp_entry.pack(side=tk.BOTTOM)
+
+
+    # def setargs():
+    args = {}
+    args['scrip_var'] = scrip_var
+    args['expiry'] = expiry_var
+    # args['spot_var'] = spot_var.get()
+    args['type_var'] = type_var
+    # print(strike_var,strike_var.get())
+    # args['strike_var'] = strike_var.get()
+    # args['cmp_var'] = cmp_var.get()
+    # args['vol_var'] = vol_var.get()
+    # args['rate_var'] = rate_var.get()
+        # analyze(win_lFrame2, args)
+
+    option_button = tk.Button(win_lFrame1, text="Analyze",
+                              font=('Poppins bold', 16), padx=10, pady=5,
+                              command=lambda: analyze())
+
+    inputtxt = None
+
     option_button.pack()
-    
 
-def analyze():
-    global spot_var
-    global type_var
-    global strike_var
-    global cmp_var
-    global vol_var
-    global rate_var
+    win_option.mainloop()
 
-    print(spot_var)
-    print(type_var)
-    print(strike_var)
-    print(cmp_var)
-    print(vol_var)
-    print(rate_var)
-        
-        
-        # spot_label.grid(row=0,column=0)
-    # spot_entry.grid(row=0,column=1)
-    # type_label.grid(row=1,column=0)
-    # type_entry.grid(row=1,column=1)
-    
-    # strike_label.grid(row=2,column=0)
-    # strike_entry.grid(row=2,column=1)
-    # rate_label.grid(row=3,column=0)
-    # rate_entry.grid(row=3,column=1)
-    # vol_label.grid(row=4,column=0)
-    # vol_entry.grid(row=4,column=1)
-    # cmp_label.grid(row=5,column=0)
-    # cmp_entry.grid(row=5,column=1)
 
 inputtxt = None
 
@@ -863,12 +968,6 @@ root.title("Trade and Financial Analytics")
 root.geometry("700x900")
 root.resizable(width=False, height=False)
 
-# global spot_var
-# global type_var
-# global strike_var
-# global cmp_var
-# global vol_var
-# global rate_var
 
 win = None
 
