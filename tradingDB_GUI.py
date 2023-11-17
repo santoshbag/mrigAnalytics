@@ -263,18 +263,19 @@ def showAnalytics_live():
         'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(0).round()
 
 
-    # df2 = df1.groupby(by=['scrip', 'l_s'], as_index=False)[
-    #     'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl'].sum().fillna(
-    #     0).round().assign(instrument='')
+    df2 = df1.groupby(by=['scrip', 'l_s'], as_index=False)[
+        'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(
+        0).round().assign(instrument='')
 
     df3 = df1.groupby(by=['scrip'], as_index=False)[
         'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(
         0).round().assign(l_s='')
 
-    df = (pd.concat([df1, df3])
+
+    df = (pd.concat([df1, df2, df3])
           .reindex(df1.columns, axis=1)
           .fillna('')
-          .sort_values(['scrip', 'l_s'], ascending=True, ignore_index=True))
+          .sort_values(['scrip', 'l_s','instrument'], ascending=True, ignore_index=True))
 
     scrips = set(list(df['scrip']))
     df['pivot_strike'] = 0
@@ -299,6 +300,7 @@ def showAnalytics_live():
         df[col] = df[col].map('{:,.0f}'.format)
     df.loc[df['pivot_strike'] == '0','pivot_strike'] = ''
     df.loc[df['pivot_strike'] == '','breakeven'] = ''
+    df.loc[df['instrument'] == '', 'breakeven'] = ''
     df.drop(columns=['wtd_strike','abs_qty'],axis=1,inplace=True)
     return [positions, df]
 
@@ -339,7 +341,8 @@ def display_dataframe():
 
         tree = ttk.Treeview(win, columns=list(df.columns), show="headings")
 
-        tree.tag_configure('subtotal', background='yellow',font=('Arial bold', 10))
+        tree.tag_configure('subtotal', background='yellow',font=('Arial bold', 12))
+        tree.tag_configure('subtotal_ls', background='cyan', font=('Arial bold', 10))
         tree.tag_configure('even', background='lightgreen')
         tree.tag_configure('odd', background='lightgray')
 
@@ -371,11 +374,14 @@ def display_dataframe():
             if row[['l_s']].values == '':
                 tree.insert("", "end", values=list(row), tags=('subtotal',))
             else:
-                if cnt % 2 == 0:
-                    tree.insert("", "end", values=list(row),tags=('even',))
+                if row[['instrument']].values == '':
+                    tree.insert("", "end", values=list(row), tags=('subtotal_ls',))
                 else:
-                    # print(list(row))
-                    tree.insert("", "end", values=list(row), tags=('odd',))
+                    if cnt % 2 == 0:
+                        tree.insert("", "end", values=list(row),tags=('even',))
+                    else:
+                        # print(list(row))
+                        tree.insert("", "end", values=list(row), tags=('odd',))
             cnt = cnt + 1
 
         def OnDoubleClick(event):
