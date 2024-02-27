@@ -18,8 +18,8 @@ def singleScaleLine_plots(labels,pltname=None):
     MEDIUM_SIZE = 10
     BIGGER_SIZE = 12
 
-    bg_color = 'black'#'dimgray'
-    fg_color = 'white'
+    bg_color = 'white'#'dimgray'
+    fg_color = 'black'
     border='yellow'
     
     plt.rc('font', size=MINI_SIZE)          # controls default text sizes

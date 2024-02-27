@@ -12,8 +12,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import requests
 import datetime,pandas,time
 from bs4 import BeautifulSoup
-import mrigstatics,mrigutilities
+import mrigstatics,mrigutilities,json
 import xml.etree.ElementTree as ET
+
+
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0"
+}
 
 
 def get_MCNews():
@@ -25,6 +31,8 @@ def get_MCNews():
         tree = ET.fromstring(response.text)
         recos = []
         desc = []
+        guid = []
+        body = []
         recodates = []
         for child in tree.iter('pubDate'):
             recodates.append(datetime.datetime.strptime((child.text[5:7]+"-"+child.text[8:11]+"-"+child.text[12:16]),'%d-%b-%Y'))
@@ -32,18 +40,43 @@ def get_MCNews():
             recos.append(child.text)
         for child in tree.iter('description'):
             desc.append(child.text[child.text.find('/>')+3:])
-        
+        for child in tree.iter('guid'):
+            articleurl = child.text
+            articlebody = ""
+            guid.append(articleurl)
+            # print(articleurl)
+            soup = BeautifulSoup(requests.get(articleurl, headers=headers).content, "html.parser")
+            data = soup.find_all('script')
+            for i in range(1,4):
+                tes = data[i].string
+                # print(tes[1707])
+                # articlebody = ""
+                try:
+                    tes = json.loads(tes, strict=False)
+                    # print(tes[0]['headline'])
+                    # print(" "*80)
+                    articlebody = tes[0]['articleBody']
+                    # print(body)
+                except:
+                    pass
+            body.append(articlebody)
+            tes = None
+
+
+
         re = []
         for i in range(0,len(recos[2:])):
-            re.append([recodates[i],recos[i+2],desc[i+2],urlkey[3:-4]])
+            re.append([recodates[i],recos[i+2],desc[i+2],urlkey[3:-4],guid[i],body[i]])
+        # for recs in re:
+            # print(recs[1],recs[5])
         
-        recos = pandas.DataFrame(re,columns=["date","title","description","type"])
+        recos = pandas.DataFrame(re,columns=["date","title","description","type","guid","body"])
         engine = mrigutilities.sql_engine()
         try:
             recos.to_sql('media',engine, if_exists='append', index=False)
         except:
             pass
-        print(recos)            
+        print(recos)
     return recos
 
 def get_ETNews():
@@ -80,8 +113,8 @@ def get_ETNews():
         return recos
     
 if __name__ == '__main__':
-    # get_MCNews()        
-    get_ETNews()
+    get_MCNews()
+    # get_ETNews()
  
     
     

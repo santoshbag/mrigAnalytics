@@ -38,11 +38,11 @@ def get_yieldCurve(currency="INR"):
                            'USD':7,
                            'GBP':7}
         
-        curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
+        # curve_date = str(soup.find_all('p')[0].find_all(class_='w3-small')[0].text).replace('Last Update: ',"").replace(' GMT+2',"").split(" ")
         # print(curve_date)
         # curve_date = curve_date[0]+"-"+curve_date[1]+"-"+curve_date[2]
         # curve_date = datetime.datetime.strptime(curve_date,'%d-%b-%Y').date()
-        curve_date = datetime.date(2023,9,27)
+        # curve_date = datetime.date(2023,9,27)
         tables = soup.find_all("table")
         # print(tables[0])
         
@@ -96,6 +96,7 @@ def get_yieldCurve(currency="INR"):
         yield_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)
         yield_table.insert(0,column='curvedate',value=curve_date)
         yield_table.insert(1,column='curve',value=currency)
+        yield_table = yield_table[yield_table['tenor'].notnull()]
         # print(yield_table)
         price_table = pandas.DataFrame(price_table[1:-1],columns=mrigutilities.get_finalColumns(price_table_cols[1:]))
         price_table.rename(columns=lambda x: x.replace("%",'_per'),inplace=True)

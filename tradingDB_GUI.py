@@ -171,6 +171,7 @@ def showAnalytics():
     #df.set_index('scrip',inplace=True)    
     # print(positions.groupby(by=['scrip']).sum()[['qty','orig_liab','curr_liab','delta','theta','pnl']])
 
+
     return [positions,df]
 
 
@@ -257,18 +258,25 @@ def showAnalytics_live():
     positions['T/D'] = positions[['qty', 'delta (D)', 'theta (T)']].apply(
         lambda x: abs(x['theta (T)'] / x['delta (D)']) if (x['delta (D)'] != 0 and x['qty'] < 0) else 0, axis=1)
 
+    positions['underlying'] = positions[['scrip']].apply(lambda x: kite_object.getQuoteLive(x['scrip'])['last_price'],axis=1)
+    positions['Intrinsic Value'] = positions[['strike','type','qty','underlying']].apply(
+        lambda x : x['qty']* max((x['underlying'] - x['strike']),0) if (x['type'] == 'CE') else
+        (x['qty']* max((x['strike'] - x['underlying']),0) if (x['type'] == 'PE') else 0),axis=1)
+    positions['Time Value'] = positions[['type','pnl','Intrinsic Value']].apply(
+        lambda x : (x['pnl'] - x['Intrinsic Value']) if (x['type'] != 'FUT') else 0 ,axis=1)
+
     positions['strike'] = positions['strike'].map('{:,.0f}'.format)
 
     df1 = positions.groupby(by=['scrip', 'instrument', 'l_s','strike'], as_index=False)[
-        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(0).round()
+        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(0).round()
 
 
     df2 = df1.groupby(by=['scrip', 'l_s'], as_index=False)[
-        'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(
+        'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(
         0).round().assign(instrument='')
 
     df3 = df1.groupby(by=['scrip'], as_index=False)[
-        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','wtd_strike','abs_qty','breakeven'].sum().fillna(
+        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(
         0).round().assign(l_s='')
 
 
@@ -296,12 +304,16 @@ def showAnalytics_live():
     # print(positions.groupby(by=['scrip']).sum()[['qty','orig_liab','curr_liab','delta','theta','pnl']])
 
     # df.loc[df['l_s'] == '',['strike']] = ''
-    for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','breakeven','pivot_strike']:
+    for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','breakeven','pivot_strike']:
         df[col] = df[col].map('{:,.0f}'.format)
     df.loc[df['pivot_strike'] == '0','pivot_strike'] = ''
     df.loc[df['pivot_strike'] == '','breakeven'] = ''
     df.loc[df['instrument'] == '', 'breakeven'] = ''
     df.drop(columns=['wtd_strike','abs_qty'],axis=1,inplace=True)
+
+    # print(df.columns)
+    df.rename(columns=ms.trade_display_analytics, inplace=True)
+
     return [positions, df]
 
 
@@ -312,7 +324,7 @@ def display_dataframe():
     win.title("Position Analytics and Greeks")
 
     win.geometry("1200x800")
-    win.resizable(width=False, height=False)
+    win.resizable()#width=False, height=False)
 
     frame = tk.Frame(win)
     frame.pack()
@@ -320,7 +332,7 @@ def display_dataframe():
     blankframe = tk.Frame(win)
     blankframe.pack()
 
-    blanklabel = tk.Label(blankframe,text='              ',pady=10)
+    blanklabel = tk.Label(blankframe,text='              ',pady=5)
     blanklabel.pack()
 
     tree = ttk.Treeview(win)
@@ -346,6 +358,28 @@ def display_dataframe():
         tree.tag_configure('even', background='lightgreen')
         tree.tag_configure('odd', background='lightgray')
 
+        # Constructing vertical scrollbar
+        # with treeview
+        verscrlbar = ttk.Scrollbar(win,
+                                   orient="vertical",
+                                   command=tree.yview)
+
+        # Calling pack method w.r.to vertical
+        # scrollbar
+        verscrlbar.pack(side='right', fill='y')
+
+        # Constructing horizontal scrollbar
+        # with treeview
+        horscrlbar = ttk.Scrollbar(win,
+                                   orient="horizontal",
+                                   command=tree.xview)
+
+        # Calling pack method w.r.to horizontal
+        # scrollbar
+        horscrlbar.pack(side='bottom', fill='x')
+
+        # Configuring treeview
+        tree.configure(xscrollcommand=verscrlbar.set)
         # for i in len(df.columns):
         #     tree.column('"#' + str(i)+'"', width=200, stretch=0)
 
@@ -362,6 +396,8 @@ def display_dataframe():
         tree.column("#11", width=100, stretch=0, anchor=tk.E)
         tree.column("#12", width=100, stretch=0, anchor=tk.E)
         tree.column("#13", width=100, stretch=0, anchor=tk.E)
+        tree.column("#14", width=100, stretch=0, anchor=tk.E)
+        tree.column("#15", width=100, stretch=0, anchor=tk.E)
 
 
 

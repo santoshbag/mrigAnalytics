@@ -19,7 +19,7 @@ insert into TEMP_DAILY_RETURNS (symbol, date, price, daily_arithmetic_returns,da
     stock_history.close_adj / lag(stock_history.close_adj, 1) OVER (PARTITION BY stock_history.symbol ORDER BY stock_history.date) - 1::numeric AS daily_arithmetic_returns,
     ln(stock_history.close_adj / lag(stock_history.close_adj, 1) OVER (PARTITION BY stock_history.symbol ORDER BY stock_history.date)) AS daily_log_returns
    FROM stock_history
-  WHERE stock_history.series in ('EQ','IN') and close_adj <> 0
+  WHERE stock_history.series in ('EQ','IN') and close_adj <> 0 and stock_history.date >='20200101'
   ORDER BY stock_history.symbol, stock_history.date
 )
 );

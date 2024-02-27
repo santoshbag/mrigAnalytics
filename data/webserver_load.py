@@ -15,6 +15,56 @@ import pandas as pd
 import json
 import time
 
+import sys,os
+import urllib.parse
+
+from PIL import ImageTk
+from PIL.Image import Image
+
+from tradingDB import tradingDB
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+
+import pandas as pd
+import numpy as np
+from dateutil import relativedelta
+import datetime
+import mrigutilities as mu
+import strategies.stocks as stocks
+import research.analytics as ra
+import io,base64
+import stockScreener as ss
+import mfScreener as ms1
+import mfScreener_new as ms
+import media.news as n
+import nsepy
+import instruments.options as options
+import instruments.termstructure as ts
+import instruments.index as index
+import instruments.qlMaps as qlMaps
+import instruments.bonds as bonds
+import instruments.swaps as swaps
+import instruments.options as options
+import instruments.capsfloors as capsfloors
+import strategies.marketoptions as mo
+import research.screener_TA as sta
+
+from fuzzywuzzy import fuzz
+# import mrigplots as mp
+from matplotlib import colors as mcolors
+import matplotlib.pyplot as plot
+import matplotlib
+from plotly.offline import plot as pplot
+import plotly.graph_objs as go
+import plotly.subplots as subplt
+import maintenance.item_manager as im
+
+import mriggraphics as mg
+import json
+
+colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+engine = mu.sql_engine()
 
 def stock_page_load():
     starttime = time.monotonic()
@@ -305,10 +355,256 @@ def os_page_load():
     engine.execute(sql%(strategy,strategy_desc,oc))
     elapsed = time.monotonic() - starttime
     print("--------Time Taken for Option Strategy load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
-       
-        
+
+
+def market_db_load():
+    starttime = time.monotonic()
+    print('Market_Graphs : Creating from Scratch')
+    graphs = []
+    d = tradingDB()
+    market_graphs = d.market_snapshot()
+    for figure in market_graphs[2]:
+        figure.update_layout(width=500, height=300,
+                             yaxis_domain=[0.2, 1.0],
+                             yaxis2_domain=[0.0, 0.2])
+        figure.update_xaxes(showline=True,
+                            linewidth=2,
+                            linecolor='ivory',
+                            mirror=True)
+
+        figure.update_layout(
+            margin=dict(l=0, r=0, b=10, t=50, pad=1),
+            paper_bgcolor="ivory"
+        )
+        plt_div = pplot(figure, output_type='div')
+        graphs.append(plt_div)
+    market_graphs_json = json.dumps(graphs)
+    im.set_items({'market_graphs': market_graphs_json})
+
+    print('N50 : Creating Table')
+    n50_ta_screen = sta.display_analytics()
+    n50_ta_screen_json = n50_ta_screen.to_json(orient='split')
+    im.set_items({'n50_ta_screen' : n50_ta_screen_json})
+
+    indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
+               "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
+               "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
+               "NIFTY HEALTHCARE INDEX", "NIFTY CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
+               "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
+               ]
+
+    print('Sector_Graph : Creating from Scratch')
+    engine = mu.sql_engine()
+    fig = subplt.make_subplots(rows=4,
+                               cols=5,
+                               shared_xaxes=True,
+                               vertical_spacing=0.04,
+                               subplot_titles=indices)
+    sql = """
+    select date, symbol, close from stock_history where symbol in {} 
+    and date > now() - interval '720 days' order by date desc
+    """
+    inx = str(indices).replace('[', '(').replace(']', ')')
+    inx_data = pd.read_sql(sql.format(inx), engine)
+    # inx_data
+
+    coord = []
+    for i in [1, 2, 3, 4, ]:
+        for j in [1, 2, 3, 4, 5]:
+            coord.append((i, j))
+    for crd, indx in list(zip(coord, range(0, 20))):
+        fig.add_trace(go.Scatter(x=inx_data['date'],
+                                 y=inx_data[inx_data['symbol'] == indices[indx]]['close'],
+                                 line=dict(color='blue',
+                                           width=1,
+                                           shape='spline'), showlegend=False), row=crd[0], col=crd[1])
+
+    #     fig.layout.annotations[indx+1]['text'] = indices[indx]
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_annotations(font_size=10)
+    fig.update_layout(width=1000, height=700)
+    sector_graph=pplot(fig, output_type='div')
+    # sector_graph_json = json.dumps(sector_graph)
+    im.set_items({'sector_graph' : str(sector_graph)})
+
+    levels = ra.level_analysis(['NIFTY'])
+    level_chart = levels['level_chart']
+    pcr = levels['pcr']
+    max_pain = levels['max_pain']
+    levels = [level_chart,pcr,max_pain]
+    levels_json = json.dumps(levels)
+    im.set_items({'NIFTY 50|levels_json' : levels_json})
+    print('NIFTY 50  Levels Populated')
+
+    levels = ra.level_analysis(['BANKNIFTY'])
+    level_chart = levels['level_chart']
+    pcr = levels['pcr']
+    max_pain = levels['max_pain']
+    levels = [level_chart, pcr, max_pain]
+    levels_json = json.dumps(levels)
+    im.set_items({'BANKNIFTY|levels_json': levels_json})
+    print('BANKNIFTY  Levels Populated')
+
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for Market DashBoard load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
+
+
+def mrigweb_stock_load(tenor='1Y'):
+    starttime = time.monotonic()
+
+    for symbol in ['SBIN', 'TATAPOWER']: #mrigstatics.NIFTY_100:
+        stk = stocks.Stock(symbol)
+        # stock_desc = stk.stock_name + " | " + stk.industry + " | ISIN: " + stk.isin
+        # nifty = stocks.Index('NIFTY 50')
+        # price_labels = ['Last Price', 'Open', 'Previous Close', 'Day High', 'Day Low', '52 Week High', '52 Week Low']
+        # quotes = []
+        # quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+        # quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+        # price_list = [price_labels, quotes]
+
+        cum_returns = []
+        return_labels = ['1W', '4W', '12W', '24W', '1Y', '3Y']
+        for i in range(0, len(return_labels)):
+            stk.get_returns(return_labels[i])
+            cum_returns.append('NA')
+            try:
+                period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days / 360
+                if period <= 1: period = 1
+                cum_returns[i] = (float(stk.daily_logreturns.sum() / period))
+            except:
+                pass
+        return_list = [return_labels, cum_returns]
+        return_list_json = json.dumps(return_list)
+        im.set_items({symbol+'|return_list' : return_list_json})
+        print(symbol+'  Return List Populated')
+
+        stk.get_price_vol(tenor)
+        dates = list(stk.pricevol_data.index)
+
+        ohlcv = stk.pricevol_data.reset_index()
+        price_graph = mg.plotly_candlestick(stk.symbol, ohlcv, [20, 60, 100])
+
+        price_graph.update_layout(width=1000, height=500,
+                                  yaxis_domain=[0.2, 1.0],
+                                  yaxis2_domain=[0.0, 0.2])
+        price_graph.update_xaxes(showline=True,
+                                 linewidth=2,
+                                 linecolor='ivory',
+                                 mirror=True)
+
+        price_graph.update_layout(
+            margin=dict(l=0, r=0, b=10, t=50, pad=1),
+            paper_bgcolor="ivory"
+        )
+        price_graph = pplot(price_graph, output_type='div')
+        im.set_items({symbol+'|price_graph': price_graph})
+        print(symbol+'  Price Graph Populated')
+
+
+        boll_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['Bollinger_Band', 'Bollinger_UBand', 'Bollinger_LBand'])
+
+        boll_graph.update_layout(width=500, height=300,
+                                 yaxis_domain=[0.0, 1.0])
+        boll_graph.update_xaxes(showline=True,
+                                linewidth=2,
+                                linecolor='ivory',
+                                mirror=True)
+
+        boll_graph.update_layout(
+            margin=dict(l=0, r=0, b=10, t=50, pad=1),
+            paper_bgcolor="ivory"
+        )
+        boll_graph = pplot(boll_graph, output_type='div')
+        im.set_items({symbol+'|boll_graph': boll_graph})
+        print(symbol+'  Boll Graph Populated')
+
+
+        macd_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['MACD', 'MACDS'])
+
+        macd_graph.update_layout(width=500, height=300,
+                                 yaxis_domain=[0.2, 1.0])
+        macd_graph.update_xaxes(showline=True,
+                                linewidth=2,
+                                linecolor='ivory',
+                                mirror=True)
+
+        macd_graph.update_layout(
+            margin=dict(l=0, r=0, b=10, t=50, pad=1),
+            paper_bgcolor="ivory")
+
+        macd_graph = pplot(macd_graph, output_type='div')
+        im.set_items({symbol+'|macd_graph': macd_graph})
+        print(symbol+'  MACD Graph Populated')
+
+
+        stk_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.symbol]
+        stk_ret['cum_ret'] = stk_ret['daily_log_returns'].cumsum()
+
+        benchmark1_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.get_benchmark_index1()]
+        benchmark1_ret['cum_ret'] = benchmark1_ret['daily_log_returns'].cumsum()
+        benchmark2_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.get_benchmark_index2()]
+        benchmark2_ret['cum_ret'] = benchmark2_ret['daily_log_returns'].cumsum()
+
+        return_graph = go.Figure(data=[go.Scatter(x=stk_ret.index,
+                                                  y=stk_ret['cum_ret'], name=stk.symbol),
+                                       go.Scatter(x=benchmark1_ret.index,
+                                                  y=benchmark1_ret['cum_ret'], name=stk.get_benchmark_index1()),
+                                       go.Scatter(x=benchmark2_ret.index,
+                                                  y=benchmark2_ret['cum_ret'], name=stk.get_benchmark_index2())])
+
+        return_graph.update_layout(width=1000, height=500, title='Returns')
+        return_graph = pplot(return_graph, output_type='div')
+        im.set_items({symbol+'|return_graph': return_graph})
+        print(symbol+'  Return Graph Populated')
+
+
+        risk = stk.get_risk()
+        risklabels, risknumbers = [], []
+        for key in risk.keys():
+            risklabels.append(key)
+            risknumbers.append(risk[key])
+
+        risk_list = [risklabels, risknumbers]
+        risk_list_json = json.dumps(risk_list)
+        im.set_items({symbol+'|risk_list' : risk_list_json})
+        print(symbol+'  Risk List Populated')
+
+        #
+        # rd = pd.DataFrame()
+        #
+        # sql = "select distinct date, title, description from media \
+        #        where date > ((select max(date) from media) - interval '2 days') \
+        #        order by date desc"
+        #
+        # engine = mu.sql_engine()
+        #
+        # news = engine.execute(sql).fetchall()
+        #
+        # news = [(item[0].strftime('%d-%b-%Y'), item[1], item[2]) for item in news if
+        #         fuzz.token_set_ratio(symbol, item[1]) > 97]
+        #
+        # optionchain = pd.DataFrame()
+        # # optionchain = stk.optionChain()
+        #
+        stk.get_levels()
+        level_chart = stk.level_chart
+        # level_chart = base64.b64encode(level_chart.getvalue()).decode('utf-8').replace('\n', '')
+        pcr = stk.pcr
+        max_pain = stk.max_pain
+        levels = [level_chart,pcr,max_pain]
+        levels_json = json.dumps(levels)
+        im.set_items({symbol+'|levels_json' : levels_json})
+        print(symbol+'  Levels Populated')
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for Market DashBoard load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
+
+
 if __name__ == '__main__':
-#    os_page_load()
-#    stock_page_load()
-#    ss_page_load()
-    os_page_load()
+    market_db_load()
+    mrigweb_stock_load()

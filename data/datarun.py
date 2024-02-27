@@ -19,13 +19,16 @@ import goldprice as gp
 import crudeoilprices as cp
 import yieldcurve as yc
 import exchangeratesHistory as fx
-import stockHistory as sh
+import stockHistoryNew as sh
 import nseIndexHistory as inx
 import totalreturnindicesHistory as tri
 import optionChainHistory as och
 import stockScreener as ss
 import optionHistory as oh
 import webserver_load as wl
+
+
+
 
 today = datetime.date.today()
 
@@ -69,10 +72,11 @@ def ratios_download():
         mc.populate_ratios_table()
 
 def returns():
-    calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
+    # calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
     engine = mu.sql_engine()
     print("Populating Returns")
-    engine.execute(calculate_returns_sql)
+    sql = "calculate_returns_stock('20200101')"
+    engine.execute(sql, engine)
 
 def stock_strategies():
 
@@ -132,156 +136,193 @@ morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
-if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
-    time.localtime().tm_hour <= eveningtime.hour - 2):
-    print("MORNING RUN")
-
-    try:
-        nav.navall_download()
-    except:
-        pass
-    try:
-        news.get_MCNews()
-    except:
-        pass
-    try:    
-        yc.yield_download()
-    except:
-        pass
-    try:    
-        gp.gold_download()
-    except:
-        pass
-    try:    
-        cp.crude_download()
-    except:
-        pass
-    try:    
-        fx.exchange_rates_download(startdate,enddate)
-    except:
-        pass
-    try:    
-        ratios_download()
-    except:
-        pass
-    try:    
-        mf_codes()
-    except:
-        pass
-    try:    
-        corp_action_download()
-    except:
-        pass
-#    try:    
-#        stock_strategies()
-#    except:
-#        pass
-
-    
-
-if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
-    print("EVENING RUN")
-##    try:    
-#        sh.stockHistory_download(startdate,enddate,progressbar)
-##    except:
-##        pass
-#    try:
-#        inx.nseIndexHistory_download(startdate,enddate,progressbar)
-#    except:
-#        pass
-#    try:    
-#        tri.tri_download(startdate,enddate,progressbar)
-#    except:
-#        pass
-#    try:    
-#        returns()
-#    except:
-#        pass
-#    try:    
-#        och.oc_download_all()
-#    except:
-#        pass
-#    try:    
-#        stock_strategies()
-#    except:
-#        pass
-#    try:    
-#        oh.optionHistory_download()
-#    except:
-#        pass    
-#    try:    
-#        oh.optionLot_download()
-#    except:
-#        pass
-    wl.stock_page_load()
-    wl.ss_page_load()
-    wl.os_page_load()
-    
-
-#try:
-#    try:
-#        scheduler.enterabs(morningtime.timestamp(),priority=0,action=nav.navall_download())
-#    except:
-#        pass
-#    try:
-#        scheduler.enterabs(morningtime.timestamp(),priority=1,action=news.get_MCNews())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(morningtime.timestamp(),priority=2,action=yc.yield_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(morningtime.timesta8p(),priority=3,action=gp.gold_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(morningtime.timestamp(),priority=4,action=cp.crude_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(morningtime.timestamp(),priority=5,action=fx.exchange_rates_download(startdate,enddate))
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=0,action=sh.stockHistory_download(startdate,enddate))
-#    except:
-#        pass
-#    try:
-#        scheduler.enterabs(eveningtime.timestamp(),priority=1,action=inx.nseIndexHistory_download(startdate,enddate))
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=2,action=tri.tri_download(startdate,enddate))
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=3,action=ratios_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=4,action=mf_codes())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=5,action=corp_action_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=6,action=och.oc_download())
-#    except:
-#        pass
-#    try:    
-#        scheduler.enterabs(eveningtime.timestamp(),priority=7,action=returns())
-#    except:
-#        pass
-#try:
-#    scheduler.run(blocking=True)
-#except KeyboardInterrupt:
-#    print('Stopped.')
-#    
+try:
+    sh.stockHistoryNew_download()
+except:
+    pass
+try:
+    # nav.navall_download()
+    mf.download_nav()
+except:
+    pass
+try:
+    news.get_MCNews()
+except:
+    pass
+try:
+    yc.yield_download()
+except:
+    pass
+try:
+    returns()
+except:
+    pass
+try:
+    gp.gold_download()
+except:
+    pass
+try:
+    cp.crude_download()
+except:
+    pass
+try:
+    fx.exchange_rates_download(startdate, enddate)
+except:
+    pass
 #
-#news.get_MCNews()
-
-#weekly download of fundsnapshots and fund portfolio holdings
- 
+# if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
+#     time.localtime().tm_hour <= eveningtime.hour - 2):
+#     print("MORNING RUN")
+#     try:
+#         sh.stockHistoryNew_download()
+#     except:
+#         pass
+#     try:
+#         # nav.navall_download()
+#         mf.download_nav()
+#     except:
+#         pass
+#     try:
+#         news.get_MCNews()
+#     except:
+#         pass
+#     try:
+#         yc.yield_download()
+#     except:
+#         pass
+#     try:
+#         gp.gold_download()
+#     except:
+#         pass
+#     try:
+#         cp.crude_download()
+#     except:
+#         pass
+#     try:
+#         fx.exchange_rates_download(startdate,enddate)
+#     except:
+#         pass
+#     # try:
+#     #     # ratios_download()
+#     # except:
+#     #     pass
+#     # try:
+#     #     # mf_codes()
+#     # except:
+#     #     pass
+#     # try:
+#     #     # corp_action_download()
+#     # except:
+#     #     pass
+# #    try:
+# #        stock_strategies()
+# #    except:
+# #        pass
+#
+#
+# if (alldata==1) or (time.localtime().tm_hour >= eveningtime.hour):
+#     print("EVENING RUN")
+# ##    try:
+# #        sh.stockHistory_download(startdate,enddate,progressbar)
+# ##    except:
+# ##        pass
+# #    try:
+# #        inx.nseIndexHistory_download(startdate,enddate,progressbar)
+# #    except:
+# #        pass
+# #    try:
+# #        tri.tri_download(startdate,enddate,progressbar)
+# #    except:
+# #        pass
+# #    try:
+# #        returns()
+# #    except:
+# #        pass
+# #    try:
+# #        och.oc_download_all()
+# #    except:
+# #        pass
+# #    try:
+# #        stock_strategies()
+# #    except:
+# #        pass
+# #    try:
+# #        oh.optionHistory_download()
+# #    except:
+# #        pass
+# #    try:
+# #        oh.optionLot_download()
+# #    except:
+# #        pass
+# #     wl.stock_page_load()
+# #     wl.ss_page_load()
+# #     wl.os_page_load()
+#
+#
+# #try:
+# #    try:
+# #        scheduler.enterabs(morningtime.timestamp(),priority=0,action=nav.navall_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(morningtime.timestamp(),priority=1,action=news.get_MCNews())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(morningtime.timestamp(),priority=2,action=yc.yield_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(morningtime.timesta8p(),priority=3,action=gp.gold_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(morningtime.timestamp(),priority=4,action=cp.crude_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(morningtime.timestamp(),priority=5,action=fx.exchange_rates_download(startdate,enddate))
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=0,action=sh.stockHistory_download(startdate,enddate))
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=1,action=inx.nseIndexHistory_download(startdate,enddate))
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=2,action=tri.tri_download(startdate,enddate))
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=3,action=ratios_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=4,action=mf_codes())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=5,action=corp_action_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=6,action=och.oc_download())
+# #    except:
+# #        pass
+# #    try:
+# #        scheduler.enterabs(eveningtime.timestamp(),priority=7,action=returns())
+# #    except:
+# #        pass
+# #try:
+# #    scheduler.run(blocking=True)
+# #except KeyboardInterrupt:
+# #    print('Stopped.')
+# #
+# #
+# #news.get_MCNews()
+#
+# #weekly download of fundsnapshots and fund portfolio holdings
+#

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import mplfinance as mpf
 
 
-file = open('settings.json')
+file = open('kite_settings.json')
 enctoken = json.load(file)
 token = enctoken["encauth"]
 session = KiteApp(enctoken=token)

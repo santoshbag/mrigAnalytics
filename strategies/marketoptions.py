@@ -237,6 +237,8 @@ class MarketOptions():
                          self.valuation_method)
     
         self.analytics = self.option.getAnalytics()
+        self.analytics['volatility'] = spotVol
+        self.analytics['Underlying'] =  self.underlying_spot
         return self.analytics
     
     def scenario_analysis(self,scenario=['SPOT']):

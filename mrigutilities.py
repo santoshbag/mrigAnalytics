@@ -1059,7 +1059,7 @@ def find_atm(spot,strike_diff):
 
 def getKiteSession():
     # datadir = os.path.dirname(__file__)
-    # settings_files_path = os.path.join(datadir,"settings.json")
+    # settings_files_path = os.path.join(datadir,"kite_settings.json")
     # file = open(settings_files_path)
     # enctoken = json.load(file)
     # token = enctoken["encauth"]

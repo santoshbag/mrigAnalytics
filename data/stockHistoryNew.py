@@ -18,6 +18,24 @@ import zipfile,re
 #from time import sleep
 import csv
 #import numpy as np
+from random import randint
+import time
+from datetime import date
+from jugaad_data.nse import bhavcopy_save,bhavcopy_index_save,bhavcopy_fo_save
+import pandas as pd
+from jugaad_data.holidays import holidays
+import sys,os
+
+
+enddate  = datetime.date.today()
+startdate  = datetime.date.today() - datetime.timedelta(days=1)
+# date_range = pd.bdate_range(start='02/23/2024', end = '02/24/2024',
+#                          freq='C', holidays = holidays(2024,12))
+date_range = pd.bdate_range(start=startdate, end = enddate,
+                         freq='C', holidays = holidays(startdate.year,12))
+dates_list = [x.date() for x in date_range]
+
+print(dates_list)
 
 
 def stockHistoryNew_download():
@@ -26,6 +44,7 @@ def stockHistoryNew_download():
     today = datetime.date.today()
 #    input_dir = "F:\\NSEDATA"
     input_dir = os.path.join(datadir,'..','..','data','input')
+    processed_dir = os.path.join(datadir,'..','..','data','processed')
     processed_file_list = []
 #    df_list = []
     write_flag=True
@@ -33,8 +52,27 @@ def stockHistoryNew_download():
     disable_sql = "alter table stock_history disable trigger return_trigger"
     enable_sql = "alter table stock_history enable trigger return_trigger"
     engine.execute(disable_sql)
-    
-    csv_header_map = {'SYMBOL':'symbol',	
+
+    for dates in dates_list:
+        try:
+            bhavcopy_save(dates, input_dir)
+            bhavcopy_index_save(dates, input_dir)
+            bhavcopy_fo_save(dates, input_dir)
+            time.sleep(randint(1, 4))  # adding random delay of 1-4 seconds
+
+        #      except (ConnectionError, ReadTimeoutError) as e:
+        except:
+            time.sleep(10)  # stop program for 10 seconds and try again.
+            try:
+                bhavcopy_save(dates, input_dir)
+                bhavcopy_index_save(dates, input_dir)
+                bhavcopy_fo_save(dates, input_dir)
+                time.sleep(randint(1, 4))
+            except:
+                print(f'{dates}: File not Found')
+
+
+    csv_header_map = {'SYMBOL':'symbol',
                   'SERIES' : 'series',	
                   'OPEN':'open',	
                   'HIGH':'high',	
@@ -98,8 +136,10 @@ def stockHistoryNew_download():
     #    print("Exisiting List")
     #    print(processed_file_list)
         stockbhavlist = []
+        stockbhavcsvlist = []
         indexfilelist = []
         fobhavlist = []
+        fobhavcsvlist = []
         fo_oilist = []
         trade_list = []
         
@@ -113,11 +153,16 @@ def stockHistoryNew_download():
             for file in f:
                 if re.search("^cm.*zip",file):
                     stockbhavlist.append(os.path.join(r,file))
-    #                print(file)
+                    print(file)
+                if re.search("^cm.*csv",file):
+                    stockbhavcsvlist.append(os.path.join(r,file))
+                    print(file)
                 if re.search("^ind_close_all_.*csv",file):
                     indexfilelist.append(os.path.join(r,file))
                 if re.search("^fo.*zip",file):
                     fobhavlist.append(os.path.join(r,file))
+                if re.search("^fo.*csv",file):
+                    fobhavcsvlist.append(os.path.join(r,file))
                 if re.search("^fao_participant_oi_.*csv",file):
                     fo_oilist.append(os.path.join(r,file))
                 if re.search("^trade_.*csv",file):
@@ -153,12 +198,41 @@ def stockHistoryNew_download():
                         print("Equity Written to Database")
                         print(stocksdata.tail(10))
                         writer.writerow([zfile])
+                        os.replace(os.path.join(zfile), os.path.join(processed_dir, os.path.basename(zfile)))
+
                     else:
                         print(stocksdata.tail(10))
     #                except:
     #                    pass
     #
-    
+        for csvfile in stockbhavcsvlist:
+            print("Processing Equity File " + str(csvfile))
+            stocksdata = pd.read_csv(csvfile)
+            stocksdata = stocksdata.replace({'-': None})
+
+            stocksdata = stocksdata[csv_header]
+            stocksdata = stocksdata[stocksdata['SERIES'] == 'EQ']
+            stocksdata = stocksdata.rename(columns=csv_header_map)
+            #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+            #                try:
+            stocksdata.apply(pd.to_numeric, errors='ignore')
+            #                stocksdata["date"] = stocksdata["date"].apply(dtm)
+            stocksdata['date'] = pd.to_datetime(stocksdata['date'])
+            stocksdata['close_adj'] = stocksdata['close']
+            stocksdata.set_index('date', inplace=True)
+            #                print(stocksdata.index)
+            #                print(stocksdata.tail(10))
+            if write_flag:
+                stocksdata.to_sql('stock_history', engine, if_exists='append', index=True)
+                print("Equity Written to Database")
+                print(stocksdata.tail(10))
+                writer.writerow(csvfile)
+                os.replace(os.path.join(input_dir,os.path.basename(csvfile)), os.path.join(processed_dir, os.path.basename(csvfile)))
+            else:
+                print(stocksdata.tail(10))
+    #                except:
+    #                    pass
+
         for zfile in fobhavlist:
            # print(zfile)
             if zfile not in processed_file_list:
@@ -191,6 +265,33 @@ def stockHistoryNew_download():
     #                except:
     #                    pass
     #
+        for csvfile in fobhavcsvlist:
+            print("Processing FO File " + str(csvfile))
+            fodata = pd.read_csv(csvfile)
+            fodata = fodata.replace({'-': None})
+
+            fodata = fodata[fo_csv_header]
+            fodata = fodata.rename(columns=fo_csv_header_map)
+            #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
+            #                try:
+            fodata.apply(pd.to_numeric, errors='ignore')
+            #                stocksdata["date"] = stocksdata["date"].apply(dtm)
+            fodata['date'] = pd.to_datetime(fodata['date'])
+            fodata['add_mod_date'] = today
+            fodata.set_index('date', inplace=True)
+            #                print(stocksdata.index)
+            #                print(stocksdata.tail(10))
+            if write_flag:
+                fodata.to_sql('futures_options_history', engine, if_exists='append', index=True)
+                print("FO Written to Database")
+                print(fodata.tail(10))
+                writer.writerow(csvfile)
+                os.replace(os.path.join(input_dir,os.path.basename(csvfile)), os.path.join(processed_dir, os.path.basename(csvfile)))
+            else:
+                print(fodata.tail(10))
+#                except:
+#                    pass
+
         for csvfile in indexfilelist:
             if csvfile not in processed_file_list:
                 print("Processing Index File "+csvfile)
@@ -218,6 +319,7 @@ def stockHistoryNew_download():
                     print("Indices Written to Database")
                     print(indexdata.tail(10))
                     writer.writerow([csvfile])
+                    os.replace(os.path.join(input_dir, os.path.basename(csvfile)),os.path.join(processed_dir, os.path.basename(csvfile)))
                 else:
                     print(indexdata.tail(10))                
     #                except:

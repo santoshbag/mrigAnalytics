@@ -31,6 +31,10 @@ import yfinance
 from mpl_finance import candlestick_ohlc
 import matplotlib.dates as mpl_dates
 import matplotlib.pyplot as plt
+from plotly.offline import plot
+import plotly.graph_objs as go
+import plotly.subplots as subplt
+
 
 import kite.kite_trade as zkite
 
@@ -80,6 +84,120 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
     plt.savefig(img_buf,format='png')
     return img_buf
 
+
+def plotly_candlestick(ticker, data_ohlcv,smas=[10]):
+    if 'date' in data_ohlcv.columns:
+        data_ohlcv['timestamp'] = data_ohlcv['date']
+    data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
+                     inplace=True)
+    data_ohlcv['colors_vol'] = data_ohlcv.Close - data_ohlcv.Close.shift(1)
+    data_ohlcv['colors_vol'] = data_ohlcv['colors_vol'].apply(lambda x: 'green' if x > 0 else 'red')
+
+    for sma in smas:
+        data_ohlcv['MA_' + str(sma)] = data_ohlcv['Close'].rolling(window=sma).mean()
+
+    sma_colors = ['purple', 'blue', 'darkcyan', 'teal']
+
+    # Make Subplot of 2 rows to plot 2 graphs sharing the x axis
+
+    sma_colors = ['purple', 'blue','darkcyan','teal']
+    fig = subplt.make_subplots(rows=2,
+                           cols=1,
+                           shared_xaxes=True,
+                           vertical_spacing=0.02)
+
+    fig.add_trace(go.Candlestick(x=data_ohlcv['Date'],
+                                         open=data_ohlcv['Open'],
+                                         high=data_ohlcv['High'],
+                                         low=data_ohlcv['Low'],
+                                         close=data_ohlcv['Close'],
+                                         increasing_line_color='green',
+                                         decreasing_line_color='red',
+                                         name='Price'), row=1,col=1)
+
+    for sma,lcolor in list(zip(smas,sma_colors)):
+        fig.add_trace(go.Scatter(x=data_ohlcv['Date'],
+                                 y=data_ohlcv['MA_'+str(sma)],
+                              line=dict(color=lcolor,
+                                           width=1,
+                                           shape='spline'), # smooth the line
+                                 name='MA_'+str(sma)), row=1,col=1)
+
+
+    # Add Volume Chart to Row 2 of subplot
+    fig.add_trace(go.Bar(x=data_ohlcv['Date'],
+                         y=data_ohlcv['Volume'],
+                         marker_color=list(data_ohlcv['colors_vol'].values)
+                         ,name='Volume'), row = 2, col = 1)
+
+    # Update Price Figure layout
+    fig.update_layout(title= ticker,
+    yaxis1_title = 'Price',
+    yaxis2_title = 'Volume',
+    # xaxis2_title = ‘Time’,
+    xaxis1_rangeslider_visible = False,
+    xaxis2_rangeslider_visible = False)
+
+    # plt_div = plot(fig, output_type='div')
+    return fig
+
+def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD']):
+    if 'date' in data_ohlcv.columns:
+        data_ohlcv['timestamp'] = data_ohlcv['date']
+    data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
+                     inplace=True)
+    data_ohlcv['colors_vol'] = data_ohlcv.Close - data_ohlcv.Close.shift(1)
+    data_ohlcv['colors_vol'] = data_ohlcv['colors_vol'].apply(lambda x: 'green' if x > 0 else 'red')
+
+    # for indicator in indicators:
+    #     data_ohlcv['MA_' + str(sma)] = data_ohlcv['Close'].rolling(window=sma).mean()
+
+    sma_colors = ['purple', 'blue', 'darkcyan', 'teal']
+
+    # Make Subplot of 2 rows to plot 2 graphs sharing the x axis
+
+    sma_colors = ['purple', 'blue','darkcyan','teal']
+    fig = subplt.make_subplots(rows=1,
+                           cols=1,
+                           shared_xaxes=True,
+                           vertical_spacing=0.02)
+
+    fig.add_trace(go.Candlestick(x=data_ohlcv['Date'],
+                                         open=data_ohlcv['Open'],
+                                         high=data_ohlcv['High'],
+                                         low=data_ohlcv['Low'],
+                                         close=data_ohlcv['Close'],
+                                         increasing_line_color='green',
+                                         decreasing_line_color='red',
+                                         name='Price'), row=1,col=1)
+
+    for indicator,lcolor in list(zip(indicators,sma_colors)):
+        fig.add_trace(go.Scatter(x=data_ohlcv['Date'],
+                                 y=data_ohlcv[indicator],
+                              line=dict(color=lcolor,
+                                           width=1,
+                                           shape='spline'), # smooth the line
+                                 name=indicator), row=1,col=1)
+
+
+    # Add Volume Chart to Row 2 of subplot
+    # fig.add_trace(go.Bar(x=data_ohlcv['Date'],
+    #                      y=data_ohlcv['Volume'],
+    #                      marker_color=list(data_ohlcv['colors_vol'].values)
+    #                      ,name='Volume'), row = 2, col = 1)
+
+    # Update Price Figure layout
+    fig.update_layout(title= ticker,
+    yaxis1_title = 'Price',
+    # xaxis2_title = ‘Time’,
+    xaxis1_rangeslider_visible = False)
+
+    # plt_div = plot(fig, output_type='div')
+    return fig
+
+
+
+
 # if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
     # expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
@@ -90,3 +208,43 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
+
+
+'''
+CSS color:
+                aliceblue, antiquewhite, aqua, aquamarine, azure,
+                beige, bisque, black, blanchedalmond, blue,
+                blueviolet, brown, burlywood, cadetblue,
+                chartreuse, chocolate, coral, cornflowerblue,
+                cornsilk, crimson, cyan, darkblue, darkcyan,
+                darkgoldenrod, darkgray, darkgrey, darkgreen,
+                darkkhaki, darkmagenta, darkolivegreen, darkorange,
+                darkorchid, darkred, darksalmon, darkseagreen,
+                darkslateblue, darkslategray, darkslategrey,
+                darkturquoise, darkviolet, deeppink, deepskyblue,
+                dimgray, dimgrey, dodgerblue, firebrick,
+                floralwhite, forestgreen, fuchsia, gainsboro,
+                ghostwhite, gold, goldenrod, gray, grey, green,
+                greenyellow, honeydew, hotpink, indianred, indigo,
+                ivory, khaki, lavender, lavenderblush, lawngreen,
+                lemonchiffon, lightblue, lightcoral, lightcyan,
+                lightgoldenrodyellow, lightgray, lightgrey,
+                lightgreen, lightpink, lightsalmon, lightseagreen,
+                lightskyblue, lightslategray, lightslategrey,
+                lightsteelblue, lightyellow, lime, limegreen,
+                linen, magenta, maroon, mediumaquamarine,
+                mediumblue, mediumorchid, mediumpurple,
+                mediumseagreen, mediumslateblue, mediumspringgreen,
+                mediumturquoise, mediumvioletred, midnightblue,
+                mintcream, mistyrose, moccasin, navajowhite, navy,
+                oldlace, olive, olivedrab, orange, orangered,
+                orchid, palegoldenrod, palegreen, paleturquoise,
+                palevioletred, papayawhip, peachpuff, peru, pink,
+                plum, powderblue, purple, red, rosybrown,
+                royalblue, saddlebrown, salmon, sandybrown,
+                seagreen, seashell, sienna, silver, skyblue,
+                slateblue, slategray, slategrey, snow, springgreen,
+                steelblue, tan, teal, thistle, tomato, turquoise,
+                violet, wheat, white, whitesmoke, yellow,
+                yellowgreen
+'''

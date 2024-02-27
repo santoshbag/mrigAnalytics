@@ -15,12 +15,12 @@ import matplotlib.pyplot as plt
 import mplfinance as mpf
 
 
-file = open('settings.json')
+file = open('kite_settings.json')
 enctoken = json.load(file)
 token = enctoken["encauth"]
 session = KiteApp(enctoken=token)
 
-kite_instruments = json.load(open("settings.json"))
+kite_instruments = json.load(open("kite_settings.json"))
 kite_instruments_df = pd.DataFrame(kite_instruments['kite_instruments'])
 
 positions = session.positions()

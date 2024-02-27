@@ -5,6 +5,17 @@ Created on Wed May 23 16:19:22 2018
 @author: Santosh Bag
 """
 
+import json
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+file = open(os.path.join(os.path.dirname(__file__), "settings.json"))
+settings = json.load(file)
+
+trade_display_analytics = settings['trade_display_analytics']
+
+
+
 """
 Total Return Indices List from NSE
 """
@@ -130,6 +141,8 @@ MC_MEDIA_URLS = {'MC_BROKERRECOS_URL':'http://www.moneycontrol.com/rss/brokerage
                  'MC_IPONEWS_URL':'http://www.moneycontrol.com/rss/iponews.xml',
                  'MC_COMMODITIES_URL':'http://www.moneycontrol.com/rss/commodities.xml',
                  'MC_RESULTS_URL':'http://www.moneycontrol.com/rss/results.xml',
+                 'MC_TECHNICALS_URL':'http://www.moneycontrol.com/rss/technicals.xml',
+                 'MC_INSURANCE_URL':'http://www.moneycontrol.com/rss/insurancenews.xml',
                  }
 
 ET_MEDIA_URLS = {'MC_BROKERRECOS_URL':'http://www.moneycontrol.com/rss/brokeragerecos.xml',
@@ -146,6 +159,19 @@ ET_MEDIA_URLS = {'MC_BROKERRECOS_URL':'http://www.moneycontrol.com/rss/brokerage
                  'MC_COMMODITIES_URL':'http://www.moneycontrol.com/rss/commodities.xml',
                  'MC_RESULTS_URL':'http://www.moneycontrol.com/rss/results.xml',
                  }
+
+'''
+Mutual Fund URLS
+'''
+
+MF = {
+    'AUM':'https://www.amfiindia.com/research-information/aum-data/average-aum',
+    'NAV_ONEMF_HIST':'https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?mf={}&frmdt={}&todt={}',
+    'SCHEME_INFO' : 'https://portal.amfiindia.com/DownloadSchemeData_Po.aspx?mf=0',
+    'NAV_ALL_HIST':'https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt={}&todt={}'
+}
+
+
 
 
 """
@@ -372,7 +398,7 @@ INDEX_MAP_FOR_OC = {'NIFTY 50':'NIFTY',
                     'NIFTY BANK':'BANKNIFTY',
                     'NIFTY MIDCAP 50':'NIFTYMID50'}
 
-MRIGWEB = {'development' : 'MRIGWEB',
+MRIGWEB = {'development' : 'mrigweb',
            'production' : 'mrigweb'}
 
 RB_WAREHOUSE = {'development' : 'rb_warehouse',
@@ -384,3 +410,5 @@ DBHOST = {'SIRIUS' : '192.168.29.208',
 ENVIRONMENT = 'development'
 #ENVIRONMENT = 'production'
 
+if __name__ == '__main__':
+    print(trade_display_analytics)

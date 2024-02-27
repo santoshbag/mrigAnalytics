@@ -60,7 +60,7 @@ def get_MCRatios(symbol=None):
         symbollist = [symbol]
     successful_download = []
     response = requests.Response()
-    for symbol in symbollist:
+    for symbol in symbollist[4:10]:
         url = mrigstatics.MC_URLS['MC_RATIOS_URL'] + symbol.split(":")[-1].strip()+"/ratiosVI/"+symbol.split(":")[-2].strip()
         timecounter = 0
         while True:
@@ -96,7 +96,8 @@ def get_MCRatios(symbol=None):
                             ratios_dict[ratio_name] = row.find_all("td")[i].text.strip().replace(",","")
                     except:
                         pass
-                ratios_dict_str =  str(ratios_dict)[1:-1].replace("'","").replace(",","|").replace("%","per")  
+                ratios_dict_str =  str(ratios_dict)[1:-1].replace("'","").replace(",","|").replace("%","per")
+                print(ratios_dict_str)
                 sql = "INSERT INTO ratios_1 (symbol, ratio_date, download_date, ratios_dictionary) VALUES ( '" \
                                                   + sym + "','" \
                                                   + ratio_date.strftime('%Y-%m-%d') + "','" \
@@ -1004,12 +1005,12 @@ def get_CorporateActions(symbol=None):
 
 
 if __name__ == '__main__':
-#    get_MCStockCodes()
+   # get_MCStockCodes()
     
-#    get_MCRatios()
+   get_MCRatios()
 #    populate_ratios_table()
 #    get_MCQtrly_Results()
-    get_MCQtrly_Results("MS24:marutisuzukiindia")
+#     get_MCQtrly_Results("MS24:marutisuzukiindia")
 #    get_BalanceSheet()
 
 #    get_ProfitLossStatement()

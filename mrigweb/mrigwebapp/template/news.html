@@ -49,6 +49,7 @@ body {
   text-decoration: none;
   font-size: 15px;
   color: #2196F3;
+  /*color: darkblue;*/
   display: block;
 }
 
@@ -101,7 +102,6 @@ body {
   color: white;
 }
 
-
 </style>
 </head>
 <body>
@@ -125,8 +125,10 @@ body {
 </a>
 
   <a href="/">Home</a>
-  <a href="/stock/">Markets</a>
   <a class="active" href="/news/">News</a>
+  <a href="/market/">Markets</a>
+  <a href="/stock/">Stocks</a>
+  <a href="/mf/">Mutual Funds</a>
   <a href="/ia/">Investment Advisory</a>
   <a href="/ra/">Risk Analytics</a>
   <a href="/softs/">Software Services</a>
@@ -146,16 +148,49 @@ body {
                 <div class="col-md-12">
       <h2 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-2"><strong>
           News and Commentaries</strong></h2>
+
+
+    <script>
+        var article = "";
+        var key = "";
+    </script>
+
+     {% for key, value in news.items %}
+       {% for n in value %}
+    <script>
+        key = key + "@"+"{{key}}"+"--"+"{{n.1}}" + "@";
+        // articles[key] = "{{n.3}}";
+        article = article + "@"+"{{n.3}}" + "@";
+        // alert("FIRST   ---> "+ "{{n.3}}");
+
+    </script>
+    {% endfor %}
+    {% endfor %}
+
+    <script>
+    const keys = key.split("@");
+    const articles = article.split("@");
+    for(let i = 0; i < keys.length; i++) {
+    // alert(keys[i]);
+    // alert(articles[i]);
+    }
+    </script>
+
     {% for key, value in news.items %}
     <p class=" mbr-white mbr-fonts-style  display-5" style="padding: 5px;" id="{{key}}">{{key}}</p>
         <br>
         <br>
         {% for n in value %}
+<!--        {{n.0}}-->
         <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>
-        <p class="body-item mbr-fonts-style display-7 " style="padding: 5px;">{{n.1}}</p>
+        <p class="body-item mbr-fonts-style display-7 " style="padding: 5px;"><a href="/news/{{n.3}}" style="color:aliceblue;">{{n.1}}</a></p>
         {% if n.2 != "NULL" %}                                                                             
-        <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="2">{{n.2}}</p>
+        <p class="body-item mbr-fonts-style display-7" style="text-align: justify"><font size="2">{{n.2}}</p>
         {% endif %}                                                                             
+        <br>
+        {% if n.4 != "NULL" %}
+        <p class="body-item mbr-fonts-style display-7" style="text-align: justify; color:white;"><font size="2">{{n.4}}</p>
+        {% endif %}
         <br>
         {% endfor %}
         <br>

@@ -14,6 +14,7 @@ import mrigstatics
 import datetime, dateutil.relativedelta
 import pandas as pd
 import numpy as np
+import research.analytics as ra
 #import matplotlib.pyplot as plt
 #import statsmodels.api as sm
 #import research.math as rm
@@ -29,6 +30,10 @@ from pandas.io.json import json_normalize
 
 
 class Stock():
+
+    benchmark_index1 = 'NIFTY 50'
+    benchmark_index2 = None
+
     def __init__(self,name):
         self.symbol = name
         self.quote = mu.getStockQuote(name)
@@ -40,9 +45,23 @@ class Stock():
             self.stock_name = metadata['stock_name']
         if 'isin' in metadata.keys():
             self.isin = metadata['isin']
+        if 'benchmark' in metadata.keys():
+            self.set_benchmark_index2(metadata['benchmark'])
         
         self.beta = None
-        
+        self.risk = {}
+
+    def get_benchmark_index1(self):
+        return self.benchmark_index1
+
+    def set_benchmark_index1(self, index):
+        self.benchmark_index1 = index
+
+    def get_benchmark_index2(self):
+        return self.benchmark_index2
+
+    def set_benchmark_index2(self, index):
+        self.benchmark_index2 = index
     
     def get_price_vol(self,period='1Y'):
         today = datetime.date.today()
@@ -121,12 +140,16 @@ class Stock():
                                                                  weeks=weeks,
                                                                  days=days)
 
-        sql = "select date, daily_log_returns from daily_returns where symbol='" + self.symbol + "' and date >='"+startdate.strftime('%Y-%m-%d')+"'"
+        # sql = "select date, daily_log_returns from daily_returns where symbol='" + self.symbol + "' and date >='"+startdate.strftime('%Y-%m-%d')+"'"
+        sql = """
+        select date, symbol, daily_log_returns from daily_returns where symbol in ('{}','{}','{}') and date >='{}'
+        """
 
         engine = mu.sql_engine()
-        self.daily_logreturns = pd.read_sql(sql,engine)
+        self.daily_logreturns = pd.read_sql(sql.format(self.symbol,self.benchmark_index1,self.benchmark_index2,startdate.strftime('%Y-%m-%d')),engine)
         if not self.daily_logreturns.empty:
             self.daily_logreturns.set_index('date',inplace=True)
+            self.daily_logreturns.sort_index(inplace=True)
 
         
     def get_ratios(self):    
@@ -150,7 +173,13 @@ class Stock():
             futures_data.index = pd.to_datetime(futures_data.index)
             
         return futures_data
-    
+
+    def get_levels(self):
+        res = ra.level_analysis([self.symbol])
+        self.level_chart = res['level_chart']
+        self.pcr = res['pcr']
+        self.max_pain = res['max_pain']
+
     def optionChain(self):
         Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+
                    "live_watch/option_chain/optionKeys.jsp?symbolCode=2772&symbol=UBL&"+
@@ -283,7 +312,7 @@ class Stock():
             B = list(returns[returns['date'].isin(set(returns['date'].loc['NIFTY 50']) & set(returns['date'].loc[sym]))]['daily_log_returns'].loc[sym])
             try:
                 beta = np.cov(A,B)[0][1]/np.var(A)
-                self.risk = {'Beta':beta}
+                self.risk.update = {'Beta':beta}
             except:
                 pass
             try:

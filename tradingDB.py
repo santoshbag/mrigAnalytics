@@ -471,17 +471,22 @@ class tradingDB():
 
     def market_snapshot(self):
         scrips = ['NIFTY 50','NIFTY BANK', 'INDIA VIX']
-        kitecodemap = pd.read_csv('kitensecodes.csv')
-        scrips = [kitecodemap[kitecodemap['tradingsymbol'] == scrip]['instrument_token'].values[0] for scrip in scrips]
+        kitecodemap = pd.read_csv(os.path.join(os.path.dirname(__file__),'kitensecodes.csv'))
+        scrips = [(kitecodemap[kitecodemap['tradingsymbol'] == scrip]['instrument_token'].values[0],scrip) for scrip in scrips]
         to_date = datetime.date.today()
         from_date = to_date - datetime.timedelta(days=70)
         hist_data = []
         graph_obj = []
-        for token in scrips:
+        graph_obj1= []
+        for (token,scrip) in scrips:
             data = self.kite_object.getHistorical(token, from_date, to_date, 'day')
-            hist_data.append(data[data.columns[:-1]])
+            data['scrip'] = scrip
+            # print(data)
+            # hist_data.append(data[data.columns[:-1]])
+            hist_data.append(data)
             ticker = kitecodemap[kitecodemap['instrument_token'] == token]['tradingsymbol'].values[0]
             graph_obj.append(mg.candlestick_plot(ticker,data[data.columns[:-1]]))
+            graph_obj1.append(mg.plotly_candlestick(ticker,data[data.columns]))
 
         current_month = datetime.date.strftime(datetime.date.today(), '%b')
         next_month = datetime.date.strftime(datetime.date.today() + datetime.timedelta(days=31), '%b')
@@ -530,8 +535,11 @@ class tradingDB():
         if (data is None):
             data = self.kite_object.getHistorical(usdinr_token[1], from_date, to_date, 'day')
             usdinr = usdinr[1]
-        hist_data.append(data[data.columns[:-1]])
+        data['scrip'] = 'USDINR'
+        # hist_data.append(data[data.columns[:-1]])
+        hist_data.append(data)
         graph_obj.append(mg.candlestick_plot(usdinr, data[data.columns[:-1]]))
+        graph_obj1.append(mg.plotly_candlestick(usdinr,data[data.columns]))
 
         data = None
         try:
@@ -542,10 +550,12 @@ class tradingDB():
         if (data is None):
             data = self.kite_object.getHistorical(crude_token[1], from_date, to_date, 'day')
             crude = crude[1]
-
+        data['scrip'] = 'CRUDEOIL'
         # data = self.kite_object.getHistorical(crude_token, from_date, to_date, 'day')
-        hist_data.append(data[data.columns[:-1]])
+        hist_data.append(data)
+        # hist_data.append(data[data.columns[:-1]])
         graph_obj.append(mg.candlestick_plot(crude, data[data.columns[:-1]]))
+        graph_obj1.append(mg.plotly_candlestick(crude,data[data.columns]))
 
         data = None
         try:
@@ -556,11 +566,22 @@ class tradingDB():
         if (data is None):
             data = self.kite_object.getHistorical(gold_token[1], from_date, to_date, 'day')
             gold = gold[1]
-        # data = self.kite_object.getHistorical(gold_token, from_date, to_date, 'day')
-        hist_data.append(data[data.columns[:-1]])
-        graph_obj.append(mg.candlestick_plot(gold, data[data.columns[:-1]]))
 
-        return [graph_obj,hist_data]
+        data['scrip'] = 'GOLD'
+        # print(data)
+        # data = self.kite_object.getHistorical(gold_token, from_date, to_date, 'day')
+        # hist_data.append(data[data.columns[:-1]])
+        hist_data.append(data)
+        graph_obj.append(mg.candlestick_plot(gold, data[data.columns[:-1]]))
+        graph_obj1.append(mg.plotly_candlestick(gold,data[data.columns]))
+
+        return [graph_obj,hist_data,graph_obj1]
+
+if __name__ == '__main__':
+    d = tradingDB()
+    hist_data = d.market_snapshot()[1]
+    print(hist_data[-1])
+
 
 
 

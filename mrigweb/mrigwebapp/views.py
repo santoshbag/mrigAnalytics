@@ -24,7 +24,7 @@ def home(request):
         GOOGLE_ADS = 1
     return render(request, "index.html", {'GOOGLE_ADS': GOOGLE_ADS})
 
-def stock(request,symbol='NIFTY 50'):
+def stock(request,symbol='HDFCBANK'):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
@@ -36,6 +36,10 @@ def stock(request,symbol='NIFTY 50'):
     price_graph,return_graph,macd_graph,boll_graph = "","","",""
     stock_desc = ""
     news = ""
+    level_chart = ""
+    pcr = ""
+    max_pain = ""
+
     engine = mu.sql_engine()
     stocklist = engine.execute("select distinct sm.symbol, sm.stock_name from security_master sm inner join stock_history sh on sm.symbol=sh.symbol where sh.series='EQ'").fetchall()
     slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
@@ -92,6 +96,9 @@ def stock(request,symbol='NIFTY 50'):
             price_graph,return_graph,macd_graph,boll_graph = stkanalytics[5], stkanalytics[6], stkanalytics[7], stkanalytics[8]
             stock_desc = stkanalytics[9]
             news = stkanalytics[10]
+            level_chart = stkanalytics[11]
+            pcr = stkanalytics[12]
+            max_pain = stkanalytics[13]
             #         fd,oc = fd.to_html(), oc.to_html()
              
             return_list = myhtml.list_to_html(return_list)
@@ -153,7 +160,165 @@ def stock(request,symbol='NIFTY 50'):
                                           "macd_graph":macd_graph,
                                           "boll_graph":boll_graph,
                                           "news":news,
+                                          "level_chart":level_chart,
+                                          "pcr":pcr,
+                                          "max_pain":max_pain,
                                           'GOOGLE_ADS': GOOGLE_ADS})
+
+
+def market(request, symbol='NIFTY 50'):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+
+    result = wdb.market_db()
+    market_graphs = result['graphs']
+    n50_ta_screen = result['n50_ta_screen']
+    # market_graphs1 = result['graphs1']
+    sector_graph = result['sector_graph']
+
+    if not n50_ta_screen.empty:
+        n50_ta_screen = n50_ta_screen.reset_index()
+        n50_ta_screen_head = list(n50_ta_screen)
+        # n50_ta_screen_head.remove("index")
+        # n50_ta_screen_head.insert(0, "")
+        n50_ta_screen = [n50_ta_screen_head] + n50_ta_screen.values.tolist()
+        n50_ta_screen = myhtml.list_to_html(n50_ta_screen)
+
+    # sql = "select * from stock_page where symbol='" + symbol + "'"
+    # stock_page = pd.read_sql(sql, engine)
+    # #    stocklist = list(stocklist)
+    price_list, return_list, risk_list, ratios, oc = "", "", "", "", ""
+    price_graph, return_graph, macd_graph, boll_graph = "", "", "", ""
+    stock_desc = ""
+    news = ""
+    engine = mu.sql_engine()
+    stocklist = engine.execute(
+        "select distinct sm.symbol, sm.stock_name from security_master sm inner join stock_history sh on sm.symbol=sh.symbol where sh.series='EQ'").fetchall()
+    slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
+    # print(stocklist)
+    for stk in stocklist:
+        if stk[0] != 'symbol':
+            if stk[1] != None:
+                slist = slist + "<option value=\"" + str(stk[0]) + " : " + str(stk[1]) + "\">"
+            else:
+                slist = slist + "<option value=\"" + str(stk[0]) + " : " + str(stk[0]) + "\">"
+    slist = slist + "</datalist>"
+    #
+    # if request.method == "POST":
+    #     # Get the posted form
+    #     stockform = fm.StockForm(request.POST)
+    #
+    #     if stockform.is_valid():
+    #         symbol = stockform.cleaned_data['symbol']
+    #         symbol = symbol.split(":")[0].strip()
+    #         print(symbol)
+    #
+    # engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    #
+    # if (symbol and symbol != ""):
+    #     sql = "select * from stock_page where symbol='" + symbol + "'"
+    #     stock_page = pd.read_sql(sql, engine)
+    #
+    #     if not stock_page.empty:
+    #         price_list = stock_page['price_list'][0]
+    #         return_list = stock_page['return_list'][0]
+    #         risk_list = stock_page['risk_list'][0]
+    #         ratios = stock_page['ratios'][0]
+    #         oc = stock_page['oc'][0]
+    #         price_graph = stock_page['price_graph'][0]
+    #         price_graph = bytes(price_graph)
+    #         price_graph = price_graph.decode('utf-8')
+    #         return_graph = stock_page['return_graph'][0]
+    #         return_graph = bytes(return_graph)
+    #         return_graph = return_graph.decode('utf-8')
+    #         macd_graph = stock_page['macd_graph'][0]
+    #         macd_graph = bytes(macd_graph)
+    #         macd_graph = macd_graph.decode('utf-8')
+    #         boll_graph = stock_page['boll_graph'][0]
+    #         boll_graph = bytes(boll_graph)
+    #         boll_graph = boll_graph.decode('utf-8')
+    #         stock_desc = stock_page['stock_description'][0]
+    #         news = stock_page['news'][0]
+    #         news = json.loads(news)
+    #     else:
+    #         if symbol == 'NIFTY 50':
+    #             stkanalytics = wdb.mrigweb_index(symbol)
+    #         else:
+    #             stkanalytics = wdb.mrigweb_stock(symbol)
+    #         price_list, return_list, risk_list, ratios, oc = stkanalytics[0], stkanalytics[1], stkanalytics[2], \
+    #         stkanalytics[3], stkanalytics[4]
+    #         price_graph, return_graph, macd_graph, boll_graph = stkanalytics[5], stkanalytics[6], stkanalytics[7], \
+    #         stkanalytics[8]
+    #         stock_desc = stkanalytics[9]
+    #         news = stkanalytics[10]
+    #         #         fd,oc = fd.to_html(), oc.to_html()
+    #
+    #         return_list = myhtml.list_to_html(return_list)
+    #         risk_list = myhtml.list_to_html(risk_list)
+    #
+    #         if not ratios.empty:
+    #             ratios = ratios.reset_index()
+    #             ratios_head = list(ratios)
+    #             ratios_head.remove("index")
+    #             ratios_head.insert(0, "")
+    #             ratios = [ratios_head] + ratios.values.tolist()
+    #             ratios = myhtml.list_to_html(ratios)
+    #
+    #         if not oc.empty:
+    #             oc = oc.reset_index()
+    #             oc[
+    #                 'PUT_Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/" + symbol + ":" + \
+    #                                 oc['Expiry'].apply(lambda x: x.strftime('%d%m%Y')) + ":" + oc['Strike_Price'].apply(
+    #                 lambda x: str(x)) + ":" + oc['PUT_LTP'].apply(lambda x: str(x)) + ":PE\">" + oc['Expiry'].apply(
+    #                 lambda x: x.strftime('%d-%b-%Y')) + "</a>"
+    #             oc['Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/" + symbol + ":" + \
+    #                            oc['Expiry'].apply(lambda x: x.strftime('%d%m%Y')) + ":" + oc['Strike_Price'].apply(
+    #                 lambda x: str(x)) + ":" + oc['CALL_LTP'].apply(lambda x: str(x)) + ":CE\">" + oc['Expiry'].apply(
+    #                 lambda x: x.strftime('%d-%b-%Y')) + "</a>"
+    #             #                oc['PUT_Expiry'] = oc['Expiry'].apply(lambda x:x.replace("CE","PE"))
+    #             oc_head = [x.replace("CALL_", "").replace("PUT_", "").replace("_", " ") for x in list(oc)]
+    #             oc = [oc_head] + oc.values.tolist()
+    #             oc = myhtml.list_to_html(oc, "small")
+    #
+    # price_labels = ['Last Price', 'Open', 'Previous Close', 'Day High', 'Day Low', '52 Week High', '52 Week Low']
+    # quotes = []
+    #
+    # if symbol == 'NIFTY 50':
+    #     stk = stocks.Index('NIFTY 50')
+    # else:
+    #     stk = stocks.Stock(symbol)
+    # quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+    # quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+    # #    if len(stk.quote) > 0:
+    # #        quotes = [stk.quote['lastPrice'],
+    # #                  stk.quote['open'],
+    # #                  stk.quote['previousclose'],
+    # #                  stk.quote['dayhigh'],
+    # #                  stk.quote['daylow'],
+    # #                  stk.quote['high52'],
+    # #                  stk.quote['low52']]
+    # #    else:
+    # #        quotes = []
+    # price_list = [price_labels, quotes]
+    # price_list = myhtml.list_to_html(price_list)
+
+    return render(request, "market.html", {"slist":slist,
+                                           "nifty_graph": market_graphs[0],
+                                           "bnifty_graph": market_graphs[1],
+                                           "vix_graph": market_graphs[2],
+                                           "usdinr_graph": market_graphs[3],
+                                           "crude_graph": market_graphs[4],
+                                           "gold_graph": market_graphs[5],
+                                           "n50_ta_screen" : n50_ta_screen,
+                                           "sector_graph": sector_graph,
+                                           'GOOGLE_ADS': GOOGLE_ADS})
 
 
 def os(request):
@@ -599,12 +764,12 @@ def option(request,opid):
                                            'GOOGLE_ADS': GOOGLE_ADS})
 
 
-def news(request):
+def news(request,newsid=None):
     
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
-    news = wdb.mrigweb_news()
+    news = wdb.mrigweb_news(newsid)
     
 #    news_head = [x.replace("CALL_","").replace("PUT_","").replace("_"," ").capitalize() for x in list(news)]
 #    news = [news_head] + news.values.tolist()
@@ -1186,13 +1351,29 @@ def mf(request):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
-    
-    topmfs = wdb.mrigweb_top_mfs()
-    topmfs = topmfs.reset_index()
-    topmfs_table = [list(topmfs)] + topmfs.values.tolist()
-    topmfs_table = myhtml.list_to_html(topmfs_table)
 
-    return render(request, "mf.html",{'topmfs_table' : topmfs_table,'GOOGLE_ADS': GOOGLE_ADS})
+    topmfslist_aum = []
+    topmfs = wdb.mrigweb_top_mfs()[0]
+    for x in topmfs:
+        mf = x.reset_index()
+        mf_table = [list(mf)] + mf.values.tolist()
+        mf_table = myhtml.list_to_html(mf_table)
+        topmfslist_aum.append(mf_table)
+
+    topmfslist_ret = []
+    topmfs = wdb.mrigweb_top_mfs()[1]
+    for x in topmfs:
+        mf = x.reset_index()
+        mf_table = [list(mf)] + mf.values.tolist()
+        mf_table = myhtml.list_to_html(mf_table)
+        topmfslist_ret.append(mf_table)
+
+    testdf = topmfs[3].to_json(orient='records')
+    # topmfslist_ret = []
+    # topmfslist_aum = []
+
+    return render(request, "mf.html",{'topmfslist_aum' : topmfslist_aum,
+                                      'topmfslist_ret' : topmfslist_ret,'testdf':testdf,'GOOGLE_ADS': GOOGLE_ADS})
     
 def stock1(request):
     GOOGLE_ADS = 0
