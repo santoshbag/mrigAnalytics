@@ -22,6 +22,7 @@ admin.autodiscover()
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('mrigwebapp.urls')),
-    path('', views.home, name='home')
+    path('', views.home, name='home'),
+    path("accounts/", include("django.contrib.auth.urls")),
 
 ]

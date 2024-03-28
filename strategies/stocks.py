@@ -176,9 +176,15 @@ class Stock():
 
     def get_levels(self):
         res = ra.level_analysis([self.symbol])
-        self.level_chart = res['level_chart']
-        self.pcr = res['pcr']
-        self.max_pain = res['max_pain']
+        if res is not None:
+            self.level_chart = res['level_chart']
+            self.pcr = res['pcr']
+            self.max_pain = res['max_pain']
+        else:
+            self.level_chart = None
+            self.pcr = None
+            self.max_pain = None
+
 
     def optionChain(self):
         Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+

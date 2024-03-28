@@ -9,7 +9,7 @@ This module downloads data by using various modules
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime,time,sched
-import moneycontrol as mc
+# import moneycontrol as mc
 import mutual_funds as mf
 import strategies.stocks as st
 import media.news as news
@@ -57,26 +57,41 @@ def mf_codes():
         print("Getting Mutual Fund Portfolios\n")
         mf.get_fund_portfolios(eqlist)
 
-def corp_action_download():
-    if today.strftime('%A') == 'Monday':
-        mc.get_MCStockCodes()
-        print("Getting Corporate Actions\n")
-        mc.get_CorporateActions()
-        st.stock_adjust()
-
-def ratios_download():    
-    if today.strftime('%A') == 'Tuesday' and 15 <= today.day <= 21:
-        mc.get_MCStockCodes()
-        print("Getting Ratios\n")
-        mc.get_MCRatios()
-        mc.populate_ratios_table()
+# def corp_action_download():
+#     if today.strftime('%A') == 'Monday':
+#         mc.get_MCStockCodes()
+#         print("Getting Corporate Actions\n")
+#         mc.get_CorporateActions()
+#         st.stock_adjust()
+#
+# def ratios_download():
+#     if today.strftime('%A') == 'Tuesday' and 15 <= today.day <= 21:
+#         mc.get_MCStockCodes()
+#         print("Getting Ratios\n")
+#         mc.get_MCRatios()
+#         mc.populate_ratios_table()
 
 def returns():
     # calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
     engine = mu.sql_engine()
+    date = engine.execute('select max(date) from daily_returns').fetchall()[0][0]
+    print(str(date).replace('-',''))
     print("Populating Returns")
-    sql = "calculate_returns_stock('20200101')"
-    engine.execute(sql, engine)
+    sql = '''insert into daily_returns (symbol, date, price, daily_arithmetic_returns,daily_log_returns)
+            (
+            (SELECT stock_history.symbol as symbol,
+                stock_history.date as date,
+                stock_history.close_adj as price,
+                stock_history.close_adj / lag(stock_history.close_adj, 1) OVER (PARTITION BY stock_history.symbol ORDER BY stock_history.date) - 1::numeric AS daily_arithmetic_returns,
+                ln(stock_history.close_adj / lag(stock_history.close_adj, 1) OVER (PARTITION BY stock_history.symbol ORDER BY stock_history.date)) AS daily_log_returns
+               FROM stock_history
+              WHERE stock_history.series in ('EQ','IN') and close_adj <> 0 and stock_history.date >= %s
+              ORDER BY stock_history.symbol, stock_history.date
+            )
+            ) 
+            on conflict (symbol,date) do nothing;
+            '''
+    engine.execute(sql,(str(date).replace('-','')))
 
 def stock_strategies():
 
@@ -136,39 +151,46 @@ morningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,hour=eveninghour,minute=0)
 #eveningtime = morningtime
 
-try:
-    sh.stockHistoryNew_download()
-except:
-    pass
-try:
-    # nav.navall_download()
-    mf.download_nav()
-except:
-    pass
-try:
-    news.get_MCNews()
-except:
-    pass
-try:
-    yc.yield_download()
-except:
-    pass
-try:
+def daily_datarun():
+    try:
+        sh.stockHistoryNew_download()
+    except:
+        pass
+    try:
+        # nav.navall_download()
+        mf.download_nav()
+    except:
+        pass
+    try:
+        news.get_MCNews()
+    except:
+        pass
+    try:
+        yc.yield_download()
+    except:
+        pass
+    try:
+        returns()
+    except:
+        pass
+    try:
+        gp.gold_download()
+    except:
+        pass
+    try:
+        cp.crude_download()
+    except:
+        pass
+    try:
+        fx.exchange_rates_download(startdate, enddate)
+    except:
+        pass
     returns()
-except:
-    pass
-try:
-    gp.gold_download()
-except:
-    pass
-try:
-    cp.crude_download()
-except:
-    pass
-try:
-    fx.exchange_rates_download(startdate, enddate)
-except:
-    pass
+    wl.market_db_load()
+    wl.mrigweb_stock_load()
+
+if __name__ == '__main__':
+    daily_datarun()
 #
 # if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
 #     time.localtime().tm_hour <= eveningtime.hour - 2):
@@ -326,3 +348,4 @@ except:
 #
 # #weekly download of fundsnapshots and fund portfolio holdings
 #
+

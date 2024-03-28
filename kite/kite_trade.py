@@ -86,11 +86,19 @@ class KiteApp:
         return Exchange
 
     def quote(self, instruments):
-        data = self.session.get(f"{self.root_url}/quote", params={"i": instruments}, headers=self.headers).json()["data"]
+        data = None
+        try:
+            data = self.session.get(f"{self.root_url}/quote", params={"i": instruments}, headers=self.headers).json()["data"]
+        except:
+            pass
         return data
 
     def ltp(self, instruments):
-        data = self.session.get(f"{self.root_url}/quote/ltp", params={"i": instruments}, headers=self.headers).json()["data"]
+        data = None
+        try:
+            data = self.session.get(f"{self.root_url}/quote/ltp", params={"i": instruments}, headers=self.headers).json()["data"]
+        except:
+            pass
         return data
 
     def historical_data(self, instrument_token, from_date, to_date, interval, continuous=False, oi=False):

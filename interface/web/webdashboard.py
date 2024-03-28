@@ -356,7 +356,8 @@ def mrigweb_db_rates(location,sheet='None'):
 #     return ret_lis
 
 def market_db():
-    page_items = im.get_item(['market_graphs','n50_ta_screen','sector_graph'])
+    page_items = im.get_item(['market_graphs','n50_ta_screen','sector_graph',
+                              'NIFTY 50|levels_json','BANKNIFTY|levels_json'])
     for k,v in page_items.items():
         page_items = v
 
@@ -400,7 +401,7 @@ def market_db():
     indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
                "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
                "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
-               "NIFTY HEALTHCARE INDEX", "NIFTY CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
+               "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
                "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
                ]
     if 'sector_graph' in page_items.keys():
@@ -1233,11 +1234,12 @@ def mrigweb_stock(symbol,tenor='1Y'):
     quotes = []
     quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
     quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['prev_close']) if 'prev_close' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['high']) if 'high' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['low']) if 'low' in stk.quote.keys() else quotes.append("")
     quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
     quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+    # print(quotes)
 #    if len(stk.quote) > 0:
 #        quotes = [stk.quote['lastPrice'],
 #                  stk.quote['open'],
@@ -1249,7 +1251,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
 #    else:
 #        quotes = []
     price_list = [price_labels,quotes]
-
+    print(price_list)
 
     cum_returns = []
     ohlcv = pd.DataFrame()
@@ -1259,18 +1261,25 @@ def mrigweb_stock(symbol,tenor='1Y'):
         return_list = json.loads(page_items[symbol+'|return_list'])
     else:
         print('Return List : Starting from Scratch')
-        for i in range(0,len(return_labels)):
+        return_labels_1 = []
+        for i in range(0, len(return_labels)):
             stk.get_returns(return_labels[i])
-            cum_returns.append('NA')
-    #        dates = list(stk.daily_logreturns.index)
-    #        cum_return_series = list(stk.daily_logreturns.daily_log_returns.cumsum())
-            try:
-                period = (stk.daily_logreturns.index[-1] - stk.daily_logreturns.index[0]).days/360
-                if period <= 1: period = 1
-                cum_returns[i] = (float(stk.daily_logreturns.sum()/period))
-            except:
-                pass
-        return_list = [return_labels,cum_returns]
+            ret_df = stk.daily_logreturns
+            ret_df = ret_df[ret_df['symbol'] == symbol]
+            # cum_returns.append('NA')
+            # try:
+            if not ret_df.empty:
+                period = (ret_df.index[-1] - ret_df.index[0]).days / 360
+                if period <= 1:
+                    period = 1
+                # print(ret_df['daily_log_returns'].sum())
+                return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                cum_returns.append(return_period)
+                return_labels_1.append(return_labels[i])
+                # print(cum_returns)
+                # except:
+            #     pass
+        return_list = [return_labels_1, cum_returns]
         return_list_json = json.dumps(return_list)
         im.update_items({symbol+'|return_list': return_list_json})
 

@@ -18,15 +18,15 @@ echo Welcome to Mrig Data Run!
 echo %alldata%
 @echo -------------Mrig Data Run----------- >> dailyBatchRunLog.txt
 @echo ------------%date% %time%------------>> dailyBatchRunLog.txt 
-cd /D F:\Mrig Analytics\Development\mrigAnalytics\data\
+#cd /D F:\Mrig Analytics\Development\mrigAnalytics\data\
+cmd /c "cd /d C:\anaconda\Scripts & .\activate & cd /d G:\Mrig Analytics\mrigAnalytics\data\ & python .\datarun.py"
 
+#python.exe datarun_linux.py %startdate% %enddate% %alldata% %progressbar%
 
-python.exe datarun_linux.py %startdate% %enddate% %alldata% %progressbar%
-
-echo ---Backing RB_WAREHOUSE------
-db_dump RB_WAREHOUSE
-echo ---Backing MRIGWEB------
-db_dump MRIGWEB
+#echo ---Backing RB_WAREHOUSE------
+#db_dump RB_WAREHOUSE
+#echo ---Backing MRIGWEB------
+#db_dump MRIGWEB
 
 
 exit /B 1

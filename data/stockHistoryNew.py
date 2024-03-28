@@ -27,22 +27,26 @@ from jugaad_data.holidays import holidays
 import sys,os
 
 
-enddate  = datetime.date.today()
-startdate  = datetime.date.today() - datetime.timedelta(days=1)
+
 # date_range = pd.bdate_range(start='02/23/2024', end = '02/24/2024',
 #                          freq='C', holidays = holidays(2024,12))
-date_range = pd.bdate_range(start=startdate, end = enddate,
-                         freq='C', holidays = holidays(startdate.year,12))
-dates_list = [x.date() for x in date_range]
-
-print(dates_list)
 
 
-def stockHistoryNew_download():
+
+def stockHistoryNew_download(startdate=None,enddate=None):
+    if enddate is None:
+        enddate = datetime.date.today()
+    if startdate is None:
+        startdate = datetime.date.today() - datetime.timedelta(days=1)
     datadir = os.path.dirname(__file__)
     processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
     today = datetime.date.today()
 #    input_dir = "F:\\NSEDATA"
+    date_range = pd.bdate_range(start=startdate, end=enddate,
+                                freq='C', holidays=holidays(startdate.year, 12))
+    dates_list = [x.date() for x in date_range]
+
+    print(dates_list)
     input_dir = os.path.join(datadir,'..','..','data','input')
     processed_dir = os.path.join(datadir,'..','..','data','processed')
     processed_file_list = []

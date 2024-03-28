@@ -17,6 +17,7 @@ import datetime,pandas
 from bs4 import BeautifulSoup
 import mrigstatics,mrigutilities
 import pandas as pd
+import logging
 
 ALL_FUNDS_SNAPSHOT_URL ='https://www.valueresearchonline.com/funds/fundSelector/fundSelectResult.asp?funcName=snapshot&amc=4,8799,5,312,332,8,9055,181,339,11,8927,28,302,308,14,9023,298,9636,9655,319,19,218,185,21,11141,327,9054,10157,15,317,24,186,25,26,187,27,10,9521,311&cat=equityExcSec,debtsAll,hybridAll,31,32,7,6,5,4,1,30,3,2,12,15,20,21,8,10,9,13,17,11,18,19,28,26,27,24,25,23,29&exc=susp,close&schemecode=&myport=&pg=&fType=csv'
 ALL_FUNDS_PORTFOLIO_URL='https://www.valueresearchonline.com/funds/fundSelector/fundSelectResult.asp?funcName=portfolio&amc=4,8799,5,312,332,8,9055,181,339,11,8927,28,302,308,14,9023,298,9636,9655,319,19,218,185,21,11141,327,9054,10157,15,317,24,186,25,26,187,27,10,9521,311&cat=equityExcSec,debtsAll,hybridAll,31,32,7,6,5,4,1,30,3,2,12,15,20,21,8,10,9,13,17,11,18,19,28,26,27,24,25,23,29&exc=susp,close&schemecode=&myport=&pg=&fType=csv'
@@ -152,7 +153,7 @@ def get_equity_fundlist():
         
     return mfeqcodes
 
-def download_nav(download_mode='mfsingle'):
+def download_nav(download_mode='mfsingle',from_date=None,to_date=None):
     # sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     # dir_loc = os.path.join(os.path.dirname(__file__), '..','data')
 
@@ -198,8 +199,10 @@ def download_nav(download_mode='mfsingle'):
                     amc = data['Scheme Code'].loc[1]
                     amfi_amc.append([mf_no, amc])
                     print(amc, mf_no)
+                    logging.info(amc,mf_no)
                     local_file = os.path.join(nav_dir, str(amc) + '_' + from_date + '_' + to_date + '.csv')
                     print(str(local_file))
+                    logging.info(str(local_file))
                     data.to_csv(local_file)
                 except:
                     pass
@@ -293,10 +296,12 @@ def download_nav(download_mode='mfsingle'):
     for file in os.listdir(nav_dir):
         filename = os.fsdecode(file)
         print(filename)
+        logging.info(filename)
         data = pd.read_csv(os.path.join(nav_dir, filename))
         amc = data['Scheme Code'].loc[1]
         # data
         print(amc)
+        logging.info(amc)
         data['Scheme Type'] = ''
         data['amc'] = amc
         data.drop(data[data['Scheme Code'] == amc].index, inplace=True)

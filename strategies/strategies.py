@@ -145,7 +145,8 @@ class MovingCrossover(Momentum):
             print(self.signals.loc[(self.signals['positions'] != 0)]['positions'])
         #   self.signals[['positions','close','short_mavg','long_mavg']].plot(grid=True)
             self.pnl()
-            
+
+
         
 if __name__ == '__main__':
     sd = datetime.date(2017,5,31)

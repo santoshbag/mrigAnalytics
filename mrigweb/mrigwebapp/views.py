@@ -121,31 +121,31 @@ def stock(request,symbol='HDFCBANK'):
                 oc = [oc_head] + oc.values.tolist()
                 oc = myhtml.list_to_html(oc,"small")
 
-    price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
-    quotes = []
-
-    if symbol == 'NIFTY 50':
-        stk = stocks.Index('NIFTY 50')
-    else:
-        stk = stocks.Stock(symbol)
-    quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['previousclose']) if 'previousclose' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
-    quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
-#    if len(stk.quote) > 0:
-#        quotes = [stk.quote['lastPrice'],
-#                  stk.quote['open'],
-#                  stk.quote['previousclose'],
-#                  stk.quote['dayhigh'],
-#                  stk.quote['daylow'],
-#                  stk.quote['high52'],
-#                  stk.quote['low52']]
-#    else:
-#        quotes = []
-    price_list = [price_labels,quotes]
+#     price_labels = ['Last Price','Open','Previous Close','Day High', 'Day Low','52 Week High','52 Week Low']
+#     quotes = []
+#
+#     if symbol == 'NIFTY 50':
+#         stk = stocks.Index('NIFTY 50')
+#     else:
+#         stk = stocks.Stock(symbol)
+#     quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['prev_close']) if 'previousclose' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['dayhigh']) if 'dayhigh' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['daylow']) if 'daylow' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+#     quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+# #    if len(stk.quote) > 0:
+# #        quotes = [stk.quote['lastPrice'],
+# #                  stk.quote['open'],
+# #                  stk.quote['previousclose'],
+# #                  stk.quote['dayhigh'],
+# #                  stk.quote['daylow'],
+# #                  stk.quote['high52'],
+# #                  stk.quote['low52']]
+# #    else:
+# #        quotes = []
+#     price_list = [price_labels,quotes]
     price_list = myhtml.list_to_html(price_list)
             
     return render(request, "stock.html", {"slist":slist,"symbol":symbol,
@@ -177,10 +177,20 @@ def market(request, symbol='NIFTY 50'):
     n50_ta_screen = result['n50_ta_screen']
     # market_graphs1 = result['graphs1']
     sector_graph = result['sector_graph']
+    nifty_levels = result['nifty_levels']
+    nifty_level_chart = ''
+    if len(nifty_levels) > 0:
+        nifty_level_chart = nifty_levels[0]
+    banknifty_levels = result['banknifty_levels']
+    banknifty_level_chart = ''
+    if len(banknifty_levels) > 0:
+        banknifty_level_chart = banknifty_levels[0]
 
     if not n50_ta_screen.empty:
-        n50_ta_screen = n50_ta_screen.reset_index()
+        # n50_ta_screen = n50_ta_screen.reset_index()
+        n50_ta_screen['Security'] = n50_ta_screen['Security'].apply(lambda x: '<a href="/stock/'+str(x)+'" style="color:aliceblue;">'+str(x)+'</a>')
         n50_ta_screen_head = list(n50_ta_screen)
+        print(n50_ta_screen['Security'])
         # n50_ta_screen_head.remove("index")
         # n50_ta_screen_head.insert(0, "")
         n50_ta_screen = [n50_ta_screen_head] + n50_ta_screen.values.tolist()
@@ -318,6 +328,8 @@ def market(request, symbol='NIFTY 50'):
                                            "gold_graph": market_graphs[5],
                                            "n50_ta_screen" : n50_ta_screen,
                                            "sector_graph": sector_graph,
+                                           "nifty_level_chart": nifty_level_chart,
+                                           "banknifty_level_chart" :banknifty_level_chart,
                                            'GOOGLE_ADS': GOOGLE_ADS})
 
 

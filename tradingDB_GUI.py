@@ -237,6 +237,8 @@ def showAnalytics_live():
 
     positions['breakeven'] = positions[['type', 'strike','avg_price']].apply(
         lambda x: (x['avg_price']+x['strike']) if (x['type'] != 'PE') else (x['strike'] - x['avg_price']), axis=1)
+    positions['wtd_breakeven'] = positions[['qty', 'breakeven']].apply(
+        lambda x: np.absolute(x['qty'] * x['breakeven']) , axis=1)
 
     positions['max_loss'] = positions[['type', 'qty', 'avg_price', 'orig_liab']].apply(
         lambda x: -x['qty'] * x['avg_price'] if (x['orig_liab'] == 0 and x['type'] != 'FUT') else 'infinite', axis=1)
@@ -268,15 +270,15 @@ def showAnalytics_live():
     positions['strike'] = positions['strike'].map('{:,.0f}'.format)
 
     df1 = positions.groupby(by=['scrip', 'instrument', 'l_s','strike'], as_index=False)[
-        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(0).round()
+        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven','wtd_breakeven'].sum().fillna(0).round()
 
 
     df2 = df1.groupby(by=['scrip', 'l_s'], as_index=False)[
-        'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(
+        'qty', 'strike', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven','wtd_breakeven'].sum().fillna(
         0).round().assign(instrument='')
 
     df3 = df1.groupby(by=['scrip'], as_index=False)[
-        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven'].sum().fillna(
+        'qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','wtd_strike','abs_qty','breakeven','wtd_breakeven'].sum().fillna(
         0).round().assign(l_s='')
 
 
@@ -286,10 +288,18 @@ def showAnalytics_live():
           .sort_values(['scrip', 'l_s','instrument'], ascending=True, ignore_index=True))
 
     scrips = set(list(df['scrip']))
-    df['pivot_strike'] = 0
+    # df['pivot_strike'] = 0
+    wtd_items = {}
     for scrip in scrips:
-        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long')),'pivot_strike'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum()
-        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short')),'pivot_strike'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum()
+        # df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long')),'pivot_strike'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum()
+        # df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short')),'pivot_strike'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum()
+        # df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long')),'breakeven'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_breakeven'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum()
+        # df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short')),'breakeven'] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_breakeven'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum()
+        wtd_items[(scrip,'Long','pivot_strike')] = '{:,.0f}'.format(df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum())
+        wtd_items[(scrip,'Short','pivot_strike')] = '{:,.0f}'.format(df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_strike'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum())
+        wtd_items[(scrip,'Long', 'breakeven')] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['wtd_breakeven'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Long'))]['abs_qty'].sum()
+        wtd_items[(scrip,'Short','breakeven')] = df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['wtd_breakeven'].sum()/df[((df['scrip'] == scrip) & (df['l_s'] == 'Short'))]['abs_qty'].sum()
+
 
     for scrip in df['scrip']:
         # sec = scrip
@@ -299,17 +309,21 @@ def showAnalytics_live():
         #     sec = 'NIFTY BANK'
         # print(scrip+'-------->'+sec)
         df.loc[((df['scrip'] == scrip) & (df['l_s'] == '')),'instrument'] = 'Last Price ---> '+str(kite_object.getQuoteLive(scrip)['last_price'])
+        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long') & (df['instrument'] == '')),'strike'] = wtd_items[(scrip,'Long','pivot_strike')]
+        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short') & (df['instrument'] == '')),'strike'] = wtd_items[(scrip,'Short','pivot_strike')]
+        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Long') & (df['instrument'] == '')),'breakeven'] = wtd_items[(scrip,'Long','breakeven')]
+        df.loc[((df['scrip'] == scrip) & (df['l_s'] == 'Short') & (df['instrument'] == '')),'breakeven'] = wtd_items[(scrip,'Short','breakeven')]
 
     # df.set_index('scrip',inplace=True)
     # print(positions.groupby(by=['scrip']).sum()[['qty','orig_liab','curr_liab','delta','theta','pnl']])
 
     # df.loc[df['l_s'] == '',['strike']] = ''
-    for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','breakeven','pivot_strike']:
+    for col in ['qty', 'orig_liab', 'curr_liab', 'delta (D)', 'theta (T)', 'T/D', 'pnl','Intrinsic Value','Time Value','breakeven']:
         df[col] = df[col].map('{:,.0f}'.format)
-    df.loc[df['pivot_strike'] == '0','pivot_strike'] = ''
-    df.loc[df['pivot_strike'] == '','breakeven'] = ''
-    df.loc[df['instrument'] == '', 'breakeven'] = ''
-    df.drop(columns=['wtd_strike','abs_qty'],axis=1,inplace=True)
+    # df.loc[df['pivot_strike'] == '0','pivot_strike'] = ''
+    # df.loc[df['pivot_strike'] == '','breakeven'] = ''
+    # df.loc[df['instrument'] == '', 'breakeven'] = ''
+    df.drop(columns=['wtd_strike','abs_qty','wtd_breakeven'],axis=1,inplace=True)
 
     # print(df.columns)
     df.rename(columns=ms.trade_display_analytics, inplace=True)
@@ -397,7 +411,7 @@ def display_dataframe():
         tree.column("#12", width=100, stretch=0, anchor=tk.E)
         tree.column("#13", width=100, stretch=0, anchor=tk.E)
         tree.column("#14", width=100, stretch=0, anchor=tk.E)
-        tree.column("#15", width=100, stretch=0, anchor=tk.E)
+        # tree.column("#15", width=100, stretch=0, anchor=tk.E)
 
 
 

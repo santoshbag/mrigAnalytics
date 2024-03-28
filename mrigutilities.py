@@ -291,9 +291,9 @@ def getOptionData(symbol, start_expirydate, end_expirydate,db='localhost'):
     engine = sql_engine(dbhost=db)
     option_df = pd.read_sql(sql, engine)
     if not option_df.empty:
-        for i in range(0, len(option_df['date']) - 1):
-            option_df.iloc[i]['date'] = datetime.datetime.combine(option_df.iloc[i]['date'], datetime.time())
-        option_df.date = pd.DatetimeIndex(option_df.date)
+        # for i in range(0, len(option_df['date']) - 1):
+        #     option_df.iloc[i]['date'] = datetime.datetime.combine(option_df.iloc[i]['date'], datetime.time())
+        # option_df.date = pd.DatetimeIndex(option_df.date)
         option_df.set_index('date', inplace=True)
         # for i in range(0,len(stock_df.index)-1):
         #   stock_df.index[i] = datetime.datetime.combine(stock_df.index[i], datetime.time())
@@ -337,50 +337,59 @@ def getStockData(symbol, start_date, end_date=None, last=False,db='localhost'):
 def getStockQuote(symbol):
     stockQuote = {}
     try:
-        stockQuote = nsepy.get_quote(symbol)
-        if ('data' in stockQuote.keys()):
-            stockQuote = stockQuote['data'][0]
+        # stockQuote = nsepy.get_quote(symbol)
+        # if ('data' in stockQuote.keys()):
+        #     stockQuote = stockQuote['data'][0]
+        price = yf.download(symbol+'.NS',period='1d',interval='1m')
+        stockQuote['lastPrice'] = price.tail(1)['Close'].values[0]
+        stockQuote['high'] = max(price['High'].values)
+        stockQuote['low'] = min(price['Low'].values)
+        stockQuote['open'] = price.head(1)['Close'].values[0]
+        stockQuote['time'] = str(price.head(1).index[0]).split('+')[0]
     except:
         pass
 #    print(stockQuote)
-    if len(stockQuote) <= 0:
+#     if len(stockQuote) <= 0:
 #        print("not live")
-        sql = "select * from stock_history where symbol='%s' order by date desc limit 1"
-        engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
-        stockQuote = pd.read_sql(sql % (symbol), engine)
-        if not stockQuote.empty:
-            stockQuote.drop('date', axis=1, inplace=True)
-            stockQuote.rename(columns={'close_adj' : 'lastPrice'}, inplace=True)
-            stockQuote = stockQuote.to_dict(orient='records')
-            stockQuote = stockQuote[0]
+    sql = "select prev_close,(select max(close_adj)  as high52 from stock_history where symbol='%s' and date > (now() - interval '1 year')) ," \
+          " (select min(close_adj)  as low52 from stock_history where symbol='%s' and date > (now() - interval '1 year'))" \
+          " from stock_history where symbol='%s' order by date desc limit 1"
+    engine = sql_engine(mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
+    stockQuote1 = pd.read_sql(sql % (symbol,symbol,symbol), engine)
+    if not stockQuote1.empty:
+        # stockQuote1.drop('date', axis=1, inplace=True)
+        stockQuote1.rename(columns={'close_adj' : 'lastPrice'}, inplace=True)
+        stockQuote1 = stockQuote1.to_dict(orient='records')
+        stockQuote1 = stockQuote1[0]
+        stockQuote = stockQuote | stockQuote1
 #            stockQuote = json.loads(stockQuote)
 #            for key in stockQuote.keys():
 #                stockQuote[key] = stockQuote[key][0]
 #            stockQuote['lastPrice'] = stockQuote['quote']
-        else:
-            try:
-                timecounter = 0
-                while True:
-                    timecounter = timecounter + 1
-                    if is_connected():
-                        stockQuote = nsepy.get_quote(quote(symbol, safe=''))
-                        if ('data' in stockQuote.keys()):
-                            stockQuote = stockQuote['data'][0]
-                    if is_connected() or timecounter > 5:
-                        break
-                    else:
-                        time.sleep(60)
-            except:
-                pass
-    momentum = 0
-    for i in range(1, 10):
-        try:
-            momentum = (stockQuote['buyPrice' + str(i)] * stockQuote['buyQuantity' + str(i)])
-            - (stockQuote['sellPrice' + str(i)] * stockQuote['sellQuantity' + str(i)])
-            stockQuote['momentum'] = momentum
-        except:
-            pass
-        # print(stockQuote['lastPrice'])
+#         else:
+#             try:
+#                 timecounter = 0
+#                 while True:
+#                     timecounter = timecounter + 1
+#                     if is_connected():
+#                         stockQuote = nsepy.get_quote(quote(symbol, safe=''))
+#                         if ('data' in stockQuote.keys()):
+#                             stockQuote = stockQuote['data'][0]
+#                     if is_connected() or timecounter > 5:
+#                         break
+#                     else:
+#                         time.sleep(60)
+#             except:
+#                 pass
+#     momentum = 0
+#     for i in range(1, 10):
+#         try:
+#             momentum = (stockQuote['buyPrice' + str(i)] * stockQuote['buyQuantity' + str(i)])
+#             - (stockQuote['sellPrice' + str(i)] * stockQuote['sellQuantity' + str(i)])
+#             stockQuote['momentum'] = momentum
+#         except:
+#             pass
+#         # print(stockQuote['lastPrice'])
     return stockQuote
 
 
@@ -1102,10 +1111,13 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
             inslist_i = list(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)].index)
             inslist.append(inslist_i[int(len(inslist_i) / 2 - len(inslist_i) / 4):int(len(inslist_i) / 2 + len(inslist_i) / 4)])
     qt = session.quote(instruments=inslist)
-    oc = pd.DataFrame(qt).T
-    oc.index.name = 'tradingsymbol'
-    oc1 = oc.merge(inspd, on='tradingsymbol')[['name','strike', 'oi', 'volume', 'last_price','expiry']]
-    return oc1
+    if qt is not None:
+        oc = pd.DataFrame(qt).T
+        oc.index.name = 'tradingsymbol'
+        oc1 = oc.merge(inspd, on='tradingsymbol')[['name','strike', 'oi', 'volume', 'last_price','expiry']]
+        return oc1
+    else:
+        return None
 
 
 def price(scrip):
@@ -1155,9 +1167,11 @@ if __name__ == '__main__':
     # levels2 = getLevels('TATAMOTORS.NS', exp,method='window')
     # print(levels1)
     # print(levels2)
-
-    scrip = ['TATAPOWER','TATAMOTORS']
-    oc = kite_OC(scrip,[expiry1,expiry2,expiry3])
-    oc.reset_index(inplace=True)
-    print(oc[oc['name'] == scrip[0]])
-    print(oc[oc['name'] == scrip[1]])
+    #
+    # scrip = ['TATAPOWER','TATAMOTORS']
+    # oc = kite_OC(scrip,[expiry1,expiry2,expiry3])
+    # oc.reset_index(inplace=True)
+    # print(oc[oc['name'] == scrip[0]])
+    # print(oc[oc['name'] == scrip[1]])
+    #
+    print(getStockQuote('TATAPOWER'))

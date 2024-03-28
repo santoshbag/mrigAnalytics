@@ -125,6 +125,12 @@ input[type=button], input[type=submit], input[type=reset] {
  {% if sector_graph|length > 0 %}
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#seclandscape">Sectoral Landscape</a>
 {% endif %}
+ {% if nifty_level_chart|length > 0 %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#niftylevels">Nifty Levels</a>
+{% endif %}
+ {% if banknifty_level_chart|length > 0 %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#bankniftylevels">BankNifty Levels</a>
+{% endif %}
 {% if n50_ta_screen|length > 0 %}
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#n50ta">Technical Snapshot</a>
 {% endif %}
@@ -236,18 +242,22 @@ input[type=button], input[type=submit], input[type=reset] {
           {% endautoescape %}
         </div>
 
-        <h3 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" id="seclandscape">
+        <br>
+        <h3 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" id="niftylevels">
         NIFTY 50 Support and Resistance Levels </h3>
 
         <div class="item-image" align=center>
-<!--        <img src="data:image/png;base64,{{nifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+        <img src="data:image/png;base64,{{nifty_level_chart|safe}}" alt="Nifty 50 Levels" width=1000 height=auto />
 <!--        <img src="data:image/png;base64,{{bnifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
-          {% autoescape off %}
-          {{ sector_graph }}
-<!--            <br>-->
-          {% endautoescape %}
         </div>
+        <br>
+       <h3 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" id="bankniftylevels">
+        BANKNIFTY Support and Resistance Levels </h3>
 
+        <div class="item-image" align=center>
+        <img src="data:image/png;base64,{{banknifty_level_chart|safe}}" alt="Nifty 50 Levels" width=1000 height=auto />
+<!--        <img src="data:image/png;base64,{{bnifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+        </div>
         {% if n50_ta_screen|length > 0 %}
         <br id="n50ta">
         <div class="container scroll">

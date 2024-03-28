@@ -31,15 +31,15 @@ def display_analytics(stocks='NIFTY 50'):
     # for stock in ['SBIN','TATAPOWER']:
     # get the stock data from Yahoo Finance using pandas_datareader
     # data = pdr.get_data_yahoo(stock_name)
-        columnmap = {'MACD_12_26_9':'Macd', 
-                     'MACDh_12_26_9':'Macd_h', 
-                     'MACDs_12_26_9':'Macd_s',
-                     'SUPERT_7_3.0':'Supertrend',
-                     'BBL_20_2.0':'BB_l',
-                     'BBM_20_2.0':'BB_m',
-                     'BBU_20_2.0':'BB_u',
-                     'STOCHRSIk_14_14_3_3':'sRSI_k', 
-                     'STOCHRSId_14_14_3_3':'sRSI_d'                     
+        columnmap = {'MACD_12_26_9':'MACD',
+                     'MACDh_12_26_9':'MACD_H',
+                     'MACDs_12_26_9':'MACD_S',
+                     'SUPERT_7_3.0':'SuperTrend',
+                     'BBL_20_2.0':'BollingB_L',
+                     'BBM_20_2.0':'BollingB_M',
+                     'BBU_20_2.0':'BollingB_U',
+                     'STOCHRSIk_14_14_3_3':'STOCH_RSI_k',
+                     'STOCHRSId_14_14_3_3':'STOCH_RSI_d'
             }
         
         data = yf.download(stock+'.NS',period='6mo')
