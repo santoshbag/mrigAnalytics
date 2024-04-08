@@ -8,6 +8,7 @@ import datetime  # import date, timedelta
 import pandas as pd  # import DataFrame
 # from sqlalchemy import create_engine
 import mrigutilities
+import mrigstatics as ms
 import nsepy
 import mriggraphics as mg
 import zipfile, re
@@ -49,7 +50,6 @@ def level_analysis(scrip):
         expiry3 = expiry2 + datetime.timedelta(days=7)
         expiry4 = expiry3 + datetime.timedelta(days=7)
         expiry_list = [expiry1, expiry2, expiry3 ,expiry4]
-        # print(expiry_list)
 
     if ('BANKNIFTY' in scrip):
         expiry_list = []
@@ -66,9 +66,21 @@ def level_analysis(scrip):
         # m_expiry = m_expiry1 if ((m_expiry1 - expiry4) == 1) else expiry4
         expiry_list = [expiry1, expiry2, expiry3,expiry4]
 
+    # CORRECT FOR HOLIDAYS
+    holidays = ms.NSE_HOLIDAYS.keys()
+    expiry_list_tmp = expiry_list
+    expiry_list = []
+    for expiry in expiry_list_tmp:
+        if expiry.strftime('%d-%b-%Y') in holidays:
+            expiry_list.append(expiry - datetime.timedelta(days = 1))
+        else:
+            expiry_list.append(expiry)
+
+    print(scrip,' EXPIRIES', expiry_list)
 
     # scrip = ['TATAPOWER', 'BANKNIFTY']
     oc = mrigutilities.kite_OC(scrip, expiry_list)
+    print(scrip,'  OPTION CHAIN ',oc)
     if oc is not None:
         # print(set(oc['expiry']))
         oc.reset_index(inplace=True)
@@ -85,7 +97,10 @@ def level_analysis(scrip):
                     oc['expiry'] == expiry), 'oi'] / ce_oi_sum if ce_oi_sum else 0
             oi_tree['oi_pe' + str(expiry)] = -oc.loc[(oc['tradingsymbol'].str[-2:] == 'PE') & (
                     oc['expiry'] == expiry), 'oi'] / pe_oi_sum if pe_oi_sum else 0
-            pcr = pe_oi_sum /ce_oi_sum if (expiry == expiry_list[0]) else pcr
+            try:
+                pcr = pe_oi_sum /ce_oi_sum if (expiry == expiry_list[0]) else pcr
+            except:
+                pass
         oi_tree.fillna(0, inplace=True)
 
         max_pain_oc = oc[oc['expiry'] == expiry_list[0]]
@@ -94,12 +109,14 @@ def level_analysis(scrip):
         else:
             yahooscrip = scrip[0]+'.NS'
         last_price = yf.download(yahooscrip,period='1d')['Close'].values[0]
-
-        max_pain_oc['itm x oi'] = max_pain_oc[['strike', 'tradingsymbol', 'oi']].apply(
-            lambda x: max(last_price - x['strike'], 0) * x['oi'] if (x['tradingsymbol'][-2:] == 'CE') else max(
-                x['strike'] - last_price, 0) * x['oi'], axis=1)
-        max_pain_oc = max_pain_oc.groupby(by=['strike'], as_index=False)['itm x oi'].sum().fillna(0).round()
-        max_pain = max_pain_oc.sort_values(['itm x oi'], ascending=False).head(1)['strike'].values[0]
+        max_pain = None
+        if max_pain_oc is not None:
+            print(max_pain_oc)
+            max_pain_oc['itm x oi'] = max_pain_oc[['strike', 'tradingsymbol', 'oi']].apply(
+                lambda x: max(last_price - x['strike'], 0) * x['oi'] if (x['tradingsymbol'][-2:] == 'CE') else max(
+                    x['strike'] - last_price, 0) * x['oi'], axis=1)
+            max_pain_oc = max_pain_oc.groupby(by=['strike'], as_index=False)['itm x oi'].sum().fillna(0).round()
+            max_pain = max_pain_oc.sort_values(['itm x oi'], ascending=False).head(1)['strike'].values[0]
 
         oi_tree.sort_values(by=['expiry', 'strike'], ascending=[True, True], inplace=True)
         num_charts = 4 if scrip[0] in ['NIFTY','BANKNIFTY'] else 3
@@ -146,3 +163,6 @@ def level_analysis(scrip):
                 'max_pain': max_pain}
     else:
         return None
+
+if __name__ == '__main__':
+    level_analysis(['NIFTY'])

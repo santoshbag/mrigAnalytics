@@ -410,5 +410,22 @@ DBHOST = {'SIRIUS' : '192.168.29.208',
 ENVIRONMENT = 'development'
 #ENVIRONMENT = 'production'
 
+NSE_HOLIDAYS = {
+	'22-Jan-2024' :'Special Holiday',
+'26-Jan-2024' : 'Republic Day',
+'08-Mar-2024':	'Mahashivratri',
+'25-Mar-2024'	:'Holi',
+'29-Mar-2024' :	'Good Friday',
+'11-Apr-2024'	:'Id-Ul-Fitr',
+'17-Apr-2024' :	'Shri Ram Navmi',
+'01-May-2024' : 'Maharashtra Day',
+'17-Jun-2024' :	'Monday	Bakri Id',
+'17-Jul-2024':	'Moharram',
+'15-Aug-2024'	: 'Independence Day',
+'02-Oct-2024' : 'Mahatma Gandhi Jayanti',
+'01-Nov-2024':	'Diwali Laxmi Pujan',
+'15-Nov-2024' : 'Gurunanak Jayanti',
+'25-Dec-2024' :	'Christmas'}
+
 if __name__ == '__main__':
     print(trade_display_analytics)

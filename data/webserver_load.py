@@ -454,7 +454,12 @@ def market_db_load():
 def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
     starttime = time.monotonic()
     load_dates = pd.read_sql('select distinct item,load_date from webpages',engine_mrigweb)
-    symbollist = sorted(mrigstatics.NIFTY_100) if symbollist[0] == 'NIFTY_100' else symbollist
+    nifty_100 = engine.execute("select index_members from stock_history where symbol='NIFTY 100' and index_members is not NULL order by date desc limit 1").fetchall()[0][0]
+    nifty_100 = nifty_100.strip('][').split(', ')
+    nifty_100 = [x[1:-1] for x in nifty_100]
+
+    # symbollist = sorted(mrigstatics.NIFTY_100) if symbollist[0] == 'NIFTY_100' else symbollist
+    symbollist = sorted(nifty_100) if symbollist[0] == 'NIFTY_100' else symbollist
 
     symbols_loaded = []
     for symbol in symbollist:

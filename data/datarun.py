@@ -26,7 +26,9 @@ import optionChainHistory as och
 import stockScreener as ss
 import optionHistory as oh
 import webserver_load as wl
-
+import requests
+from io import StringIO
+import pandas as pd
 
 
 
@@ -144,6 +146,38 @@ def stock_strategies():
     engine.execute(sql)
     print("Populating Stock Strategies Finished----\n")    
 
+
+def update_index_constituents():
+    urls = {'NIFTY 100': 'https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv',
+            'NIFTY 50': 'https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv'
+            }
+    headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0'}
+
+    result = {}
+    # print(headers)
+    for key in urls.keys():
+        req = requests.get(urls[key], headers=headers)
+        # print(req)
+        data = StringIO(req.text)
+        df = pd.read_csv(data)
+        result[key] = str(df['Symbol'].tolist())
+
+    engine = mu.sql_engine()
+    date = engine.execute("select max(date) from stock_history where symbol='NIFTY 50'").fetchall()[0][0]
+    disable_sql = "alter table stock_history disable trigger return_trigger"
+    # enable_sql = "alter table stock_history enable trigger return_trigger"
+    engine.execute(disable_sql)
+    print(str(date).replace('-', ''))
+    print("Populating Index Constituent")
+    for key in result.keys():
+        sql = ''' update stock_history 
+        set index_members=%s 
+        where symbol=%s and date=%s
+        '''
+        engine.execute(sql,(result[key],key,(str(date).replace('-',''))))
+
+
+
 scheduler = sched.scheduler(timefunc=time.time)
 morninghour = 6
 eveninghour = 16
@@ -186,11 +220,14 @@ def daily_datarun():
     except:
         pass
     returns()
+    update_index_constituents()
+
     wl.market_db_load()
     wl.mrigweb_stock_load()
 
 if __name__ == '__main__':
     daily_datarun()
+    # update_index_constituents()
 #
 # if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
 #     time.localtime().tm_hour <= eveningtime.hour - 2):

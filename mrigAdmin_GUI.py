@@ -90,13 +90,13 @@ def managelogin():
 
 
 def data_status():
-    stock_date = pd.read_sql("select series as item,max(date) as last_date from stock_history group by series", engine)
+    stock_date = pd.read_sql("select series as item,max(date) as last_date from stock_history where series in ('EQ','IN') group by series", engine)
     fo_date = pd.read_sql("select 'FO' as item,max(date) as last_date from futures_options_history", engine)
     mf_date = pd.read_sql("select 'MF' as item ,max(nav_date) as last_date from mf_history", engine)
     webpage_date = pd.read_sql("select 'WEBPG' as item, max(load_date) as last_date from webpages", engine_mrigweb)
     # df = pd.concat([stock_date, fo_date, mf_date, webpage_date]).set_index('item').transpose()
     df = pd.concat([stock_date, fo_date, mf_date, webpage_date])
-    df['last_date'] = df['last_date'].apply(lambda x: x.strftime('%d-%m-%Y'))
+    df['last_date'] = df['last_date'].apply(lambda x: x.strftime('%d-%b-%Y'))
     df = df.set_index('item').transpose()
     # df = [list(df), df.values.tolist()[0]]
     return df
@@ -131,7 +131,7 @@ def adHoc_mf():
 root = tk.Tk()
 # root = tk.Toplevel()
 root.title("Mrig Analytisc Administration")
-root.geometry("900x400")
+root.geometry("900x500")
 root.resizable(width=False, height=False)
 
 
@@ -139,7 +139,7 @@ win = None
 
 image = Image.open("mrigtrading1.png")
 
-resize_image = image.resize((700, 90))
+resize_image = image.resize((900, 90))
 img = ImageTk.PhotoImage(resize_image)
 
 
@@ -159,6 +159,11 @@ bg = tk.PhotoImage(file = "mrigtrading1.png",master=frame0)
 label1 = tk.Label(lFrame0,text = 'Mrig Analytics Administration',
                   font=('Poppins bold', 16), padx=10,pady=5,fg='maroon')#,image=bg)
 label1.pack()
+
+label2 = tk.Label(lFrame0,text = '('+today.strftime('%d-%b-%Y')+')',
+                  font=('Poppins bold', 12), padx=10,pady=2,fg='maroon')#,image=bg)
+label2.pack()
+
 
 # create a button to display the DataFrame
 dailyrun_button = tk.Button(lFrame0, text="Daily Datarun",
@@ -192,7 +197,7 @@ mf_button.pack(side = tk.LEFT)
 #                            command=django_start)
 # django_button.pack(side = tk.LEFT)
 
-canvas1 = tk.Canvas(frame0, width = 700,height = 90)
+canvas1 = tk.Canvas(frame0, width = 900,height = 90)
   
 canvas1.pack(fill = "both", expand = True)
   
@@ -212,7 +217,7 @@ def refresh_login_button():
 
 
     login_button = tk.Button(frame0, text=vendor_connection, font=('Poppins bold', 12),fg=fg, command=managelogin)
-    login_button.place(x=520,y=20)
+    login_button.place(x=720,y=20)
     if kite_object.getStatus() == 1:
         login_button['state'] = tk.DISABLED
         login_button['disabledforeground'] = 'darkgreen'
@@ -220,7 +225,7 @@ def refresh_login_button():
 refresh_login_button()
 
 close_button = tk.Button(frame0, text= "Close", font=('Poppins bold', 14), command=close_root)
-close_button.place(x=620,y=25)
+close_button.place(x=820,y=25)
 # close_button.pack(side = tk.LEFT)
 
 blank_Frame = tk.LabelFrame(root, pady=20)

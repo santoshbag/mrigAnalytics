@@ -14,6 +14,9 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import mrigstatics as ms
+import mrigutilities as mu
+
+engine = mu.sql_engine()
 
 # define a function to display the analytics for the selected stock
 def display_analytics(stocks='NIFTY 50'):
@@ -24,9 +27,14 @@ def display_analytics(stocks='NIFTY 50'):
     print('<<<<<<<<<<'+stocks+'>>>>>>>>>>')
     if stocks == 'NIFTY 50':
         slist = ms.NIFTY_50
+        nifty_50 = engine.execute("select index_members from stock_history where symbol='NIFTY 50' and index_members is not NULL order by date desc limit 1").fetchall()[0][0]
+        nifty_50 = nifty_50.strip('][').split(', ')
+        slist = [x[1:-1] for x in nifty_50]
     else:
         slist = ms.NIFTY_100
-        
+        nifty_100 = engine.execute("select index_members from stock_history where symbol='NIFTY 100' and index_members is not NULL order by date desc limit 1").fetchall()[0][0]
+        nifty_100 = nifty_100.strip('][').split(', ')
+        slist = [x[1:-1] for x in nifty_100]
     for stock in slist: #['SBIN','TATAMOTORS']: #ms.NIFTY_50:
     # for stock in ['SBIN','TATAPOWER']:
     # get the stock data from Yahoo Finance using pandas_datareader
