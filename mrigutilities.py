@@ -27,7 +27,7 @@ import json
 from pandas.io.json import json_normalize
 import math
 import yfinance
-from mpl_finance import candlestick_ohlc
+# from mpl_finance import candlestick_ohlc
 import matplotlib.dates as mpl_dates
 import matplotlib.pyplot as plt
 import yfinance as yf

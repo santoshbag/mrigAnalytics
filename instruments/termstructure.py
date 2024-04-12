@@ -146,7 +146,7 @@ class SpotZeroYieldCurve(YieldCurveTermStructure):
         self.reference_date = reference_date     #Date for which the rates are applicable
         self.compounding = ql.Compounded
         self.compounding_frequency = ql.Annual
-        self.day_count = ql.Thirty360()
+        self.day_count = ql.Thirty360(ql.Thirty360.BondBasis)
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
         #self.spot_rates = ['sd']
@@ -268,7 +268,7 @@ class FlatForwardYieldCurve(YieldCurveTermStructure):
     def __init__(self,reference_date,flat_rate):
         self.reference_date = reference_date     #Date for which the rates are applicable
         self.flat_rate= flat_rate
-        self.day_count = ql.Thirty360()
+        self.day_count = ql.Thirty360(ql.Thirty360.BondBasis)
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
         ql.Settings.instance().evaluationDate = qlMaps.qlDates(reference_date)
@@ -304,7 +304,7 @@ class FlatDividendYieldCurve(YieldCurveTermStructure):
     def __init__(self,reference_date,flat_rate):
         self.reference_date = reference_date     #Date for which the rates are applicable
         self.flat_rate= flat_rate
-        self.day_count = ql.Thirty360()
+        self.day_count = ql.Thirty360(ql.Thirty360.BondBasis)
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
         self.compounding = ql.Compounded
@@ -346,7 +346,7 @@ class FlatVolatilityCurve(Volatilty):
     def __init__(self,reference_date,flat_vol):
         self.reference_date = reference_date     #Date for which the rates are applicable
         self.flat_vol= flat_vol
-        self.day_count = ql.Thirty360()
+        self.day_count = ql.Thirty360(ql.Thirty360.BondBasis)
         self.calendar = ql.India()
         self.interpolation = ql.Linear()
         self.setupCurve(None)

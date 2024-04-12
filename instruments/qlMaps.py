@@ -6,7 +6,7 @@ Created on Sat Jun  2 18:37:46 2018
 
 Mapping module for Quantlib classes and constants
 """
-
+import QuantLib
 import QuantLib as ql
 
 CURRENCY  = {'INR' : ql.INRCurrency(),
@@ -20,10 +20,10 @@ CALENDAR = {'India' : ql.India(),
             'UK' : ql.UnitedKingdom(),
             'TARGET' : ql.TARGET()}
 
-DAYCOUNT = {'30-360' : ql.Thirty360(),
-            'Actual-Actual' : ql.ActualActual(),
+DAYCOUNT = {'30-360' : ql.Thirty360(QuantLib.Thirty360.BondBasis),
+            'Actual-Actual' : ql.ActualActual(QuantLib.ActualActual.ISDA),
             'Actual-360' : ql.Actual360(),
-            'Actual-365Fixed' : ql.Actual365Fixed()}
+            'Actual-365Fixed' : ql.Actual365Fixed(QuantLib.Actual365Fixed.Standard)}
 
 COMPOUNDING = {'Compounded' : ql.Compounded,
              'Continuous': ql.Continuous}
