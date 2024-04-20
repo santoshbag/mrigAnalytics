@@ -32,30 +32,24 @@ import sys,os
 #                          freq='C', holidays = holidays(2024,12))
 
 
+datadir = os.path.dirname(__file__)
+processed_files_path = os.path.join(datadir, '..', '..', 'data', "processed_files.csv")
+today = datetime.date.today()
+input_dir = os.path.join(datadir, '..', '..', 'data', 'input')
+processed_dir = os.path.join(datadir, '..', '..', 'data', 'processed')
 
-def stockHistoryNew_download(startdate=None,enddate=None):
+
+def data_download(startdate=None,enddate=None):
     if enddate is None:
         enddate = datetime.date.today()
     if startdate is None:
         startdate = datetime.date.today() - datetime.timedelta(days=1)
-    datadir = os.path.dirname(__file__)
-    processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
-    today = datetime.date.today()
-#    input_dir = "F:\\NSEDATA"
+
     date_range = pd.bdate_range(start=startdate, end=enddate,
                                 freq='C', holidays=holidays(startdate.year, 12))
     dates_list = [x.date() for x in date_range]
 
     print(dates_list)
-    input_dir = os.path.join(datadir,'..','..','data','input')
-    processed_dir = os.path.join(datadir,'..','..','data','processed')
-    processed_file_list = []
-#    df_list = []
-    write_flag=True
-    engine = mrigutilities.sql_engine()
-    disable_sql = "alter table stock_history disable trigger return_trigger"
-    enable_sql = "alter table stock_history enable trigger return_trigger"
-    engine.execute(disable_sql)
 
     for dates in dates_list:
         try:
@@ -74,6 +68,50 @@ def stockHistoryNew_download(startdate=None,enddate=None):
                 time.sleep(randint(1, 4))
             except:
                 print(f'{dates}: File not Found')
+
+
+
+def data_insert(startdate=None,enddate=None):
+    if enddate is None:
+        enddate = datetime.date.today()
+    if startdate is None:
+        startdate = datetime.date.today() - datetime.timedelta(days=1)
+    # datadir = os.path.dirname(__file__)
+    # processed_files_path = os.path.join(datadir,'..','..','data',"processed_files.csv")
+    today = datetime.date.today()
+#    input_dir = "F:\\NSEDATA"
+#     date_range = pd.bdate_range(start=startdate, end=enddate,
+#                                 freq='C', holidays=holidays(startdate.year, 12))
+    # dates_list = [x.date() for x in date_range]
+
+    # print(dates_list)
+    # input_dir = os.path.join(datadir,'..','..','data','input')
+    # processed_dir = os.path.join(datadir,'..','..','data','processed')
+    processed_file_list = []
+#    df_list = []
+    write_flag=True
+    engine = mrigutilities.sql_engine()
+    disable_sql = "alter table stock_history disable trigger return_trigger"
+    enable_sql = "alter table stock_history enable trigger return_trigger"
+    engine.execute(disable_sql)
+
+    # for dates in dates_list:
+    #     try:
+    #         bhavcopy_save(dates, input_dir)
+    #         bhavcopy_index_save(dates, input_dir)
+    #         bhavcopy_fo_save(dates, input_dir)
+    #         time.sleep(randint(1, 4))  # adding random delay of 1-4 seconds
+    #
+    #     #      except (ConnectionError, ReadTimeoutError) as e:
+    #     except:
+    #         time.sleep(10)  # stop program for 10 seconds and try again.
+    #         try:
+    #             bhavcopy_save(dates, input_dir)
+    #             bhavcopy_index_save(dates, input_dir)
+    #             bhavcopy_fo_save(dates, input_dir)
+    #             time.sleep(randint(1, 4))
+    #         except:
+    #             print(f'{dates}: File not Found')
 
 
     csv_header_map = {'SYMBOL':'symbol',
@@ -397,5 +435,5 @@ def stockHistoryNew_download(startdate=None,enddate=None):
 
 #    
 if __name__ == '__main__':
-        
-    stockHistoryNew_download()
+    data_download()
+    data_insert()

@@ -187,7 +187,8 @@ eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 
 def daily_datarun():
     try:
-        sh.stockHistoryNew_download()
+        sh.data_download()
+        sh.data_insert()
     except:
         pass
     try:
