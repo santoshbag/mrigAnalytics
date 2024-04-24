@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 from plotly.offline import plot
 import plotly.graph_objs as go
 import plotly.subplots as subplt
-
+import mrigutilities as mu
 
 import kite.kite_trade as zkite
 
@@ -85,13 +85,22 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
     return img_buf
 
 
-def plotly_candlestick(ticker, data_ohlcv,smas=[10]):
+def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True):
     if 'date' in data_ohlcv.columns:
         data_ohlcv['timestamp'] = data_ohlcv['date']
     data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
                      inplace=True)
     data_ohlcv['colors_vol'] = data_ohlcv.Close - data_ohlcv.Close.shift(1)
     data_ohlcv['colors_vol'] = data_ohlcv['colors_vol'].apply(lambda x: 'green' if x > 0 else 'red')
+
+    startDate = min(data_ohlcv['Date'])
+    endDate = max(data_ohlcv['Date'])
+
+    levels = []
+    if levelFlag:
+        levels = mu.getLevels(ticker, startDate, endDate)
+        levels = [x[1] for x in levels[0]]
+        print(levels)
 
     for sma in smas:
         data_ohlcv['MA_' + str(sma)] = data_ohlcv['Close'].rolling(window=sma).mean()
@@ -122,6 +131,15 @@ def plotly_candlestick(ticker, data_ohlcv,smas=[10]):
                                            width=1,
                                            shape='spline'), # smooth the line
                                  name='MA_'+str(sma)), row=1,col=1)
+
+
+    for l in levels:
+        fig.add_trace( go.Scatter(x=data_ohlcv['Date'],
+                                 y= pd.Series(l, index=np.arange(len(data_ohlcv['Date']))),
+                              line=dict(color='grey',
+                                           width=1,
+                                           shape='spline')),
+                                  row=1,col=1)
 
 
     # Add Volume Chart to Row 2 of subplot

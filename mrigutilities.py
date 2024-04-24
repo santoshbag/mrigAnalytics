@@ -928,7 +928,16 @@ second element is the price value.
 def getLevels(name,startdate=(datetime.date.today() - datetime.timedelta(days=365)),
               enddate=datetime.date.today(),
               method='fractal'):
-    ticker = yf.Ticker(name)
+    yahoomap = {'NIFTY': '^NSEI',
+                'NIFTY 50': '^NSEI',
+                'BANKNIFTY': '^NSEBANK',
+                'NIFTY BANK': '^NSEBANK',}
+
+    if name in ['NIFTY', 'BANKNIFTY','NIFTY 50','NIFTY BANK']:
+        yahooscrip = yahoomap[name]
+    else:
+        yahooscrip = name + '.NS'
+    ticker = yf.Ticker(yahooscrip)
     start, end = startdate.strftime('%Y-%m-%d') , enddate.strftime('%Y-%m-%d')
     df = ticker.history(interval="1d",start=start, end=end)
     df['Date'] = pd.to_datetime(df.index)
