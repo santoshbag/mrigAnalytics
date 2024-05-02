@@ -10,9 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
 import mrigutilities as mu
-import instruments.qlMaps as qlMaps
 
-from instruments.portfolio import Product
+from portfolio.portfolio import Product
 
 class Swap(Product):
     

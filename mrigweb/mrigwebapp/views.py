@@ -166,6 +166,31 @@ def stock(request,symbol='HDFCBANK'):
                                           'GOOGLE_ADS': GOOGLE_ADS})
 
 
+def folio(request):
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    if request.method == 'POST' and request.FILES['portfolio_file']:
+        myfile = request.FILES['portfolio_file']
+        foliocontent = pd.read_csv(myfile)
+        print(foliocontent)
+        foliocontent_head = list(foliocontent)
+        # print(n50_ta_screen['Security'])
+        # n50_ta_screen_head.remove("index")
+        # n50_ta_screen_head.insert(0, "")
+        foliocontent = [foliocontent_head] + foliocontent.values.tolist()
+        foliocontent = myhtml.list_to_html(foliocontent)
+        # fs = FileSystemStorage()
+        # filename = fs.save(myfile.name, myfile)
+        # uploaded_file_url = fs.url(filename)
+        return render(request, "folio.html", {
+            'foliocontent': foliocontent
+        })
+
+    return render(request, "folio.html", {'GOOGLE_ADS': GOOGLE_ADS})
+
+
 def market(request, symbol='NIFTY 50'):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
@@ -432,48 +457,59 @@ def ss(request):
       print("method is post")
       strategyform = fm.StockStrategyForm(request.POST)
 
-    sql = "select * from ss_page "
-    ss_page = pd.read_sql(sql,engine)
-    
-    if not ss_page.empty:
-        bm_desc = 'Big Money Momentum Strategy'
-        bm_table = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_table'].values[0]
-        bm_graph = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_graph'].values[0]
-        bm_graph = bytes(bm_graph)
-        bm_graph = bm_graph.decode('utf-8')
-        scg_desc = 'Small Cap Growth Stocks'
-        scg_table = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_table'].values[0]
-        scg_graph = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_graph'].values[0]
-        scg_graph = bytes(scg_graph)
-        scg_graph = scg_graph.decode('utf-8')
-        nh_desc = 'New Highs making Stocks'
-        nh_table = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_table'].values[0]
-        nh_graph = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_graph'].values[0]
-        nh_graph = bytes(nh_graph)
-        nh_graph = nh_graph.decode('utf-8')
-        gi_desc = 'Growth and Income Stocks'
-        gi_table = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_table'].values[0]
-        gi_graph = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_graph'].values[0]
-        gi_graph = bytes(gi_graph)
-        gi_graph = gi_graph.decode('utf-8')
+    result = wdb.stock_strategies()
+    st_macd_daily = result['st_macd_daily']
+    if not st_macd_daily.empty:
+        # n50_ta_screen = n50_ta_screen.reset_index()
+        st_macd_daily['symbol'] = st_macd_daily['symbol'].apply(lambda x: '<a href="/stock/'+str(x)+'" style="color:aliceblue;">'+str(x)+'</a>')
+        st_macd_daily_head = list(st_macd_daily)
+        print(st_macd_daily['symbol'])
+        # n50_ta_screen_head.remove("index")
+        # n50_ta_screen_head.insert(0, "")
+        st_macd_daily = [st_macd_daily_head] + st_macd_daily.values.tolist()
+        st_macd_daily = myhtml.list_to_html(st_macd_daily)
+    # sql = "select * from ss_page "
+    # ss_page = pd.read_sql(sql,engine)
+    #
+    # if not ss_page.empty:
+    #     bm_desc = 'Big Money Momentum Strategy'
+    #     bm_table = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_table'].values[0]
+    #     bm_graph = ss_page.loc[ss_page['strategy_name'] == bm_desc]['strategy_graph'].values[0]
+    #     bm_graph = bytes(bm_graph)
+    #     bm_graph = bm_graph.decode('utf-8')
+    #     scg_desc = 'Small Cap Growth Stocks'
+    #     scg_table = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_table'].values[0]
+    #     scg_graph = ss_page.loc[ss_page['strategy_name'] == scg_desc]['strategy_graph'].values[0]
+    #     scg_graph = bytes(scg_graph)
+    #     scg_graph = scg_graph.decode('utf-8')
+    #     nh_desc = 'New Highs making Stocks'
+    #     nh_table = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_table'].values[0]
+    #     nh_graph = ss_page.loc[ss_page['strategy_name'] == nh_desc]['strategy_graph'].values[0]
+    #     nh_graph = bytes(nh_graph)
+    #     nh_graph = nh_graph.decode('utf-8')
+    #     gi_desc = 'Growth and Income Stocks'
+    #     gi_table = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_table'].values[0]
+    #     gi_graph = ss_page.loc[ss_page['strategy_name'] == gi_desc]['strategy_graph'].values[0]
+    #     gi_graph = bytes(gi_graph)
+    #     gi_graph = gi_graph.decode('utf-8')
 
     
     return render(request, "ss.html", {
-                                       "bm_table":bm_table,
-                                       "bm_graph":bm_graph,
-                                       "bm_desc":bm_desc,
-                                       "scg_table":scg_table,
-                                       "scg_graph":scg_graph,
-                                       "scg_desc":scg_desc,
-#                                       "tafa_table":tafa_table,
-#                                       "tafa_graph":tafa_graph,
-#                                       "tafa_desc":tafa_desc,
-                                       "nh_table":nh_table,
-                                       "nh_graph":nh_graph,
-                                       "nh_desc":nh_desc,
-                                       "gi_table":gi_table,
-                                       "gi_graph":gi_graph,
-                                       "gi_desc":gi_desc,
+                                       "st_macd_daily":st_macd_daily,
+#                                        "bm_graph":bm_graph,
+#                                        "bm_desc":bm_desc,
+#                                        "scg_table":scg_table,
+#                                        "scg_graph":scg_graph,
+#                                        "scg_desc":scg_desc,
+# #                                       "tafa_table":tafa_table,
+# #                                       "tafa_graph":tafa_graph,
+# #                                       "tafa_desc":tafa_desc,
+#                                        "nh_table":nh_table,
+#                                        "nh_graph":nh_graph,
+#                                        "nh_desc":nh_desc,
+#                                        "gi_table":gi_table,
+#                                        "gi_graph":gi_graph,
+#                                        "gi_desc":gi_desc,
                                        'GOOGLE_ADS': GOOGLE_ADS
 #                                       "customscreen":customscreen,
 #                                       "strategyform":strategyform

@@ -215,7 +215,7 @@ def showAnalytics_live():
     positions['strike'] = positions['Instrument'].apply(lambda x: x[num_pos(x) + 5:-2])
     positions['strike'] = positions['strike'].apply(lambda x: 0 if (x == 'F') else x)
     positions['strike'] = pd.to_numeric(positions['strike'],errors='ignore')
-    positions['expiry'] = datetime.datetime.strptime('24APR16','%y%b%d')
+    positions['expiry'] = datetime.datetime.strptime('24MAY09','%y%b%d')
     try:
         positions['expiry'] = positions['Instrument'].apply(
             lambda x: datetime.datetime.strptime(x[num_pos(x):num_pos(x) + 5] + '27', '%y%b%d'))

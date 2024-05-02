@@ -32,6 +32,7 @@ from dateutil import relativedelta
 import datetime
 import mrigutilities as mu
 import strategies.stocks as stocks
+from strategies import strategies as strat
 import research.analytics as ra
 import io,base64
 import stockScreener as ss
@@ -633,6 +634,25 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
     print("--------Time Taken for Market DashBoard load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 
+def strategies_stock_load():
+    starttime = time.monotonic()
+    print('Stock Strategies : Creating from Scratch')
+
+    print('SUPERTREND_MACD : Creating Table')
+
+    st_macd_daily = strat.st_macd()
+    signals = st_macd_daily.getSignals()
+    # print('SIGNALS-----',signals)
+    st_macd_daily_json = signals.to_json(orient='split')
+    im.set_items({'st_macd_daily' : st_macd_daily_json})
+
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for STRATEGY load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
+
+
+
+
 if __name__ == '__main__':
-     market_db_load()
-     mrigweb_stock_load(force=1)
+     # market_db_load()
+     # mrigweb_stock_load(force=1)
+     strategies_stock_load()

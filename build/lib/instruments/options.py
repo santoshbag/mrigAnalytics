@@ -8,7 +8,7 @@ import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
-from instruments.portfolio import Product
+from portfolio.portfolio import Product
 import instruments.qlMaps as qlMaps
 
 class Option(Product):

@@ -10,10 +10,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import QuantLib as ql
 import mrigutilities as mu
-import instruments.qlMaps as qlMaps
 
 from instruments.options import Option
-from instruments.portfolio import Product
+from portfolio.portfolio import Product
 
 class CapsFloors(Option):
     def __init__(self,setupparams,name='Bond1'):

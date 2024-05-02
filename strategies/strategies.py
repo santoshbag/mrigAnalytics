@@ -14,10 +14,59 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import research.math as rm
+import research.analytics as ra
 
 class Strategy():
     def __init__(self):
         self.name = "Strategy"
+
+class st_macd(Strategy):
+    def __init__(self):
+        self.name = "SUPERTREND and MACD Strategy"
+        self.signals = pd.DataFrame()
+        self.positions = pd.DataFrame()
+        self.portfolio = pd.DataFrame()
+
+    def getSignals(self):
+        stocksdf = pd.DataFrame()
+        TA = ra.display_tech_analysis()
+        # print('TA --------',TA)
+        for stock in sorted(set(TA['symbol'])):
+            # print(stock)
+            df = TA[TA['symbol'] == stock].tail(5)
+            df['opinion'] = 'NAL'
+            # try:
+            if len(df) > 3:
+                # print(df[['symbol','close','SUPERT_7_3.0',  'SUPERTd_7_3.0','MACD_12_26_9','opinion']])
+                df = pd.DataFrame() if (
+                            df.head(1)['SUPERTd_7_3.0'].values[0] == df.tail(1)['SUPERTd_7_3.0'].values[0]) else df
+                if len(df.columns) > 0:
+                    # print(df[['symbol','close','SUPERT_7_3.0',  'SUPERTd_7_3.0','MACD_12_26_9','opinion']])
+                    if ((df.tail(1)['MACD_12_26_9'].values[0] > 0) and (df.tail(1)['SUPERTd_7_3.0'].values[0] > 0)):
+                        # print('BUY')
+                        df['opinion'] = 'BUY'
+                        df = df.tail(1)
+                    elif ((df.tail(1)['MACD_12_26_9'].values[0] < 0) and (df.tail(1)['SUPERTd_7_3.0'].values[0] < 0)):
+                        df['opinion'] = 'SELL'
+                        df = df.tail(1)
+                        # print('SELL')
+                    elif ((df.tail(1)['MACD_12_26_9'].values[0] > 0) and (df.tail(1)['SUPERTd_7_3.0'].values[0] < 0)):
+                        df['opinion'] = 'CAUTIOUS SELL'
+                        df = df.tail(1)
+                        # print('SELL')
+                    elif ((df.tail(1)['MACD_12_26_9'].values[0] < 0) and (df.tail(1)['SUPERTd_7_3.0'].values[0] > 0)):
+                        df['opinion'] = 'CAUTIOUS BUY'
+                        df = df.tail(1)
+                        # print('SELL')
+                    else:
+                        df['opinion'] = 'NA'
+            # except:
+            # pass
+            # print(df.head(1)['SUPERTd_7_3.0'].values,df.tail(1)['SUPERTd_7_3.0'].values)
+            stocksdf = pd.concat([stocksdf,df])
+        stocksdf = stocksdf[['symbol', 'close', 'SUPERT_7_3.0', 'SUPERTd_7_3.0', 'MACD_12_26_9', 'opinion']]
+        self.signals = stocksdf
+        return stocksdf
 
 class Momentum(Strategy):
     def __init__(self):
@@ -151,12 +200,12 @@ class MovingCrossover(Momentum):
 if __name__ == '__main__':
     sd = datetime.date(2017,5,31)
     ed = datetime.date(2018,11,18)
-    trades1 = MovingCrossover('HDFCBANK',60,90)
-    trades1.backtest(sd,ed)
-    #trades2 = MovingCrossover('MARUTI',60,90)
-    #trades2.backtest(sd,ed)
-
-    rm.isNormal(np.array(list(trades2.portfolio['returns'])))
+    # trades1 = MovingCrossover('HDFCBANK',60,90)
+    # trades1.backtest(sd,ed)
+    # trades2 = MovingCrossover('MARUTI',60,90)
+    # #trades2.backtest(sd,ed)
+    #
+    # rm.isNormal(np.array(list(trades2.portfolio['returns'])))
     #rm.linreg(trades1.portfolio['returns'][1:519].values,trades2.portfolio['returns'][1:519].values)
 
 

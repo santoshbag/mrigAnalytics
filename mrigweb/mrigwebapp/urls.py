@@ -28,6 +28,7 @@ urlpatterns = [
     path('stock/',vw.stock, name='stock'),
     path('mf/',vw.mf, name='mf'),
     path('stock/<str:symbol>',vw.stock, name='stock'),
+    path('folio/',vw.folio, name='folio'),
     path('stock1/',vw.stock1, name='stock1'),
     path('os/',vw.os, name='os'),
     path('osa/<str:strategyid>',vw.osa, name='osa'),

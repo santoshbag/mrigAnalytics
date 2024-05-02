@@ -109,6 +109,7 @@ body {
 <body>
 
 <div class="sidenav">
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#st_macd">Super Trend MACD</a>
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#bigmoney">Big Money</a>
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#smallcaps">Small Caps</a>
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#growthincome">Growth Income</a>
@@ -131,6 +132,7 @@ body {
   <a href="/stock/">Markets</a>
   <a href="/news/">News</a>
   <a class="active" href="/ia/">Investment Advisory</a>
+  <a href="/folio/">Portfolio</a>
   <a href="/ra/">Risk Analytics</a>
   <a href="/softs/">Software Services</a>
   <a href="/ds/">Data Services</a>  
@@ -155,71 +157,80 @@ body {
           
         </div>
 
-        <div class="container scroll" id="bigmoney">
+        <div class="container scroll" id="st_macd">
         <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          {{bm_desc|safe}} </h5>
+          SuperTrend MACD Indicator </h5>
           <table class="table" cellspacing="0">
           <thead>
-          {{bm_table|safe}}
+          {{st_macd_daily|safe}}
           </table>
         </div>
         <br>
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{bm_graph|safe}}" alt="Big Money Returns Graph" width=800 height=auto />
-        </div>
-        <br>
-        <div class="container scroll" id="smallcaps">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          {{scg_desc|safe}} </h5>
-          <table class="table" cellspacing="0">
-          <thead>
-          {{scg_table|safe}}
-          </table>
-        </div>
-        <br>
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{scg_graph|safe}}" alt="Small Cap Returns Graph" width=800 height=auto />
-        </div>
-        <br>
-        <div class="container scroll" id="growthincome">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          {{gi_desc|safe}} </h5>
-          <table class="table" cellspacing="0">
-          <thead>
-          {{gi_table|safe}}
-          </table>
-        </div>
-        <br>
-        <div class="item-image" align=center >
-        <img src="data:image/png;base64,{{gi_graph|safe}}" alt="Growth Income Returns Graph" width=800 height=auto />
-        </div>
-        <br>
-        <div class="container scroll" id="newhighs">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          {{nh_desc|safe}} </h5>
-          <table class="table" cellspacing="0">
-          <thead>
-          {{nh_table|safe}}
-          </table>
-        </div>
-        <br>
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{nh_graph|safe}}" alt="New Highs Returns Graph" width=800 height=auto />
-        </div>
-        <br>
-        <div class="container scroll" id="tafa">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          {{tafa_desc|safe}} </h5>
-          <table class="table" cellspacing="0">
-          <thead>
-          {{tafa_table|safe}}
-          </table>
-        </div>
-        <br>
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{tafa_graph|safe}}" alt="TAFA Returns Graph" width=800 height=auto />
-        </div>
-        <br>
+<!--        <div class="container scroll" id="bigmoney">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          {{bm_desc|safe}} </h5>-->
+<!--          <table class="table" cellspacing="0">-->
+<!--          <thead>-->
+<!--          {{bm_table|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="item-image" align=center>-->
+<!--        <img src="data:image/png;base64,{{bm_graph|safe}}" alt="Big Money Returns Graph" width=800 height=auto />-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="container scroll" id="smallcaps">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          {{scg_desc|safe}} </h5>-->
+<!--          <table class="table" cellspacing="0">-->
+<!--          <thead>-->
+<!--          {{scg_table|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="item-image" align=center>-->
+<!--        <img src="data:image/png;base64,{{scg_graph|safe}}" alt="Small Cap Returns Graph" width=800 height=auto />-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="container scroll" id="growthincome">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          {{gi_desc|safe}} </h5>-->
+<!--          <table class="table" cellspacing="0">-->
+<!--          <thead>-->
+<!--          {{gi_table|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="item-image" align=center >-->
+<!--        <img src="data:image/png;base64,{{gi_graph|safe}}" alt="Growth Income Returns Graph" width=800 height=auto />-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="container scroll" id="newhighs">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          {{nh_desc|safe}} </h5>-->
+<!--          <table class="table" cellspacing="0">-->
+<!--          <thead>-->
+<!--          {{nh_table|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="item-image" align=center>-->
+<!--        <img src="data:image/png;base64,{{nh_graph|safe}}" alt="New Highs Returns Graph" width=800 height=auto />-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="container scroll" id="tafa">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          {{tafa_desc|safe}} </h5>-->
+<!--          <table class="table" cellspacing="0">-->
+<!--          <thead>-->
+<!--          {{tafa_table|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
+<!--        <div class="item-image" align=center>-->
+<!--        <img src="data:image/png;base64,{{tafa_graph|safe}}" alt="TAFA Returns Graph" width=800 height=auto />-->
+<!--        </div>-->
+<!--        <br>-->
       </div>
     </div>
 </section>

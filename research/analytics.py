@@ -19,6 +19,7 @@ import csv
 import research.screener_TA as sta
 import numpy as np
 import io,base64
+import pandas_ta as ta
 
 import tkinter as tk
 from tkinter import ttk
@@ -30,9 +31,10 @@ from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QHeade
 
 import kite.kite_account as ka
 
-kite_object = ka.kite_account()
+# kite_object = ka.kite_account()
 # today = datetime.date.today()
 today = datetime.datetime.now()
+engine = mrigutilities.sql_engine()
 
 yahoomap = {'NIFTY' : '^NSEI',
             'BANKNIFTY' : '^NSEBANK',}
@@ -86,6 +88,7 @@ def level_analysis(scrip):
         oc.reset_index(inplace=True)
         oi_tree = oc
         pcr = None
+        pcr_str = ""
         # for expiry in sorted(set(list(oc['expiry'])), reverse=True):
         for expiry in expiry_list:
             print( expiry_list[0])
@@ -99,6 +102,7 @@ def level_analysis(scrip):
                     oc['expiry'] == expiry), 'oi'] / pe_oi_sum if pe_oi_sum else 0
             try:
                 pcr = pe_oi_sum /ce_oi_sum if (expiry == expiry_list[0]) else pcr
+                pcr_str = '            ' + 'PCR : ' + '{0:.2f}'.format(pcr)
             except:
                 pass
         oi_tree.fillna(0, inplace=True)
@@ -109,19 +113,22 @@ def level_analysis(scrip):
         else:
             yahooscrip = scrip[0]+'.NS'
         last_price = yf.download(yahooscrip,period='1d')['Close'].values[0]
+        last_price_str = '({0:.2f})'.format(last_price)
         max_pain = None
-        if max_pain_oc is not None:
-            print(max_pain_oc)
+        max_pain_str = ""
+        if ((max_pain_oc is not None) & (len(max_pain_oc) > 0)) :
+            print("max_pain_oc",max_pain_oc)
             max_pain_oc['itm x oi'] = max_pain_oc[['strike', 'tradingsymbol', 'oi']].apply(
                 lambda x: max(last_price - x['strike'], 0) * x['oi'] if (x['tradingsymbol'][-2:] == 'CE') else max(
                     x['strike'] - last_price, 0) * x['oi'], axis=1)
             max_pain_oc = max_pain_oc.groupby(by=['strike'], as_index=False)['itm x oi'].sum().fillna(0).round()
             max_pain = max_pain_oc.sort_values(['itm x oi'], ascending=False).head(1)['strike'].values[0]
+            max_pain_str = '      Max Pain : ' + '{0:.2f}'.format(max_pain)
 
         oi_tree.sort_values(by=['expiry', 'strike'], ascending=[True, True], inplace=True)
         num_charts = 4 if scrip[0] in ['NIFTY','BANKNIFTY'] else 3
         fig, ax = plt.subplots(1, num_charts, figsize=(20, 10), squeeze=False)
-        fig.suptitle(scrip[0] + '({0:.2f})'.format(last_price)+'            ' + 'PCR : ' + '{0:.2f}'.format(pcr)+'      Max Pain : ' + '{0:.2f}'.format(max_pain), fontsize=15)
+        fig.suptitle(scrip[0] + last_price_str+pcr_str+max_pain_str, fontsize=15)
         print(scrip[0]+' Number of Charts for '+str(num_charts))
         # oi_tree[['oi_ce','oi_pe']].plot(kind='barh')
         i = 0
@@ -163,6 +170,82 @@ def level_analysis(scrip):
                 'max_pain': max_pain}
     else:
         return None
+
+def apply_strat(x,CustomStrategy):
+    x.ta.strategy(CustomStrategy)
+    return x
+def display_tech_analysis(stocks='NIFTY 100'):
+    # get the stock name from the entry box
+    df = pd.DataFrame()
+    cnt = 1
+
+    engine = mrigutilities.sql_engine()
+    period_date = datetime.date.today() - datetime.timedelta(days=180)
+
+    print('<<<<<<<<<<' + str(stocks) + '>>>>>>>>>>')
+
+    if stocks == 'NIFTY 100':
+        slist = str(ms.NIFTY_100).replace('{', '(').replace('}', ')')
+    elif stocks == 'NIFTY 50':
+        slist = str(ms.NIFTY_50).replace('{', '(').replace('}', ')')
+    else:
+        slist = str(stocks).replace('[', '(').replace(']', ')')
+
+    slist = slist.replace(')', ",'NIFTY 50','NIFTY BANK')")
+    sql = "select date,symbol, high as High,low as Low,close as Close from stock_history where \
+    symbol in {} and date > '{}' \
+    order by symbol, date asc".format(slist, period_date.strftime('%Y%m%d'))
+    # print(sql)
+    data = pd.read_sql(sql, engine)
+    # print(data)
+    CustomStrategy = ta.Strategy(
+        name="Momo and Volatility",
+        description=" MACD and SuperTrend",
+        ta=[
+            {"kind": "macd"},
+            {"kind": "supertrend", "period": 7, "multiplier": 3},
+        ]
+    )
+
+    # data = data[data['symbol'] == 'SBIN']
+    newdf = data.groupby(['symbol']).apply(apply_strat,CustomStrategy=CustomStrategy)
+    # newdf = pd.DataFrame()
+    # print('NEWDF----',newdf)
+    return newdf
+
+def spot_fut_analysis(scrip):
+    '''
+    SPOT FUT SPREAD
+    '''
+
+    sql = "select date, 'spot' as expiry, close from stock_history where symbol = '%s' and date > (now() - interval '1 year') order by date desc"
+    spot = pd.read_sql(sql % (scrip), engine)
+    expiry = ['20240328', '20240425', '20240530']
+    sql = "select date, expiry ,close from futures_options_history \
+            where symbol = '%s' and option_type not in ('CE','PE') \
+            and date > (now() - interval '1 year') order by date desc"
+    fut = pd.read_sql(sql % (scrip), engine)
+    spot_fut = pd.concat([spot, fut])
+
+    spot_fut_p = spot_fut.pivot(index=['date'], columns=['expiry'], values=['close'])
+    spot_fut_p.columns = spot_fut_p.columns.droplevel(level=0)
+    # spot_fut_p
+    spot_fut_new = pd.DataFrame()
+    for i in range(0, len(spot_fut_p)):
+        try:
+            df = pd.DataFrame(spot_fut_p.iloc[i]).dropna().transpose()
+            # print(df)
+            # df.columns[0]
+            df = df.rename(
+                columns={df.columns[0]: "near", df.columns[1]: "mid", df.columns[2]: "far", df.columns[3]: "spot"})
+            spot_fut_new = pd.concat([spot_fut_new, df])
+        except:
+            pass
+
+    spot_fut_new['near_sprd'] = spot_fut_new['near'] - spot_fut_new['spot']
+    spot_fut_new['mid_sprd'] = spot_fut_new['mid'] - spot_fut_new['near']
+    spot_fut_new['far_sprd'] = spot_fut_new['far'] - spot_fut_new['mid']
+    return (spot_fut_new)
 
 if __name__ == '__main__':
     level_analysis(['NIFTY'])

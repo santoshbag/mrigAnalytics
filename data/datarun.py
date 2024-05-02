@@ -29,6 +29,7 @@ import webserver_load as wl
 import requests
 from io import StringIO
 import pandas as pd
+import correlations as corr
 
 
 
@@ -222,9 +223,11 @@ def daily_datarun():
         pass
     returns()
     update_index_constituents()
+    corr.nifty_corr_data()
 
     wl.market_db_load()
     wl.mrigweb_stock_load()
+    wl.strategies_stock_load()
 
 if __name__ == '__main__':
     daily_datarun()

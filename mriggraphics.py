@@ -138,7 +138,7 @@ def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True):
                                  y= pd.Series(l, index=np.arange(len(data_ohlcv['Date']))),
                               line=dict(color='grey',
                                            width=1,
-                                           shape='spline')),
+                                           shape='spline'),showlegend=False),
                                   row=1,col=1)
 
 

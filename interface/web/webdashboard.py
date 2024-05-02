@@ -501,6 +501,24 @@ def market_db():
             'banknifty_levels' : banknifty_levels
             }
 
+def stock_strategies():
+    page_items = im.get_item(['st_macd_daily'])
+    for k,v in page_items.items():
+        page_items = v
+
+
+    if 'st_macd_daily' in page_items.keys():
+        print('ST_MACD : Getting from Database')
+        st_macd_daily = pd.read_json(page_items['st_macd_daily'], orient='split')
+    else:
+        print('ST_MACD : Creating Table')
+        st_macd_daily = sta.display_analytics()
+        st_macd_daily_json = st_macd_daily.to_json(orient='split')
+        im.set_items({'st_macd_daily' : st_macd_daily_json})
+
+    return {'st_macd_daily' : st_macd_daily,
+            }
+
 def mrigweb_top_mfs(n=5):
     topmfs = ms.top_aum_mfs()
     assetlist1 = []
