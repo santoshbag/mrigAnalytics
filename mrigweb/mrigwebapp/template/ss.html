@@ -137,6 +137,12 @@ body {
   <a href="/softs/">Software Services</a>
   <a href="/ds/">Data Services</a>  
   <a href="/about/">About Us</a>
+    {% if user.is_authenticated %}
+
+  <a href="/logout/">Logout</a>
+    {% else %}
+  <a href="/login/">Login</a>
+	{% endif %}
 </div>
 </section>
 <br>

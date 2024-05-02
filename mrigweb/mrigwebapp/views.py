@@ -3,7 +3,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from django.shortcuts import render
-from django.http import HttpResponse
 from django.http import request
 import nsepy
 from mrigwebapp.myhtml import myhtml
@@ -14,6 +13,9 @@ import mrigutilities as mu
 import mrigstatics
 import datetime
 import json
+
+from django.conf import settings
+from django.http import HttpResponse, Http404
 import strategies.stocks as stocks
 
 # Create your views here.
@@ -166,7 +168,11 @@ def stock(request,symbol='HDFCBANK'):
                                           'GOOGLE_ADS': GOOGLE_ADS})
 
 
-def folio(request):
+def folio(request, template=''):
+    # print(kwargs)
+    # print('folioid',folioid)
+    # print('template',template)
+    template_map = {'eqfo' : 'equity_options_futures.csv','':'none'}
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
@@ -187,6 +193,18 @@ def folio(request):
         return render(request, "folio.html", {
             'foliocontent': foliocontent
         })
+
+    if request.method == 'GET' and template is not None:
+        file = template_map[template]
+        print(file)
+        file_path = os.path.join(settings.MEDIA_ROOT,'downloads', file)
+        print(file_path)
+        if os.path.exists(file_path):
+            print('file exists')
+            with open(file_path, 'rb') as fh:
+                response = HttpResponse(fh.read(), content_type="text/csv")
+                response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                return response
 
     return render(request, "folio.html", {'GOOGLE_ADS': GOOGLE_ADS})
 
@@ -358,7 +376,7 @@ def market(request, symbol='NIFTY 50'):
                                            'GOOGLE_ADS': GOOGLE_ADS})
 
 
-def os(request):
+def option_s(request):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
