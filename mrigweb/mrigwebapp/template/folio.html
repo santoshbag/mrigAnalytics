@@ -118,14 +118,27 @@ input[type=button], input[type=submit], input[type=reset] {
 
 <div class="sidenav">
 
-    <h6 class="body-item mbr-fonts-style display-7"  style="padding: 5px;" >Portfolio</h6>
+    <h6 class="body-item mbr-fonts-style display-7"  style="padding: 5px;" >Portfolio Upload</h6>
       <form class="body-item mbr-fonts-style display-4" style="padding: 2px 5px;" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="file" name="portfolio_file">
         <input type="submit">
       </form>
+  <br>
+          {% if user.is_authenticated %}
+          {% if port_list|length > 0 %}
+    <h6 class="body-item mbr-fonts-style display-7"  style="padding: 5px;" >Portfolio List</h6>
+
+       {% for p in port_list %}
+<!--            <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>-->
+        <a class="body-item mbr-fonts-style display-2" style="padding: px;" href="/folio/port_name={{p}}" ">{{p}}</a>
+<!--        <a class="body-item mbr-fonts-style display-1" style="padding: px;" href="/folio/port_name={{p}}" >{{p}}</a>-->
+        {% endfor %}
+        {% endif %}
+  {% endif %}
+  <br>
       <h6 class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="">Downloads</h6>
-  <a class="body-item mbr-fonts-style display-1" style="padding: px;" href="/folio/eqfo" >equity_options_futures</a>
+  <a class="body-item mbr-fonts-style display-1" style="padding: px;" href="/folio/dl_file=eqfo" >equity_options_futures</a>
 <!--{% if symbol %}-->
 <!--  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="">Downloads</a>-->
 <!--  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="{% url 'folio/template/' template=eqfo %}" >equity_options_futures</a>-->
@@ -168,7 +181,7 @@ input[type=button], input[type=submit], input[type=reset] {
   <a href="/about/">About Us</a>
     {% if user.is_authenticated %}
 
-  <a href="/logout/">Logout</a>
+    <a href="/logout/">   {{user.username}}  Logout</a>
     {% else %}
   <a href="/login/">Login</a>
 	{% endif %}
@@ -183,6 +196,21 @@ input[type=button], input[type=submit], input[type=reset] {
   </div>
   <div class="container container-table " style="margin-left:150px";>
     <br>
+        {% if user.is_authenticated %}
+          {% if port_list|length > 0 %}
+      {% if portfolio|length > 0 %}
+
+            <br id="pfoliocont">
+        <div class="container scroll">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" >
+          Portfolio </h5>
+          <table class="table" cellspacing="0">
+          <thead>
+          {{portfolio|safe}}
+          </table>
+        </div>
+        {% endif %}
+        {% endif %}
 <!--      {{foliocontent|safe}}-->
            {% if foliocontent|length > 0 %}
         <br id="foliocont">
@@ -194,6 +222,7 @@ input[type=button], input[type=submit], input[type=reset] {
           {{foliocontent|safe}}
           </table>
         </div>
+            {% endif %}
             {% endif %}
   </div>
 </section>

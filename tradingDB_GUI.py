@@ -27,7 +27,7 @@ import tradingDB as tdb
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-import strategies.marketoptions as mo
+import strategies.market_instruments as mo
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,

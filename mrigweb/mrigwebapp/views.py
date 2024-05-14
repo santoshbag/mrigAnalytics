@@ -13,7 +13,8 @@ import mrigutilities as mu
 import mrigstatics
 import datetime
 import json
-
+import urllib.parse
+import portfolios.portfolio_manager as pm
 from django.conf import settings
 from django.http import HttpResponse, Http404
 import strategies.stocks as stocks
@@ -172,14 +173,20 @@ def folio(request, template=''):
     # print(kwargs)
     # print('folioid',folioid)
     # print('template',template)
-    template_map = {'eqfo' : 'equity_options_futures.csv','':'none'}
+    resultParams = urllib.parse.parse_qs(template)
+    template_map = {'eqfo' : 'equity_options_futures.csv',
+                    '':'none'}
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
     engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
-    if request.method == 'POST' and request.FILES['portfolio_file']:
+    print(request.user.username)
+    if (request.method == 'POST') and ('portfolio_file' in request.FILES.keys()):
         myfile = request.FILES['portfolio_file']
         foliocontent = pd.read_csv(myfile)
+        foliocontent['account_id'] = request.user.username
+        foliocontent['portfolio_currency'] = 'INR'
+        foliocontent = pm.add_portfolio(foliocontent)
         print(foliocontent)
         foliocontent_head = list(foliocontent)
         # print(n50_ta_screen['Security'])
@@ -195,18 +202,35 @@ def folio(request, template=''):
         })
 
     if request.method == 'GET' and template is not None:
-        file = template_map[template]
-        print(file)
-        file_path = os.path.join(settings.MEDIA_ROOT,'downloads', file)
-        print(file_path)
-        if os.path.exists(file_path):
-            print('file exists')
-            with open(file_path, 'rb') as fh:
-                response = HttpResponse(fh.read(), content_type="text/csv")
-                response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
-                return response
+        if 'dl_file' in resultParams.keys():
+            file = template_map[resultParams['dl_file']]
+            print(file)
+            file_path = os.path.join(settings.MEDIA_ROOT,'downloads', file)
+            print(file_path)
+            if os.path.exists(file_path):
+                print('file exists')
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="text/csv")
+                    response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                    return response
 
-    return render(request, "folio.html", {'GOOGLE_ADS': GOOGLE_ADS})
+    port_list=[]
+    pfolio = pd.DataFrame()
+    if request.user.is_authenticated:
+        account = request.user.username
+        port_list = pm.portfolio_list(account)
+        if 'port_name' in resultParams.keys():
+            port_name = resultParams['port_name']
+            pfolio = pm.show_portfolio(port_name[0], account)
+            pfolio_head = list(pfolio)
+            pfolio = [pfolio_head] + pfolio.values.tolist()
+            pfolio = myhtml.list_to_html(pfolio)
+            print(pfolio)
+
+
+    return render(request, "folio.html", {'port_list':port_list,
+                                          'portfolio' : pfolio,
+                                            'GOOGLE_ADS': GOOGLE_ADS})
 
 
 def market(request, symbol='NIFTY 50'):

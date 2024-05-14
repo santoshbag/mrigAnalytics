@@ -36,6 +36,7 @@ import kite.kite_trade as zkite
 
 import scipy.stats as si
 from scipy import optimize
+from sqlalchemy.dialects.postgresql import insert
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -1060,6 +1061,13 @@ def impVol(S,K,T,option_price,r=0.05,opt='CE'):
             pass
     return vol
 
+def insert_on_conflict_nothing(table, conn, keys, data_iter):
+    # "a" is the primary key in "conflict_table"
+    data = [dict(zip(keys, row)) for row in data_iter]
+    stmt = insert(table.table).values(data).on_conflict_do_nothing(index_elements=table.index)
+    # stmt = insert(table.table).values(data).on_conflict_do_nothing()
+    result = conn.execute(stmt)
+    return result.rowcount
 
 def find_atm(spot,strike_diff):
     # diff = 2.5
@@ -1131,7 +1139,7 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
 
 def price(scrip):
     price = None
-    yahoo_map = {'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK'}
+    yahoo_map = {'NIFTY': '^NSEI','NIFTY 50': '^NSEI', 'BANKNIFTY': '^NSEBANK'}
     yahooid = scrip + '.NS'
     if (scrip == 'NIFTY' or scrip == 'BANKNIFTY'):
         yahooid = yahoo_map[scrip]

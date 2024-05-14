@@ -135,7 +135,7 @@ body {
   <a href="/about/">About Us</a>
     {% if user.is_authenticated %}
 
-  <a href="/logout/">Logout</a>
+    <a href="/logout/">   {{user.username}}  Logout</a>
     {% else %}
   <a href="/login/">Login</a>
 	{% endif %}

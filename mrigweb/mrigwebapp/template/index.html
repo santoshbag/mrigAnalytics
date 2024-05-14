@@ -168,8 +168,9 @@ body {
   <a href="/about/">About Us</a>
 
     {% if user.is_authenticated %}
-
-  <a href="/logout/">Logout</a>
+<!--        <h6 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" >-->
+<!--         {{user.username}} </h6>-->
+    <a href="/logout/">   {{user.username}}  Logout</a>
     {% else %}
   <a href="/login/">Login</a>
 	{% endif %}

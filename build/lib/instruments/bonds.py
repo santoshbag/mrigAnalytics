@@ -11,7 +11,7 @@ import QuantLib as ql
 import mrigutilities as mu
 import instruments.qlMaps as qlMaps
 
-from portfolio.portfolio import Product
+from portfolios.portfolio import Product
 
 class Bond(Product):
     def __init__(self,setupparams,name='Bond1'):

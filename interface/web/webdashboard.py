@@ -38,7 +38,7 @@ import instruments.bonds as bonds
 import instruments.swaps as swaps
 import instruments.options as options
 import instruments.capsfloors as capsfloors
-import strategies.marketoptions as mo
+import strategies.market_instruments as mo
 import research.screener_TA as sta
 
 from fuzzywuzzy import fuzz

@@ -12,7 +12,7 @@ import QuantLib as ql
 import mrigutilities as mu
 
 from instruments.options import Option
-from portfolio.portfolio import Product
+from portfolios.portfolio import Product
 
 class CapsFloors(Option):
     def __init__(self,setupparams,name='Bond1'):
