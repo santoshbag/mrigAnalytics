@@ -32,7 +32,8 @@ import matplotlib.dates as mpl_dates
 import matplotlib.pyplot as plt
 import yfinance as yf
 
-import kite.kite_trade as zkite
+# import kite.kite_trade as zkite
+import kite.mrigkite as zkite
 
 import scipy.stats as si
 from scipy import optimize
@@ -265,6 +266,13 @@ def python_dates(qldates):
 
 
 def getIndexData(symbol, start_date, end_date,db='localhost'):
+    '''
+    :param symbol:
+    :param start_date:
+    :param end_date:
+    :param db:
+    :return:
+    '''
     sql = "select * from stock_history where series = 'IN' and date >='" + start_date.strftime('%Y-%m-%d') \
           + "' and date <'" + end_date.strftime('%Y-%m-%d') \
           + "' and symbol='" \
@@ -1093,8 +1101,10 @@ def getKiteSession():
     engine = sql_engine()
     auth = pd.read_sql("select token from auth where vendor='zerodha'",engine)
     token = auth['token'].values[0]
+    kite_object = zkite.mrigkite()
+    session = kite_object.kite
     # print(token)
-    session = zkite.KiteApp(enctoken=token)
+    # session = zkite.KiteApp(enctoken=token)
     quote = session.quote('NSE:NIFTY 50')
     if quote is not None:
         print('connection active')
@@ -1104,6 +1114,41 @@ def getKiteSession():
     # if session is not None:
     #     print(token)
     return session
+
+
+def getExpiry(**kwargs):
+    engine = sql_engine()
+    scrip_list = []
+    instrument_list = []
+    args = kwargs
+    print(args)
+    if 'scrip' in kwargs.keys():
+        scrip_list.append(kwargs['scrip'])
+    if 'scriplist' in kwargs.keys():
+        scrip_list = scrip_list + kwargs['scriplist']
+    if 'instrument' in kwargs.keys():
+        instrument_list.append(kwargs['instrument'])
+    if 'instrumentlist' in kwargs.keys():
+        instrument_list = instrument_list + kwargs['instrumentlist']
+
+    scrip_list = scrip_list if len(scrip_list) > 0 else ['-99']
+    instrument_list = instrument_list if len(instrument_list) > 0 else ['-99']
+
+    scrip_list = str(scrip_list).replace('[', '(').replace(']', ')')
+    instrument_list = str(instrument_list).replace('[', '(').replace(']', ')')
+
+    sql = "select instrument_token,tradingsymbol,name,expiry from market_instruments \
+    where (name in {} or tradingsymbol in {}) \
+    and instrument_date = (select max(instrument_date) from market_instruments)".format(scrip_list, instrument_list)
+
+    expiry_df = pd.read_sql(sql, engine)
+
+    return expiry_df
+    # print(expiry_df)
+
+
+getExpiry(scrip='NIFTY', instrumentlist=['BANKNIFTY24JUNFUT'])
+
 
 def kite_OC(scrips=['NIFTY'],expiry=None):
     session = getKiteSession()
@@ -1127,11 +1172,39 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
         for exp in expiry:
             inslist_i = list(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)].index)
             inslist.append(inslist_i[int(len(inslist_i) / 2 - len(inslist_i) / 4):int(len(inslist_i) / 2 + len(inslist_i) / 4)])
-    qt = session.quote(instruments=inslist)
+    qt = None
+    try:
+        qt = session.quote(inslist)
+    except:
+        pass
     if qt is not None:
         oc = pd.DataFrame(qt).T
         oc.index.name = 'tradingsymbol'
         oc1 = oc.merge(inspd, on='tradingsymbol')[['name','strike', 'oi', 'volume', 'last_price','expiry']]
+        return oc1
+    else:
+        return None
+
+
+def kite_OC_new(scrips=['NIFTY']):
+    session = getKiteSession()
+    # ins = session.instruments(exchange='NFO')
+
+    inspd = getExpiry(scriplist=scrips)
+    inspd.set_index('instrument_token', inplace=True)
+    inspd.index = inspd.index.map(str)
+
+    qt = {}
+    for scrip in scrips:
+        print(scrip)
+        for exp in sorted(set(inspd['expiry'])):
+            qt = qt | session.quote(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)]['instrument_token'])
+
+    if qt is not None:
+        oc = pd.DataFrame(qt).T
+        oc.set_index('instrument_token', inplace=True)
+        oc.index = oc.index.map(str)
+        oc1 = pd.merge(inspd, oc, left_index=True, right_index=True)
         return oc1
     else:
         return None
@@ -1162,7 +1235,14 @@ def price_steps(price):
     else:
         return 50
 
-
+def getIndexMembers(index):
+    engine = sql_engine()
+    members = []
+    try:
+        members = engine.execute("select index_members from stock_history where symbol=%s order by date desc limit 1",(index)).fetchall()[0][0]
+    except:
+        pass
+    return members
 if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
     # expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
@@ -1173,22 +1253,23 @@ if __name__ == '__main__':
 #    oc.to_csv('oc_live.csv')        
 #    print(oc.columns)
 #    print(oc.tail(10))
-    expiry1 = last_thursday_of_month(datetime.date.today())
-    expiry2 = last_thursday_of_month(expiry1 + datetime.timedelta(days=30))
-    expiry3 = last_thursday_of_month(expiry2 + datetime.timedelta(days=30))
-# strk = 17500
-    # print(getIndexOptionQuote('NIFTY', exp, strk))
-    #print(getStockQuote('AXISBANK'))
-    
-    # levels1 = getLevels('TATAMOTORS.NS', exp)
-    # levels2 = getLevels('TATAMOTORS.NS', exp,method='window')
-    # print(levels1)
-    # print(levels2)
-    #
-    # scrip = ['TATAPOWER','TATAMOTORS']
-    # oc = kite_OC(scrip,[expiry1,expiry2,expiry3])
-    # oc.reset_index(inplace=True)
-    # print(oc[oc['name'] == scrip[0]])
-    # print(oc[oc['name'] == scrip[1]])
-    #
-    print(getStockQuote('TATAPOWER'))
+#     expiry1 = last_thursday_of_month(datetime.date.today())
+#     expiry2 = last_thursday_of_month(expiry1 + datetime.timedelta(days=30))
+#     expiry3 = last_thursday_of_month(expiry2 + datetime.timedelta(days=30))
+# # strk = 17500
+#     # print(getIndexOptionQuote('NIFTY', exp, strk))
+#     #print(getStockQuote('AXISBANK'))
+#
+#     # levels1 = getLevels('TATAMOTORS.NS', exp)
+#     # levels2 = getLevels('TATAMOTORS.NS', exp,method='window')
+#     # print(levels1)
+#     # print(levels2)
+#     #
+#     scrip = ['ADANIENSOL']#,'TATAMOTORS']
+#     oc = kite_OC(scrip,[expiry1,expiry2,expiry3])
+#     oc.reset_index(inplace=True)
+#     print(oc[oc['name'] == scrip[0]])
+#     print(oc[oc['name'] == scrip[1]])
+
+    # print(getStockQuote('TATAPOWER'))
+    print(getIndexMembers('NIFTY BANK'))

@@ -150,7 +150,17 @@ def stock_strategies():
 
 def update_index_constituents():
     urls = {'NIFTY 100': 'https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv',
-            'NIFTY 50': 'https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv'
+            'NIFTY 50': 'https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv',
+            'NIFTY 500' : 'https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv',
+            'NIFTY 200': 'https://nsearchives.nseindia.com/content/indices/ind_nifty200list.csv',
+            'NIFTY SMALLCAP 100' : 'https://www.niftyindices.com/IndexConstituent/ind_niftysmallcap100list.csv',
+            'NIFTY MIDCAP 100': 'https://www.niftyindices.com/IndexConstituent/ind_niftymidcap100list.csv',
+            'NIFTY BANK' : 'https://www.niftyindices.com/IndexConstituent/ind_niftybanklist.csv',
+            'NIFTY AUTO' : 'https://www.niftyindices.com/IndexConstituent/ind_niftyautolist.csv',
+            'NIFTY IT' : 'https://www.niftyindices.com/IndexConstituent/ind_niftyitlist.csv',
+            'NIFTY FMCG':'https://www.niftyindices.com/IndexConstituent/ind_niftyfmcglist.csv',
+            'NIFTY PHARMA': 'https://www.niftyindices.com/IndexConstituent/ind_niftypharmalist.csv',
+            'NIFTY METAL' : 'https://www.niftyindices.com/IndexConstituent/ind_niftymetallist.csv'
             }
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0'}
 
@@ -177,6 +187,20 @@ def update_index_constituents():
         '''
         engine.execute(sql,(result[key],key,(str(date).replace('-',''))))
 
+
+def populate_market_instruments():
+    session = mu.getKiteSession()
+    ins = session.instruments()
+    ins = pd.DataFrame(ins)
+    engine = mu.sql_engine()
+    ins['expiry'] = ins['expiry'].apply(lambda x: None if x == '' else x)
+    ins['strike'] = ins['strike'].apply(lambda x: None if x == '' else x)
+    ins['lot_size'] = ins['lot_size'].apply(lambda x: None if x == '' else x)
+    ins['last_price'] = ins['last_price'].apply(lambda x: None if x == '' else x)
+    ins['tick_size'] = ins['tick_size'].apply(lambda x: None if x == '' else x)
+    ins['instrument_date'] = datetime.date.today()
+    engine.execute("delete from market_instruments where instrument_date < (CURRENT_DATE - interval '10 days')")
+    ins.to_sql('market_instruments', engine, index=False, if_exists='append')
 
 
 scheduler = sched.scheduler(timefunc=time.time)
@@ -223,6 +247,7 @@ def daily_datarun():
         pass
     returns()
     update_index_constituents()
+    populate_market_instruments()
     corr.nifty_corr_data()
 
     wl.market_db_load()
@@ -230,8 +255,8 @@ def daily_datarun():
     #wl.strategies_stock_load()
 
 if __name__ == '__main__':
-    daily_datarun()
-    # update_index_constituents()
+    # daily_datarun()
+    update_index_constituents()
 #
 # if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
 #     time.localtime().tm_hour <= eveningtime.hour - 2):

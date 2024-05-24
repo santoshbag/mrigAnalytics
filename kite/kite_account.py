@@ -23,7 +23,7 @@ class kite_account:
     session = None
 
     def __init__(self):
-        self.session = mu.getKiteSession()
+        self.session = None #mu.getKiteSession()
 
     def getKiteSession(self):
         return self.session

@@ -7,8 +7,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime  # import date, timedelta
 import pandas as pd  # import DataFrame
 # from sqlalchemy import create_engine
-import mrigutilities
+import mrigutilities as mu
 import mrigstatics as ms
+import instruments.qlMaps as qlMaps
+import instruments.termstructure as ts
+import strategies.market_instruments as mi
 import nsepy
 import mriggraphics as mg
 import zipfile, re
@@ -34,14 +37,14 @@ import kite.kite_account as ka
 # kite_object = ka.kite_account()
 # today = datetime.date.today()
 today = datetime.datetime.now()
-engine = mrigutilities.sql_engine()
+engine = mu.sql_engine()
 
 yahoomap = {'NIFTY' : '^NSEI',
             'BANKNIFTY' : '^NSEBANK',}
 def level_analysis(scrip):
-    m_expiry1 = mrigutilities.last_thursday_of_month(datetime.date.today())
-    m_expiry2 = mrigutilities.last_thursday_of_month(m_expiry1 + datetime.timedelta(days=30))
-    m_expiry3 = mrigutilities.last_thursday_of_month(m_expiry2 + datetime.timedelta(days=30))
+    m_expiry1 = mu.last_thursday_of_month(datetime.date.today())
+    m_expiry2 = mu.last_thursday_of_month(m_expiry1 + datetime.timedelta(days=30))
+    m_expiry3 = mu.last_thursday_of_month(m_expiry2 + datetime.timedelta(days=30))
     today = datetime.date.today()
     expiry_list = [m_expiry1, m_expiry2, m_expiry3]
 
@@ -81,7 +84,7 @@ def level_analysis(scrip):
     print(scrip,' EXPIRIES', expiry_list)
 
     # scrip = ['TATAPOWER', 'BANKNIFTY']
-    oc = mrigutilities.kite_OC(scrip, expiry_list)
+    oc = mu.kite_OC(scrip, expiry_list)
     print(scrip,'  OPTION CHAIN ',oc)
     if oc is not None:
         # print(set(oc['expiry']))
@@ -175,21 +178,30 @@ def apply_strat(x,CustomStrategy):
     x.ta.strategy(CustomStrategy)
     return x
 def display_tech_analysis(stocks='NIFTY 100'):
+    '''
+    :param stocks: Either an index or a list of stocks
+    :return: DataFrame of Analytics
+    '''
     # get the stock name from the entry box
     df = pd.DataFrame()
     cnt = 1
 
-    engine = mrigutilities.sql_engine()
+    engine = mu.sql_engine()
     period_date = datetime.date.today() - datetime.timedelta(days=180)
 
     print('<<<<<<<<<<' + str(stocks) + '>>>>>>>>>>')
 
-    if stocks == 'NIFTY 100':
-        slist = str(ms.NIFTY_100).replace('{', '(').replace('}', ')')
-    elif stocks == 'NIFTY 50':
-        slist = str(ms.NIFTY_50).replace('{', '(').replace('}', ')')
-    else:
+    if type(stocks) is str:
+        sList = mu.getIndexMembers(stocks)
         slist = str(stocks).replace('[', '(').replace(']', ')')
+    if type(stocks) is list:
+        slist = str(stocks).replace('[', '(').replace(']', ')')
+    # if stocks == 'NIFTY 100':
+    #     slist = str(ms.NIFTY_100).replace('{', '(').replace('}', ')')
+    # elif stocks == 'NIFTY 50':
+    #     slist = str(ms.NIFTY_50).replace('{', '(').replace('}', ')')
+    # else:
+    #     slist = str(stocks).replace('[', '(').replace(']', ')')
 
     slist = slist.replace(')', ",'NIFTY 50','NIFTY BANK')")
     sql = "select date,symbol, high as High,low as Low,close as Close from stock_history where \
@@ -247,5 +259,199 @@ def spot_fut_analysis(scrip):
     spot_fut_new['far_sprd'] = spot_fut_new['far'] - spot_fut_new['mid']
     return (spot_fut_new)
 
+def scenario_analysis(portfolio,scenario=['SPOT']):
+    '''
+    portfolio is in form of a list of (symbol,object) tuple
+    '''
+    # if not scenario:
+    #     if analytics:
+    #         return analytics
+#     else:
+    #         return valuation("-")
+    #
+    # spot = scenario['spot']
+    """
+            Set Interest Rate Curve
+            """
+
+    args = {'day_count': '30-360',
+            'calendar': 'India',
+            'compounding': 'Compounded',
+            'compounding_frequency': 'Annual',
+            'interpolation': 'Linear',
+            'shiftparameter': None}
+
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+
+    today = datetime.date.today()
+
+    engine = mu.sql_engine()
+    try:
+        today = \
+        engine.execute("select curvedate from yieldcurve where curve='INR' order by curvedate desc limit 1").fetchall()[
+            0][0]
+    except:
+        pass
+    # discount_curve = ts.SpotZeroYieldCurve('INR',today)
+    discount_curve = ts.FlatForwardYieldCurve(today, 0.06)
+    discount_curve.setupCurve(args)
+
+
+
+
+
+    """
+    Set Flat Dividend Curve
+    """
+    args = {'day_count': '30-360',
+            'calendar': 'India',
+            'flat_rate': 0.01,
+            'compounding': 'Compounded',
+            'compounding_frequency': 'Annual',
+            'interpolation': 'Linear'}
+
+    if mu.args_inspector(args)[0]:
+        for arg_name in args:
+            try:
+                args[arg_name] = qlMaps.QL[args[arg_name]]
+            except:
+                pass
+
+    dividend_curve = ts.FlatDividendYieldCurve(today, args['flat_rate'])
+    dividend_curve.setupCurve(args)
+
+
+    result = []
+    for (sym,sec) in portfolio:
+        simulated_result = []
+        val_date = today
+        # print(sym)
+        assettype = str(type(sec))[8:-2].split(".")[-1]
+        underlying_symbol = sec.get_underlying()
+        underlying_spot = mu.price(underlying_symbol)
+        expiry = sec.get_expiry()
+
+        """
+        Set Flat Volatility Curve
+        """
+        spotVol = 0.30
+        try:
+            nse_vol = engine.execute(
+                "select nse_vol from stock_history where symbol='" + underlying_symbol + "' order by date desc limit 1").fetchall()
+            nse_vol = nse_vol[0][0]
+            # print(nse_vol)
+            if nse_vol:
+                spotVol = float(nse_vol)
+        except:
+            pass
+        args = {'day_count': '30-360',
+                'calendar': 'India',
+                'spot_vols': spotVol,
+                'compounding': 'Compounded',
+                'compounding_frequency': 'Annual',
+                'interpolation': 'Linear'}
+
+        if mu.args_inspector(args)[0]:
+            for arg_name in args:
+                try:
+                    args[arg_name] = qlMaps.QL[args[arg_name]]
+                except:
+                    pass
+
+        volatility_curve = ts.FlatVolatilityCurve(today, spotVol)
+        volatility_curve.setupCurve(args)
+        valuation_method = 'Black Scholes'
+        # underlying_spot = sec.underlying
+
+        if 'TIME' in scenario:
+            step = max(1,int((expiry - today).days/100))
+
+            while  val_date <= expiry:
+                # print(val_date)
+            # for spotprice in range(245,275):
+            #     print(spotprice)
+                if assettype == 'MarketOptions':
+                    """
+                    Set option Valuation and get Results
+                    """
+
+
+                    sec.option.valuation(underlying_spot,
+                             discount_curve,
+                             volatility_curve,
+                             dividend_curve,
+                             valuation_method,
+                            eval_date=val_date)
+                    res = sec.option.getAnalytics()
+                    # print('Option',val_date,res)
+
+                if assettype == 'MarketFutures':
+                    """
+                    Set option Valuation and get Results
+                    """
+                    # underlying_spot = sec.underlying
+                    sec.futures.valuation(underlying_spot=underlying_spot,eval_date=val_date)
+                    res = sec.futures.getAnalytics()
+                    # print('Futures',val_date,res)
+
+                    # print(res)
+                simulated_result.append((val_date.strftime('%d-%b-%y'),res['NPV']))
+                # result.append([sym,val_date,res['NPV']])
+                val_date = val_date + datetime.timedelta(days=step)
+
+        if 'SPOT' in scenario:
+            scale = 0.05
+            first = int(underlying_spot*(1-scale))
+            last = int(underlying_spot*(1+scale))
+            step = max(1,int((last-first)/100))
+
+            for spotprice in range(first,last,step):
+                if assettype == 'MarketOptions':
+                    """
+                    Set option Valuation and get Results
+                    """
+
+                    # underlying_spot = sec.underlying
+                    # print(spotprice)
+                    sec.option.valuation(spotprice,
+                             discount_curve,
+                             volatility_curve,
+                             dividend_curve,
+                             valuation_method)
+                    res = sec.option.getAnalytics()
+                    # print('Option',spotprice,res)
+                # print(res)
+                if assettype == 'MarketFutures':
+
+                    """
+                    Set option Valuation and get Results
+                    """
+                    # underlying_spot = sec.underlying
+                    sec.futures.valuation(underlying_spot=spotprice,eval_date=today)
+                    res = sec.futures.getAnalytics()
+                    # print('Futures', spotprice,res)
+                    # print(res)
+                # result.append([sym,spotprice,res['NPV']])
+                # simulated_result.append((spotprice,res['NPV']))
+                simulated_result.append(("{:.4f}".format(round(spotprice/underlying_spot,4)), res['NPV']))
+        result.append([sym,simulated_result])
+        # print(result)
+    result = pd.DataFrame(result,columns=['symbol','SCENARIO_'+scenario[0]])
+
+    return result
+
+
 if __name__ == '__main__':
-    level_analysis(['NIFTY'])
+    # level_analysis(['NIFTY'])
+    expiry = datetime.date(2024,5,30)
+    op_obj = mi.MarketOptions('NIFTY',22500,expiry,'CE')
+    fut_obj = mi.MarketFutures('NIFTY',22866,expiry)
+    scen = scenario_analysis([('NIFTY24MAY22500CE',op_obj),('NIFTY24MAYFUT',fut_obj)])
+    pd.set_option('display.max_rows', None)
+    # print(scen.pivot(values=['price'],columns=['spot'],index=['symbol']))
+    print(scen)

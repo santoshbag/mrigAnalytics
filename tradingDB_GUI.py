@@ -40,8 +40,9 @@ from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QHeade
 
 
 import kite.kite_account as ka
-
-kite_object = ka.kite_account()
+import kite.mrigkite as mk
+# kite_object = ka.kite_account()
+kite_object = mk.mrigkite()
 
 # today = datetime.date.today()
 today = datetime.datetime.now()
@@ -1210,10 +1211,10 @@ def refresh_login_button():
         fg='Red'
 
 
-    login_button = tk.Button(frame0, text=vendor_connection, font=('Poppins bold', 12),fg=fg, command=managelogin)
+    login_button = tk.Button(frame0, text=vendor_connection, font=('Poppins bold', 12),fg=fg)
+    login_button['state'] = tk.DISABLED
     login_button.place(x=520,y=20)
     if kite_object.getStatus() == 1:
-        login_button['state'] = tk.DISABLED
         login_button['disabledforeground'] = 'darkgreen'
 
 refresh_login_button()

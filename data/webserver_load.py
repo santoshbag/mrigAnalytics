@@ -367,8 +367,8 @@ def market_db_load():
     market_graphs = d.market_snapshot()
     for figure in market_graphs[2]:
         figure.update_layout(width=500, height=300,
-                             yaxis_domain=[0.2, 1.0],
-                             yaxis2_domain=[0.0, 0.2])
+                             yaxis_domain=[0.0, 1.0])
+                             # yaxis2_domain=[0.0, 0.2])
         figure.update_xaxes(showline=True,
                             linewidth=2,
                             linecolor='ivory',

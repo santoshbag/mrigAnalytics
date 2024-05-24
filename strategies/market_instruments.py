@@ -27,6 +27,7 @@ today = datetime.date.today()
 class MarketOptions():
     def __init__(self,symbol,strike,expiry,option_type):
         self.symbol = symbol
+        self.underlying_symbol = symbol
         self.strike = strike
         self.expiry = expiry
         self.option_type = option_type
@@ -54,7 +55,13 @@ class MarketOptions():
             self.volatility_curve = None
             self.dividend_curve = None
             self.valuation_method = 'Black Scholes'
-    
+
+    def get_expiry(self):
+        return self.expiry
+
+    def get_underlying(self):
+        return self.underlying_symbol
+
     def get_price_vol(self,period='1Y'):
         today = datetime.date.today()
         years=0
@@ -300,6 +307,7 @@ class MarketOptions():
 class MarketFutures():
     def __init__(self, symbol, strike, expiry):
         self.symbol = symbol
+        self.underlying_symbol = symbol
         self.strike = strike
         self.expiry = expiry
         self.underlying = mu.price(symbol)
@@ -324,6 +332,12 @@ class MarketFutures():
             self.volatility_curve = None
             self.dividend_curve = None
             self.valuation_method = 'Black Scholes'
+
+    def get_expiry(self):
+        return self.expiry
+
+    def get_underlying(self):
+        return self.underlying_symbol
 
     def get_price_vol(self, period='1Y'):
         today = datetime.date.today()
@@ -365,7 +379,7 @@ class MarketFutures():
 
         return self.oh
 
-    def valuation(self, ltp, spot=None, rate=None, vol=None):
+    def valuation(self, ltp, spot=None, rate=0.06, dividend=0):
 
         """
         Greeks and Graphs--------------------------------------------------------------
@@ -406,7 +420,7 @@ class MarketFutures():
                 except:
                     pass
 
-        self.futures.valuation(ltp)
+        self.futures.valuation(underlying_spot=self.underlying_spot,riskfree_rate=rate,dividend=dividend)
 
         self.analytics = self.futures.getAnalytics()
         self.analytics['Underlying'] = self.underlying_spot

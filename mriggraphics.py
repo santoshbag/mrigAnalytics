@@ -52,6 +52,9 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
     # data_ohlc.rename(columns=lambda x: str(x).capitalize(),inplace=True)
     if 'date' in data_ohlc.columns:
         data_ohlc['timestamp'] = data_ohlc['date']
+    if 'Date' in data_ohlc.columns:
+        data_ohlc['timestamp'] = data_ohlc['Date']
+
     data_ohlc.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'},
                      inplace=True)
     data_ohlc['MA10'] = data_ohlc['Close'].rolling(window=10).mean()
@@ -85,9 +88,11 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
     return img_buf
 
 
-def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True):
+def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True,include_volume=True):
     if 'date' in data_ohlcv.columns:
         data_ohlcv['timestamp'] = data_ohlcv['date']
+    if 'Date' in data_ohlcv.columns:
+        data_ohlcv['timestamp'] = data_ohlcv['Date']
     data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
                      inplace=True)
     data_ohlcv['colors_vol'] = data_ohlcv.Close - data_ohlcv.Close.shift(1)
@@ -110,7 +115,12 @@ def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True):
     # Make Subplot of 2 rows to plot 2 graphs sharing the x axis
 
     sma_colors = ['purple', 'blue','darkcyan','teal']
-    fig = subplt.make_subplots(rows=2,
+
+    num_rows = 2
+    if not include_volume:
+        num_rows = 1
+
+    fig = subplt.make_subplots(rows=num_rows,
                            cols=1,
                            shared_xaxes=True,
                            vertical_spacing=0.02)
@@ -142,19 +152,27 @@ def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True):
                                   row=1,col=1)
 
 
+
     # Add Volume Chart to Row 2 of subplot
-    fig.add_trace(go.Bar(x=data_ohlcv['Date'],
-                         y=data_ohlcv['Volume'],
-                         marker_color=list(data_ohlcv['colors_vol'].values)
-                         ,name='Volume'), row = 2, col = 1)
+    if include_volume:
+        fig.add_trace(go.Bar(x=data_ohlcv['Date'],
+                             y=data_ohlcv['Volume'],
+                             marker_color=list(data_ohlcv['colors_vol'].values)
+                             ,name='Volume'), row = 2, col = 1)
 
     # Update Price Figure layout
-    fig.update_layout(title= ticker,
-    yaxis1_title = 'Price',
-    yaxis2_title = 'Volume',
-    # xaxis2_title = ‘Time’,
-    xaxis1_rangeslider_visible = False,
-    xaxis2_rangeslider_visible = False)
+    if include_volume:
+        fig.update_layout(title= ticker,
+        yaxis1_title = 'Price',
+        yaxis2_title = 'Volume',
+        # xaxis2_title = ‘Time’,
+        xaxis1_rangeslider_visible = False,
+        xaxis2_rangeslider_visible = False)
+    else:
+        fig.update_layout(title= ticker,
+        yaxis1_title = 'Price',
+        # xaxis2_title = ‘Time’,
+        xaxis1_rangeslider_visible = False)
 
     # plt_div = plot(fig, output_type='div')
     return fig

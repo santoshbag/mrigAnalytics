@@ -56,9 +56,11 @@ class EquityFutures(Futures):
         Product.productMetadataSet = setupparams
 
 
-    def valuation(self,ltp):
+    def valuation(self,underlying_spot,riskfree_rate=0.06,dividend=0,eval_date=today):
         self.is_valued = True
-        self.analytics = {'NPV': ltp, 'delta': 1, 'gamma': 0, 'theta': 0, 'theta_per_day': 0,
+        tot = (self.maturity_date - eval_date).days/365
+        npv = underlying_spot*(1+riskfree_rate*tot) - dividend
+        self.analytics = {'NPV': npv, 'delta': 1, 'gamma': 0, 'theta': 0, 'theta_per_day': 0,
                      'rho': 0, 'vega': 0, 'strike_sensitivity': 0, 'dividendRho': 0,
                      'volatility': 0}
         return self.analytics

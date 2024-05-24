@@ -12,6 +12,7 @@ import pandas as pd
 import kite.kite_account as ka
 import strategies.market_instruments as mo
 import datetime
+import research.analytics as ra
 import json
 '''
 Manager module for Class Portfolio 
@@ -70,10 +71,62 @@ def show_portfolio(name,user):
     port_analytics['gamma'] = port_analytics['gamma'] * port_analytics['qty']
     port_analytics['theta_per_day'] = port_analytics['theta_per_day'] * port_analytics['qty']
     # port_analytics.dropna(inplace=True)
+
+
+    scenarios = ['SCENARIO_SPOT','SCENARIO_TIME']
+    scenario_dfs = []
+    for scenario in scenarios:
+        df = pd.DataFrame()
+        for sec, cost, qty in zip(list(port_analytics['security']), list(port_analytics['cost']), list(port_analytics['qty'])):
+            # print(sec)
+            scen_spot = json.loads(port_analytics[port_analytics['security'] == sec]['scenarios'].values[0])
+            # print(scen_spot)
+            if len(scen_spot[scenario]) > 5:
+                scen_spot = pd.DataFrame(scen_spot[scenario], columns=['spot', sec])
+                scen_spot.set_index('spot', inplace=True)
+                scen_spot[sec] = (scen_spot[sec] - cost) * qty
+                # print(scen_spot)
+                if df.empty:
+                    df = scen_spot
+                else:
+                    df = df.merge(scen_spot, left_index=True, right_index=True)
+        df = df.transpose()
+        df.loc["Total"] = df.sum()
+        df = df.loc["Total"]
+        df = df.reset_index()
+        scenario_dfs.append(df)
+    # print(df)
+
+    from plotly.offline import plot
+    import plotly.graph_objs as go
+    import plotly.subplots as subplt
+
+    fig = subplt.make_subplots(rows=len(scenario_dfs),
+                               cols=1,
+                               shared_yaxes=False,
+                               vertical_spacing=0.2,
+                               subplot_titles=scenarios)
+    i = 0
+    for scenario_df,scenario in zip(scenario_dfs,scenarios):
+        i = i + 1
+        fig.add_trace(go.Scatter(x=scenario_df['spot'],
+                                 y=scenario_df['Total'],
+                                 line=dict(color='blue',
+                                           width=1,
+                                           shape='spline'), showlegend=False,name=scenario), row=i, col=1)
+
+
+    # fig.show()
+    fig.update_xaxes(showticklabels=True)
+    fig.update_yaxes(showticklabels=True)
+    fig.update_annotations(font_size=10)
+    fig.update_layout(width=900, height=700)
+    scenario_graph = plot(fig, output_type='div')
+
     port_analytics = port_analytics[['portfolio_name','valuation_date_time',  'position_date', 'security', 'type', 'qty', 'cost',
        'price', 'delta', 'gamma', 'theta_per_day', 'vega', 'rho',       'analytic_value']]
 
-    return port_analytics
+    return [port_analytics,scenario_graph]
 
 
 '''
@@ -97,8 +150,8 @@ def run_portfolio_analtyics():
     mrig_engine = mu.sql_engine(dbname=mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     rb_engine = mu.sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT])
 
-    kite_object = ka.kite_account()
-    ssn = kite_object.session
+    # kite_object = ka.kite_account()
+    ssn = mu.getKiteSession()
 
     symbols = mrig_engine.execute("select distinct split_part(sec_id,'|',1) as symbol from portfolio").fetchall()
     symbols = str([s[0] for s in symbols]).replace('[', '(').replace(']', ')')
@@ -119,8 +172,16 @@ def run_portfolio_analtyics():
     .apply(lambda x : x['obj'].valuation(x['cmp']) if (x['expiry_date'] >= datetime.date.today()) else {'NPV': 0, 'delta': 0, \
                      'gamma': 0, 'theta': 0, 'theta_per_day': 0,'rho': 0, 'vega': 0, 'strike_sensitivity': 0, 'dividendRho': 0, \
                      'volatility': 0}, axis=1)
-    sec_m['date'] = datetime.date.today()
+    sec_m['date'] = datetime.datetime.now()
 
+
+    # Make portfolio list
+    portfolio_list = [(x[0],sec_m[sec_m['symbol'] == x[0]]['obj'].values[0]) for x in sec_m[sec_m['expiry_date'] >= datetime.date.today()][['symbol']].values]
+    scen_spot = ra.scenario_analysis(portfolio_list,scenario=['SPOT'])
+    scen_time = ra.scenario_analysis(portfolio_list,scenario=['TIME'])
+    sec_m = sec_m.merge(scen_spot,on='symbol',how='left')
+    sec_m = sec_m.merge(scen_time,on='symbol',how='left')
+    sec_m.fillna('None', inplace=True)
     # print(sec_m)
     return sec_m
 
@@ -137,12 +198,20 @@ def populate_portfolio_analytics(analytics_db):
     for sym in symbols:
         analytics = analytics_db[analytics_db['symbol'] == sym]
         result = analytics['analytics'].values[0] if len(analytics['analytics'].values) > 0 else None
+        result1 = {}
+        result1['SCENARIO_SPOT'] = analytics['SCENARIO_SPOT'].values[0]
+        result1['SCENARIO_TIME'] = analytics['SCENARIO_TIME'].values[0]
         analytics['others'] = json.dumps(result)
+        analytics['scenarios'] = json.dumps(result1)
+        # result.pop('SCENARIO_SPOT')
+        # result.pop('SCENARIO_TIME')
+
         for key, val in result.items():
             analytics[key] = val
         analytics.rename(columns=analytics_map, inplace=True)
         analytics = analytics[
-            ['date', 'secid', 'price', 'delta', 'gamma', 'theta_per_day', 'vega', 'rho', 'others', 'analytic_value']]
+            ['date', 'secid', 'price', 'delta', 'gamma', 'theta_per_day', 'vega', 'rho', 'others', 'analytic_value',
+             'scenarios']]
         df = pd.concat([df, analytics])
         # print(analytics)
     df.to_sql('analytics', rb_engine, index=False, if_exists='append')

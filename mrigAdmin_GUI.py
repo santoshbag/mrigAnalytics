@@ -7,6 +7,8 @@ Created on Tue Apr 25 11:22:01 2023
 
 import sys,os
 import time
+import webbrowser
+
 import mrigstatics
 import numpy as np
 
@@ -23,6 +25,7 @@ import mrigutilities
 from data import datarun as drun
 from data import webserver_load as wload
 from data import stockHistoryNew as sh
+from kite import mrigkite as mk
 from data import mutual_funds as mf
 import mrigstatics as ms
 import zipfile,re
@@ -50,7 +53,8 @@ from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QHeade
 
 import kite.kite_account as ka
 
-kite_object = ka.kite_account()
+# kite_object = ka.kite_account()
+kite_object = mk.mrigkite()
 
 # today = datetime.date.today()
 today = datetime.datetime.now()
@@ -64,6 +68,8 @@ def close_root():
 
 
 inputtxt = None
+api_key_input = None
+api_secret_input = None
 
 def managelogin():
     top = tk.Toplevel(root)
@@ -71,22 +77,64 @@ def managelogin():
     top.title("Login")
     login_label = tk.Label(top,text='Zerodha Auth Token')
     login_label.pack()
+
+    login_url_label = tk.Label(top,text='Click URL to get access token',cursor= "hand2", foreground= "green")
+    login_url_label.pack()
+
+
     inputtxt = tk.Text(top,
                        height=5,
                        width=150)
 
     inputtxt.pack()
 
+    def open_url(url):
+        webbrowser.open_new_tab(url)
+
+    login_url_label.bind("<Button-1>", lambda e: open_url(kite_object.login_url
+                                                          ))
     def login():
         token = inputtxt.get(1.0, "end-1c")
-        kite_object.kiteLogin(token)
-        print(token)
+        kite_object.kite_login(token)
         top.destroy()
         login_button.destroy()
         refresh_login_button()
 
     log_button = tk.Button(top, text="Login", font=('Poppins bold', 14), command=login)
     log_button.pack()
+
+def credentials():
+    top = tk.Toplevel(root)
+    top.geometry("400x250")
+    top.title("ZERODHA API KEYS")
+    cred_label1 = tk.Label(top,text='ZERODHA API KEY')
+    cred_label1.pack()
+    api_key_input = tk.Text(top,
+                       height=2,
+                       width=150)
+
+    api_key_input.pack()
+    cred_label2 = tk.Label(top,text='ZERODHA API SECRET')
+    cred_label2.pack()
+
+    api_secret_input = tk.Text(top,
+                       height=2,
+                       width=150)
+
+    api_secret_input.pack()
+
+    def cred():
+        cred = {}
+        cred['api_key'] = api_key_input.get(1.0, "end-1c")
+        cred['api_secret'] = api_secret_input.get(1.0, "end-1c")
+
+        kite_object.set_credentials(cred)
+        top.destroy()
+        submit_button.destroy()
+        # refresh_login_button()
+
+    submit_button = tk.Button(top, text="Submit", font=('Poppins bold', 14), command=cred)
+    submit_button.pack()
 
 
 def data_status():
@@ -217,10 +265,15 @@ def refresh_login_button():
 
 
     login_button = tk.Button(frame0, text=vendor_connection, font=('Poppins bold', 12),fg=fg, command=managelogin)
-    login_button.place(x=720,y=20)
+    login_button.place(x=620,y=20)
     if kite_object.getStatus() == 1:
         login_button['state'] = tk.DISABLED
         login_button['disabledforeground'] = 'darkgreen'
+
+refresh_login_button()
+
+cred_button = tk.Button(frame0, text='Set \n Credential', font=('Poppins bold', 12), command=credentials)
+cred_button.place(x=720,y=20)
 
 refresh_login_button()
 

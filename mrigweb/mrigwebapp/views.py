@@ -215,21 +215,24 @@ def folio(request, template=''):
                     return response
 
     port_list=[]
-    pfolio = pd.DataFrame()
+    pfolio_tbl = pd.DataFrame()
+    pfolio_scenario_graph = ""
     if request.user.is_authenticated:
         account = request.user.username
         port_list = pm.portfolio_list(account)
         if 'port_name' in resultParams.keys():
             port_name = resultParams['port_name']
             pfolio = pm.show_portfolio(port_name[0], account)
-            pfolio_head = list(pfolio)
-            pfolio = [pfolio_head] + pfolio.values.tolist()
-            pfolio = myhtml.list_to_html(pfolio)
-            print(pfolio)
+            pfolio_head = list(pfolio[0])
+            pfolio_tbl = [pfolio_head] + pfolio[0].values.tolist()
+            pfolio_tbl = myhtml.list_to_html(pfolio_tbl)
+            pfolio_scenario_graph = pfolio[1]
+            print(pfolio_tbl)
 
 
     return render(request, "folio.html", {'port_list':port_list,
-                                          'portfolio' : pfolio,
+                                          'portfolio' : pfolio_tbl,
+                                          'pfolio_scenario_graph' : pfolio_scenario_graph,
                                             'GOOGLE_ADS': GOOGLE_ADS})
 
 
