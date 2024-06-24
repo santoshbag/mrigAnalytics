@@ -38,6 +38,7 @@ import kite.mrigkite as zkite
 import scipy.stats as si
 from scipy import optimize
 from sqlalchemy.dialects.postgresql import insert
+import sympy as sp
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -199,6 +200,9 @@ def get_indexoptions_expiry():
 
     return sorted(set(expiryDateList))
 
+def shortenlength(numberToShorten):
+    limited_float = "{:.2f}".format(numberToShorten)
+    return limited_float
 
 def test_df():
     nifty_fut = nsepy.get_history(symbol="NIFTY",
@@ -1117,11 +1121,19 @@ def getKiteSession():
 
 
 def getExpiry(**kwargs):
+    '''
+
+    :param scrip: for single symbol
+           scriplist: for a list of symbol
+           instrument: for a single instrument
+           instrumentlist: for a list of instruments
+    :return: Dataframe containing expiry
+    '''
     engine = sql_engine()
     scrip_list = []
     instrument_list = []
-    args = kwargs
-    print(args)
+    # args = kwargs
+    # print(args)
     if 'scrip' in kwargs.keys():
         scrip_list.append(kwargs['scrip'])
     if 'scriplist' in kwargs.keys():
@@ -1137,9 +1149,10 @@ def getExpiry(**kwargs):
     scrip_list = str(scrip_list).replace('[', '(').replace(']', ')')
     instrument_list = str(instrument_list).replace('[', '(').replace(']', ')')
 
-    sql = "select instrument_token,tradingsymbol,name,expiry from market_instruments \
+    sql = "select instrument_token,tradingsymbol,name,expiry,strike,instrument_type,lot_size from market_instruments \
     where (name in {} or tradingsymbol in {}) \
-    and instrument_date = (select max(instrument_date) from market_instruments)".format(scrip_list, instrument_list)
+    and instrument_type in ('CE','PE') \
+    and expiry is not null and instrument_date = (select max(instrument_date) from market_instruments)".format(scrip_list, instrument_list)
 
     expiry_df = pd.read_sql(sql, engine)
 
@@ -1147,7 +1160,7 @@ def getExpiry(**kwargs):
     # print(expiry_df)
 
 
-getExpiry(scrip='NIFTY', instrumentlist=['BANKNIFTY24JUNFUT'])
+# getExpiry(scrip='NIFTY', instrumentlist=['BANKNIFTY24JUNFUT'])
 
 
 def kite_OC(scrips=['NIFTY'],expiry=None):
@@ -1167,6 +1180,7 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
     inspd = inspd[(inspd['name'].isin(scrips)) & (inspd['expiry'].isin(expiry)) & (inspd['strike'] > 0)][['name','tradingsymbol', 'strike','expiry']]
     inspd['tradingsymbol'] = 'NFO:' + inspd['tradingsymbol']
     inspd.set_index('tradingsymbol', inplace=True)
+    print('----Instruments----\n ',inspd)
     inslist= []
     for scrip in scrips:
         for exp in expiry:
@@ -1179,6 +1193,7 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
         pass
     if qt is not None:
         oc = pd.DataFrame(qt).T
+        print('----Quotes----\n ', oc)
         oc.index.name = 'tradingsymbol'
         oc1 = oc.merge(inspd, on='tradingsymbol')[['name','strike', 'oi', 'volume', 'last_price','expiry']]
         return oc1
@@ -1186,29 +1201,35 @@ def kite_OC(scrips=['NIFTY'],expiry=None):
         return None
 
 
-def kite_OC_new(scrips=['NIFTY']):
+def kite_OC_new(scrips=['NIFTY'],expiry=None):
     session = getKiteSession()
     # ins = session.instruments(exchange='NFO')
 
     inspd = getExpiry(scriplist=scrips)
-    inspd.set_index('instrument_token', inplace=True)
-    inspd.index = inspd.index.map(str)
+    if len(inspd) > 0:
+        inspd.set_index('instrument_token', inplace=True)
+        inspd.index = inspd.index.map(str)
+        # print('----Instruments----\n ',inspd.columns)
 
-    qt = {}
-    for scrip in scrips:
-        print(scrip)
-        for exp in sorted(set(inspd['expiry'])):
-            qt = qt | session.quote(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)]['instrument_token'])
 
-    if qt is not None:
-        oc = pd.DataFrame(qt).T
-        oc.set_index('instrument_token', inplace=True)
-        oc.index = oc.index.map(str)
-        oc1 = pd.merge(inspd, oc, left_index=True, right_index=True)
-        return oc1
+        qt = {}
+        for scrip in scrips:
+            # print(scrip)
+            # print('expiries \n',set(inspd['expiry']))
+            for exp in sorted(set(inspd['expiry'])):
+                qt = qt | session.quote(inspd[(inspd['name'] == scrip) & (inspd['expiry'] == exp)].index)
+
+        if qt is not None:
+            oc = pd.DataFrame(qt).T
+            oc.set_index('instrument_token', inplace=True)
+            oc.index = oc.index.map(str)
+            # print('----Quotes----\n ', oc.columns)
+            oc1 = pd.merge(inspd, oc, left_index=True, right_index=True)
+            return oc1
+        else:
+            return None
     else:
         return None
-
 
 def price(scrip):
     price = None
@@ -1243,6 +1264,21 @@ def getIndexMembers(index):
     except:
         pass
     return members
+
+def evaluate_expression(expression, variable_values):
+    try:
+        # Parse the expression
+        expr = sp.sympify(expression)
+        # print(expr.free_symbols)
+
+        # Substitute the variables with their values
+        result = expr.subs(variable_values)
+
+        return result
+    except sp.SympifyError as e:
+        raise ValueError(f"Error evaluating expression: {e}")
+
+
 if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
     # expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
@@ -1270,6 +1306,6 @@ if __name__ == '__main__':
 #     oc.reset_index(inplace=True)
 #     print(oc[oc['name'] == scrip[0]])
 #     print(oc[oc['name'] == scrip[1]])
-
+    print(getExpiry(scrip = 'CIPLA'))
     # print(getStockQuote('TATAPOWER'))
-    print(getIndexMembers('NIFTY BANK'))
+    # print(getIndexMembers('NIFTY BANK'))

@@ -32,7 +32,7 @@ from dateutil import relativedelta
 import datetime
 import mrigutilities as mu
 import strategies.stocks as stocks
-from strategies import strategies as strat
+from strategies import strategy as strat
 import research.analytics as ra
 import io,base64
 import stockScreener as ss
@@ -391,41 +391,41 @@ def market_db_load():
     indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
                "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
                "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
-               "NIFTY HEALTHCARE INDEX", "NIFTY CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
+               "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
                "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
                ]
 
     print('Sector_Graph : Creating from Scratch')
     engine = mu.sql_engine()
-    fig = subplt.make_subplots(rows=4,
-                               cols=5,
+    fig = subplt.make_subplots(rows=5,
+                               cols=4,
                                shared_xaxes=True,
                                vertical_spacing=0.04,
                                subplot_titles=indices)
     sql = """
     select date, symbol, close from stock_history where symbol in {} 
-    and date > now() - interval '720 days' order by date desc
+    and date > now() - interval '360 days' order by date desc
     """
     inx = str(indices).replace('[', '(').replace(']', ')')
     inx_data = pd.read_sql(sql.format(inx), engine)
     # inx_data
 
     coord = []
-    for i in [1, 2, 3, 4, ]:
-        for j in [1, 2, 3, 4, 5]:
+    for i in [1, 2, 3, 4, 5]:
+        for j in [1, 2, 3, 4]:
             coord.append((i, j))
     for crd, indx in list(zip(coord, range(0, 20))):
         fig.add_trace(go.Scatter(x=inx_data['date'],
-                                 y=inx_data[inx_data['symbol'] == indices[indx]]['close'],
-                                 line=dict(color='blue',
-                                           width=1,
-                                           shape='spline'), showlegend=False), row=crd[0], col=crd[1])
+                                 y=inx_data[inx_data['symbol'] == indices[indx]]['close'],fill='tozeroy',mode='none',
+                                showlegend=False), row=crd[0], col=crd[1])
+        fig['layout']['yaxis'+str(indx+1)].update(range=[min(inx_data[inx_data['symbol'] == indices[indx]]['close'].values), max(inx_data[inx_data['symbol'] == indices[indx]]['close'].values)])
 
     #     fig.layout.annotations[indx+1]['text'] = indices[indx]
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
+
     fig.update_annotations(font_size=10)
-    fig.update_layout(width=1000, height=700)
+    fig.update_layout(width=1000, height=600)
     sector_graph=pplot(fig, output_type='div')
     # sector_graph_json = json.dumps(sector_graph)
     im.set_items({'sector_graph' : str(sector_graph)})
@@ -495,7 +495,9 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
                     if period <= 1:
                         period = 1
                     # print(ret_df['daily_log_returns'].sum())
-                    return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                    # return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                    return_period = ("{:.2%}".format(float(ret_df['daily_log_returns'].sum() / period)))
+
                     cum_returns.append(return_period)
                     return_labels_1.append(return_labels[i])
                     # print(cum_returns)
@@ -510,7 +512,9 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
             dates = list(stk.pricevol_data.index)
 
             ohlcv = stk.pricevol_data.reset_index()
-            price_graph = mg.plotly_candlestick(stk.symbol, ohlcv, [20, 60, 100])
+            data_max_date = max(dates).strftime('%d-%b-%y')
+            print('data_max_date  ', data_max_date)
+            price_graph = mg.plotly_candlestick(stk.symbol, ohlcv, [20, 60, 100],data_date=data_max_date)
 
             price_graph.update_layout(width=1000, height=500,
                                       yaxis_domain=[0.2, 1.0],
@@ -590,8 +594,14 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
             risklabels, risknumbers = [], []
             for key in risk.keys():
                 risklabels.append(key)
-                risknumbers.append(risk[key])
-
+                # risknumbers.append(risk[key])
+                r = risk[key]
+                try:
+                    r = '{:.2%}'.format(r)
+                    # print('Risk in Percentage---->',r)
+                except:
+                    pass
+                risknumbers.append(r)
             risk_list = [risklabels, risknumbers]
             risk_list_json = json.dumps(risk_list)
             im.set_items({symbol+'|risk_list' : risk_list_json})
@@ -654,5 +664,5 @@ def strategies_stock_load():
 
 if __name__ == '__main__':
      # market_db_load()
-     # mrigweb_stock_load(force=1)
+     # mrigweb_stock_load(symbollist=['HDFCBANK'],force=1)
      strategies_stock_load()

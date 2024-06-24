@@ -140,10 +140,11 @@ def credentials():
 def data_status():
     stock_date = pd.read_sql("select series as item,max(date) as last_date from stock_history where series in ('EQ','IN') group by series", engine)
     fo_date = pd.read_sql("select 'FO' as item,max(date) as last_date from futures_options_history", engine)
+    ins_date = pd.read_sql("select 'MI' as item,max(instrument_date) as last_date from market_instruments", engine)
     mf_date = pd.read_sql("select 'MF' as item ,max(nav_date) as last_date from mf_history", engine)
     webpage_date = pd.read_sql("select 'WEBPG' as item, max(load_date) as last_date from webpages", engine_mrigweb)
     # df = pd.concat([stock_date, fo_date, mf_date, webpage_date]).set_index('item').transpose()
-    df = pd.concat([stock_date, fo_date, mf_date, webpage_date])
+    df = pd.concat([stock_date, fo_date,ins_date, mf_date, webpage_date])
     df['last_date'] = df['last_date'].apply(lambda x: x.strftime('%d-%b-%Y'))
     df = df.set_index('item').transpose()
     # df = [list(df), df.values.tolist()[0]]

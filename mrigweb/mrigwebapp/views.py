@@ -18,7 +18,7 @@ import portfolios.portfolio_manager as pm
 from django.conf import settings
 from django.http import HttpResponse, Http404
 import strategies.stocks as stocks
-
+import strategies.option_strategies as op_s
 # Create your views here.
 
 def home(request):
@@ -187,7 +187,7 @@ def folio(request, template=''):
         foliocontent['account_id'] = request.user.username
         foliocontent['portfolio_currency'] = 'INR'
         foliocontent = pm.add_portfolio(foliocontent)
-        print(foliocontent)
+        # print(foliocontent)
         foliocontent_head = list(foliocontent)
         # print(n50_ta_screen['Security'])
         # n50_ta_screen_head.remove("index")
@@ -227,7 +227,7 @@ def folio(request, template=''):
             pfolio_tbl = [pfolio_head] + pfolio[0].values.tolist()
             pfolio_tbl = myhtml.list_to_html(pfolio_tbl)
             pfolio_scenario_graph = pfolio[1]
-            print(pfolio_tbl)
+            # print(pfolio_tbl)
 
 
     return render(request, "folio.html", {'port_list':port_list,
@@ -403,90 +403,301 @@ def market(request, symbol='NIFTY 50'):
                                            'GOOGLE_ADS': GOOGLE_ADS})
 
 
+# def option_s(request):
+#     GOOGLE_ADS = 0
+#     if mrigstatics.ENVIRONMENT == 'production':
+#         GOOGLE_ADS = 1
+#     engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+#     os_list = ["Covered Call","Bull Put Spread", "Bear Call Spread"]
+#     strategy_desc = ""
+#     strategy = None
+#     oc = pd.DataFrame()
+#     slist = "<input style=\"width: 130px; height: 25px;\" list=\"os\" name=\"strategy\"><datalist id=\"os\">"
+#     for stg in os_list:
+#         slist = slist + "<option value=\""+str(stg)+"\">"
+#     slist = slist + "</datalist>"
+#
+#     if request.method == "POST":
+#       #Get the posted form
+#       strategyform = fm.StrategyForm(request.POST)
+#
+#       if strategyform.is_valid():
+#          strategy = strategyform.cleaned_data['strategy']
+#
+#
+#          sql = "select * from os_page where strategy='"+strategy+"' limit 1"
+#          os_page = pd.read_sql(sql,engine)
+#
+#          if not os_page.empty:
+#              strategy_desc = os_page['strategy_name'][0]
+#              oc = os_page['strategy_table'][0]
+#
+#     return render(request, "os.html", {"slist":slist,
+#                                        "strategy":strategy,
+#                                        "strategy_desc" : strategy_desc,
+#                                        "oc":oc,
+#                                        'GOOGLE_ADS': GOOGLE_ADS})
+
+
 def option_s(request):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
-    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])    
-    os_list = ["Covered Call","Bull Put Spread", "Bear Call Spread"]
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    datadir = os.path.dirname(__file__)
+
+
+
+
+    os_list = ["Covered Call", "Bull Put Spread", "Bear Call Spread"]
     strategy_desc = ""
     strategy = None
     oc = pd.DataFrame()
     slist = "<input style=\"width: 130px; height: 25px;\" list=\"os\" name=\"strategy\"><datalist id=\"os\">"
     for stg in os_list:
-        slist = slist + "<option value=\""+str(stg)+"\">"
+        slist = slist + "<option value=\"" + str(stg) + "\">"
     slist = slist + "</datalist>"
-    
+
     if request.method == "POST":
-      #Get the posted form
-      strategyform = fm.StrategyForm(request.POST)
-      
-      if strategyform.is_valid():
-         strategy = strategyform.cleaned_data['strategy']
-         
-    
-         sql = "select * from os_page where strategy='"+strategy+"' limit 1"
-         os_page = pd.read_sql(sql,engine)
-        
-         if not os_page.empty:
-             strategy_desc = os_page['strategy_name'][0]
-             oc = os_page['strategy_table'][0]
-           
-    return render(request, "os.html", {"slist":slist,
-                                       "strategy":strategy,
-                                       "strategy_desc" : strategy_desc,
-                                       "oc":oc,
+        # Get the posted form
+        strategyform = fm.StrategyForm(request.POST)
+
+        if strategyform.is_valid():
+            strategy = strategyform.cleaned_data['strategy']
+
+            sql = "select * from os_page where strategy='" + strategy + "' limit 1"
+            os_page = pd.read_sql(sql, engine)
+
+            if not os_page.empty:
+                strategy_desc = os_page['strategy_name'][0]
+                oc = os_page['strategy_table'][0]
+
+    # json_file_path = os.path.join(datadir, '..','..','strategies','option_strategies.json')
+    # f = open(json_file_path)
+    # strjson = json.load(f)
+    #
+    # strjson = strjson['bps']
+    # strjson = json.dumps(strjson)
+    #
+    # bps = op_s.OptionStrategy('BPS')
+    # bps.set_strategy_json(strjson)
+    # bps.set_symbols(['TATAMOTORS'])#,'TATAPOWER','SBIN','HDFCBANK','SRF'])
+    # bps.run_strategy()
+
+    strategy = 'BPS'
+    strategy_desc = 'Bull Put Spread'
+
+    mrig_engine = mu.sql_engine(dbname=mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    loaddate = datetime.date.today().strftime('%y%m%d')
+
+    # strategy_basket = bps.strategy_basket#['TATAMOTORS'][0][3]
+
+    # strategy_basket = mrig_engine.execute("select strategy_id,strategy_obj from os_page where load_date = (select max(load_date) from os_page)").fetchall()
+    strategy_basket = mrig_engine.execute("select strategy_id,strategy_obj from os_page where load_date = (select max(load_date) from os_page)").fetchall()
+
+    stratmap = {'BPS':'Bull Put Spread','BCS':'Bull Call Spread','BEARPS':'Bear Put Spread','BEARCS':'Bear Call Spread'}
+    strategy_body = {}
+    colormap = {0:'#0047AB',1: '#0096FF'}
+    cnt = 0
+    for id,strategylist in strategy_basket:
+        s = json.loads(strategylist)
+        s = pd.DataFrame(s[0])
+        # s.drop(['obj', 'yld'], axis=1, inplace=True)
+        stratname = stratmap[s['portfolio_name'].head(1).values[0].split('_')[1]]
+        # s['valuation_date_time'] = s['valuation_date_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # s['position_date'] = s['position_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # s['date'] = s['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        #
+        # s['expiry_date'] = s['expiry_date'].astype(str)
+        # s[['max_risk','max_profit','breakeven','Yield']] = s[['max_risk','max_profit','breakeven','Yield']].applymap(mu.shortenlength)
+        # s[3][['max_risk','max_profit','breakeven','Yield']] = s[3][['max_risk','max_profit','breakeven','Yield']].astype(
+
+        # s[3]['max_risk'] = pd.to_numeric(s[3]['max_risk'], errors='coerce')
+
+        # s[3]['max_profit'] = pd.to_numeric(s[3]['max_profit'], errors='coerce')
+        # s[3]['breakeven'] = pd.to_numeric(s[3]['breakeven'], errors='coerce')
+        # s[3]['Yield'] = pd.to_numeric(s[3]['Yield'], errors='coerce')
+
+        # sql = "insert into os_page (strategy_id, strategy_obj,load_date, strategy_table, strategy_name) values (%s,%s,%s,'','')"
+        # mrig_engine.execute(sql, (id, json.dumps([s[3].to_dict(), s[1],s[2]]), loaddate))
+
+        s = s[['strategy_id', 'portfolio_name', 'underlying', 'strike','expiry_date', 'max_profit', 'max_risk', 'breakeven', 'Yield',
+         'date','underlying_price']]
+        s['portfolio_name'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/osa/"+\
+                                         s['strategy_id']+"\">"+ s['portfolio_name']+"</a>"
+        try:
+            s['underlying'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/stock/"+s['underlying']+"\">"+ \
+                                     s['underlying']+' ('+s['underlying_price'].map(mu.shortenlength)+")</a>"
+        except:
+            pass
+        s = s.drop(['strategy_id','underlying_price'], axis=1)
+        s.rename(columns={'Yield':'Max_Yield'},inplace=True)
+        s.columns = map(lambda x: str(x).upper(), s.columns)
+
+        # print('Inside Views \n\n',strategylist)
+        strategylist_head = [list(s)]
+        strategylist_body = s.values.tolist()
+        # print('Inside Views \n\n',strategylist_body)
+
+        # strategylist_tbl = [strategylist.values.tolist()
+        strategylist_head_tbl = myhtml.list_to_html(strategylist_head,body_flag=False)
+        strategylist_body_tbl = myhtml.list_to_html(strategylist_body,header_flag=False,span={'col':[0,0],'row' : [1,2],})
+        if stratname in strategy_body.keys():
+            strategy_body[stratname].append(strategylist_body_tbl)
+        else:
+            strategy_body[stratname] = [strategylist_body_tbl]
+        cnt = cnt +1
+    # pfolio_scenario_graph = pfolio[1]
+
+    return render(request, "os.html", {"slist": slist,
+                                       "strategy": strategy,
+                                       "strategy_desc": stratname,
+                                       "strategylist_head" : strategylist_head_tbl,
+                                       "strategylist" : strategy_body,
+                                       "oc": oc,
                                        'GOOGLE_ADS': GOOGLE_ADS})
-def osa(request,strategyid):
+
+
+# def osa(request,strategyid):
+#     GOOGLE_ADS = 0
+#     if mrigstatics.ENVIRONMENT == 'production':
+#         GOOGLE_ADS = 1
+#
+#     strategy = mu.mrigsession_get(strategyid)
+#
+#     analytics = []
+#     description = ""
+#     if strategy['strategyname'] == 'coveredcall':
+#         analytics = wdb.covered_call_analysis(strategy)
+#         description = "Covered Call Strategy using option:"
+#     if strategy['strategyname'] == 'bullputspread':
+#         analytics = wdb.bull_put_spread_analysis(strategy)
+#         description = "Bull Put Spread Strategy using options:"
+#     if strategy['strategyname'] == 'bearcallspread':
+#         analytics = wdb.bear_call_spread_analysis(strategy)
+#         description = "Bear Call Spread Strategy using options:"
+#     strategy_desc = analytics[0]
+#     strategy_specs = analytics[1]
+#     strategy_risk = analytics[2]
+#     NPV_graph = analytics[3]
+#     delta_graph = analytics[4]
+#     gamma_graph = analytics[5]
+#     theta_graph = analytics[6]
+#     results = analytics[7]
+#
+#     long_option_desc = strategy_desc[0]+" "+strategy_desc[1].strftime('%d-%b-%Y')+ " "+str(strategy_desc[2])
+#     short_option_desc = ""
+#     if len(strategy_desc) >3:
+#         short_option_desc = strategy_desc[0]+" "+strategy_desc[1].strftime('%d-%b-%Y')+ " "+str(strategy_desc[3])
+# #
+#     strategy_specs = myhtml.list_to_html(strategy_specs)
+#     strategy_risk = myhtml.list_to_html(strategy_risk)
+#     results = myhtml.dict_to_html(results)
+#
+#     return render(request, "osa.html", {"symbol":strategy_desc[0],
+#                                         "strategy_desc" : description,
+#                                        "long_option_desc":long_option_desc,
+#                                        "short_option_desc":short_option_desc,
+#                                        "strategy_specs" : strategy_specs,
+#                                        "strategy_risk" : strategy_risk,
+#                                        "NPV_graph" : NPV_graph,
+#                                        "delta_graph" : delta_graph,
+#                                        "gamma_graph" : gamma_graph,
+#                                        "theta_graph" : theta_graph,
+#                                        "results" : results,
+#                                        'GOOGLE_ADS': GOOGLE_ADS
+#                                        })
+
+
+def osa(request, strategyid):
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
-    
-    strategy = mu.mrigsession_get(strategyid)
-    
-    analytics = []
-    description = ""
-    if strategy['strategyname'] == 'coveredcall':
-        analytics = wdb.covered_call_analysis(strategy)
-        description = "Covered Call Strategy using option:"
-    if strategy['strategyname'] == 'bullputspread':
-        analytics = wdb.bull_put_spread_analysis(strategy)
-        description = "Bull Put Spread Strategy using options:"
-    if strategy['strategyname'] == 'bearcallspread':
-        analytics = wdb.bear_call_spread_analysis(strategy)
-        description = "Bear Call Spread Strategy using options:"
-    strategy_desc = analytics[0]
-    strategy_specs = analytics[1]
-    strategy_risk = analytics[2]
-    NPV_graph = analytics[3]
-    delta_graph = analytics[4]
-    gamma_graph = analytics[5]
-    theta_graph = analytics[6]
-    results = analytics[7]
 
-    long_option_desc = strategy_desc[0]+" "+strategy_desc[1].strftime('%d-%b-%Y')+ " "+str(strategy_desc[2])
-    short_option_desc = ""
-    if len(strategy_desc) >3:
-        short_option_desc = strategy_desc[0]+" "+strategy_desc[1].strftime('%d-%b-%Y')+ " "+str(strategy_desc[3])
-#    
-    strategy_specs = myhtml.list_to_html(strategy_specs)
-    strategy_risk = myhtml.list_to_html(strategy_risk)
-    results = myhtml.dict_to_html(results)
-       
-    return render(request, "osa.html", {"symbol":strategy_desc[0],
-                                        "strategy_desc" : description,
-                                       "long_option_desc":long_option_desc,
-                                       "short_option_desc":short_option_desc,
-                                       "strategy_specs" : strategy_specs,
-                                       "strategy_risk" : strategy_risk,
-                                       "NPV_graph" : NPV_graph,
-                                       "delta_graph" : delta_graph,
-                                       "gamma_graph" : gamma_graph,
-                                       "theta_graph" : theta_graph,
-                                       "results" : results,
-                                       'GOOGLE_ADS': GOOGLE_ADS
-                                       })
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    stratmap = {'BPS':'Bull Put Spread','BCS':'Bull Call Spread','BEARPS':'Bear Put Spread','BEARCS':'Bear Call Spread'}
 
+    # strategy = mu.mrigsession_get(strategyid)
+    strategy = engine.execute("select strategy_obj from os_page where strategy_id='"+strategyid+"'").fetchall()[0][0]
+    # print(strategy)
+
+    strategy = json.loads(strategy)
+    df = strategy[0]
+    graphs = strategy[1]
+    NPV_graph = strategy[2]
+
+    df = pd.DataFrame(df)
+    symbol = df['underlying'].head(1).values[0]
+
+    # analytics = []
+    # description = ""
+    # if strategy['strategyname'] == 'coveredcall':
+    #     analytics = wdb.covered_call_analysis(strategy)
+    #     description = "Covered Call Strategy using option:"
+    # if strategy['strategyname'] == 'bullputspread':
+    #     analytics = wdb.bull_put_spread_analysis(strategy)
+    #     description = "Bull Put Spread Strategy using options:"
+    # if strategy['strategyname'] == 'bearcallspread':
+    #     analytics = wdb.bear_call_spread_analysis(strategy)
+    #     description = "Bear Call Spread Strategy using options:"
+    # strategy_desc = df['portfolio_name'].head(1).values[0]
+    strategy_desc = stratmap[df['portfolio_name'].head(1).values[0].split('_')[1]]
+
+    strategy_risk = df[['underlying', 'security', 'direction', 'option_type', 'strike',
+       'expiry_date', 'cost', 'max_profit', 'max_risk', 'breakeven', 'Yield',
+         'qty','delta', 'gamma', 'theta_per_day', 'vega', 'rho']]
+
+    strategy_risk['cost'] = strategy_risk['cost']*strategy_risk['qty']
+
+    strategy_risk = strategy_risk.append(strategy_risk[['cost','qty','delta', 'gamma', 'theta_per_day', 'vega', 'rho']].sum(numeric_only=True), ignore_index=True).fillna('')
+    # strategy_risk.loc[:,[ 'max_profit', 'max_risk', 'breakeven', 'Yield']] = strategy_risk[[ 'max_profit', 'max_risk', 'breakeven', 'Yield']].head(1).values
+    strategy_risk['max_profit'] = strategy_risk['max_profit'].head(1).values[0]
+    strategy_risk['max_risk'] = strategy_risk['max_risk'].head(1).values[0]
+    strategy_risk['breakeven'] = strategy_risk['breakeven'].head(1).values[0]
+    strategy_risk['Yield'] = strategy_risk['Yield'].head(1).values[0]
+    strategy_risk.drop('underlying',axis=1,inplace=True)
+    strategy_risk.rename(columns={'Yield': 'Max_Yield'}, inplace=True)
+    strategy_risk.columns = map(lambda x: str(x).upper(), strategy_risk.columns)
+
+    print(strategy_risk)
+    # NPV_graph = analytics[3]
+    # delta_graph = analytics[4]
+    # gamma_graph = analytics[5]
+    # theta_graph = analytics[6]
+    # results = analytics[7]
+
+    # long_option_desc = strategy_desc[0] + " " + strategy_desc[1].strftime('%d-%b-%Y') + " " + str(strategy_desc[2])
+    # short_option_desc = ""
+    # if len(strategy_desc) > 3:
+    #     short_option_desc = strategy_desc[0] + " " + strategy_desc[1].strftime('%d-%b-%Y') + " " + str(strategy_desc[3])
+    # #
+    # strategy_specs = myhtml.list_to_html(strategy_specs)
+
+    strategy_risk_head = [list(strategy_risk)]
+    strategy_risk_body = strategy_risk.values.tolist()
+    # print('Inside Views \n\n',strategylist_body)
+
+    # strategylist_tbl = [strategylist.values.tolist()
+    strategy_risk = myhtml.list_to_html(strategy_risk_head +strategy_risk_body)
+    # strategylist_body_tbl = myhtml.list_to_html(strategy_risk_body, header_flag=False)
+
+    # strategy_risk = myhtml.list_to_html(strategy_risk)
+    # results = myhtml.dict_to_html(results)
+
+    return render(request, "osa.html", {"symbol": symbol,
+                                        # "strategy_desc": description,
+                                        # "long_option_desc": long_option_desc,
+                                        # "short_option_desc": short_option_desc,
+                                        "strategy_desc": strategy_desc,
+                                        "strategy_risk": strategy_risk,
+                                        "graphs": graphs,
+                                        "NPV_graph": NPV_graph,
+                                        # "delta_graph": delta_graph,
+                                        # "gamma_graph": gamma_graph,
+                                        # "theta_graph": theta_graph,
+                                        # "results": results,
+                                        'GOOGLE_ADS': GOOGLE_ADS
+                                        })
 
 def ss(request):
     GOOGLE_ADS = 0

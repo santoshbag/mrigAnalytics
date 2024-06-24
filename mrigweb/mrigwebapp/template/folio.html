@@ -213,15 +213,19 @@ input[type=button], input[type=submit], input[type=reset] {
       <br>
             <h3 class="mbr-section-title mbr-white mbr-fonts-style align-center pb-3 display-9" id="seclandscape">
         Portfolio Scenarios </h3>
+       {% for graph in pfolio_scenario_graph %}
 
         <div class="item-image" align=center>
 <!--        <img src="data:image/png;base64,{{nifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
 <!--        <img src="data:image/png;base64,{{bnifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
           {% autoescape off %}
-          {{ pfolio_scenario_graph }}
+          {{ graph }}
 <!--            <br>-->
           {% endautoescape %}
         </div>
+        <br>
+       <br>
+        {% endfor %}
         {% endif %}
         {% endif %}
 <!--      {{foliocontent|safe}}-->

@@ -26,12 +26,12 @@ def dict_to_html(dic=None):
     table = list_to_html([keys,vals])
     return table
 
-def list_to_html(arglist=None,size="normal"):
+def list_to_html(arglist=None,size="normal",header_flag=True,body_flag=True,table_body_color="",span={'col':[0,1],'row' : [0,1],}):
     if arglist == None:
         return ""
 
     header_html = "<th class=\"head-item mbr-fonts-style display-7\"  style=\"padding: 5px;\" bgcolor=\"#f9f295\"><font color=\"#0f7699\" size=\"1\" onclick=\"sortTable(%s)\">%s</th>"
-    body_html = "<td class=\"body-item mbr-fonts-style display-7\" style=\"padding: 5px;\" nowrap=\"nowrap\"><font size=\"1\">%s</td>"
+    body_html = "<td class=\"body-item mbr-fonts-style display-7\" style=\"padding: 5px;\" bgcolor=\"%s\" rowspan=\"%s\" nowrap=\"nowrap\" text-align=\"center\" vertical-align=\"middle\"><font size=\"1\">%s</td>"
 
     if size == "small":
         header_html = "<th class=\"head-item mbr-fonts-style\" style=\"padding: 5px;\" bgcolor=\"#f9f295\"><font color=\"#0f7699\" size=\"1\"  onclick=\"sortTable(%s)\">%s</font></th>"
@@ -42,29 +42,45 @@ def list_to_html(arglist=None,size="normal"):
     table = "<tr class=\"table-heads \">"
     
     # Header
+    start = 1
     i = 0
-    for head in arglist[0]:
-#        table = table + "<th class=\"head-item mbr-fonts-style display-7\">" + head + "</th>"
-        if isinstance(head,float):
-            table = table + header_html %(i,"{0:9.2f}".format(head))
-        elif isinstance(head,datetime.date):
-            table = table + header_html %(i,head.strftime('%d-%b-%Y'))
-        else:
-            table = table + header_html %(i,head)
-        i = i + 1
-        
-    table = table + "</tr></thead><tbody>"
-    
-    for row in arglist[1:]:
-        table = table + "<tr>"
-        for cell in row:
-            if isinstance(cell,float):
-                table = table + body_html %("{0:9.2f}".format(cell))
-            elif isinstance(cell,datetime.date):
-                table = table + body_html %(cell.strftime('%d-%b-%Y'))
+    if header_flag:
+        start = 1
+        for head in arglist[0]:
+    #        table = table + "<th class=\"head-item mbr-fonts-style display-7\">" + head + "</th>"
+            if isinstance(head,float):
+                table = table + header_html %(i,"{0:9.2f}".format(head))
+            elif isinstance(head,datetime.date):
+                table = table + header_html %(i,head.strftime('%d-%b-%Y'))
             else:
-                table = table + body_html %(cell)
+                table = table + header_html %(i,head)
+            i = i + 1
+    else:
+        start = 0
 
-        table = table + "</tr>"
+    table = table + "</tr></thead><tbody>"
+
+    if body_flag:
+        rownum=0
+        for row in arglist[start:]:
+            rownum = rownum + 1
+            table = table + "<tr>"
+            colnum=0
+            for cell in row:
+                colnum = colnum + 1
+                if (span['row'][0] == colnum):
+                    rowspan = span['row'][1]
+                else:
+                    rowspan = 1
+                if (rownum > 1) & (colnum == 1) & (span['row'][0] > 0):
+                    continue
+                if isinstance(cell,float):
+                    table = table + body_html %(table_body_color,rowspan,"{0:9.2f}".format(cell))
+                elif isinstance(cell,datetime.date):
+                    table = table + body_html %(table_body_color,rowspan,cell.strftime('%d-%b-%Y'))
+                else:
+                    table = table + body_html %(table_body_color,rowspan,cell)
+
+            table = table + "</tr>"
     table = table + "</tbody>"    
     return table

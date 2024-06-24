@@ -8,6 +8,8 @@ Generates the Correlation data based on returns/prices and populates the databas
 for the purpose of historical analysis
 """
 import sys,os
+import time
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime #import date, timedelta
 import logging
@@ -31,9 +33,12 @@ logging.basicConfig(filename=log_file_path,
                     filemode='a')
 
 def nifty_corr_data():
+    starttime = time.monotonic()
+
     # create logger
     logger = logging.getLogger('correlations.py > nifty_corr_data()')
     logger.setLevel(logging.DEBUG)
+    print('Correlation populating Started')
 
     sql = '''
     delete from return_correlations;
@@ -60,6 +65,9 @@ def nifty_corr_data():
         logger.info('Correlation Generated')
     except Exception as e:
         logger.error("%s", str(e))
+    print('Correlation populating Ended')
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for Correlation load %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 
 if __name__ == '__main__':

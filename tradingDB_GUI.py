@@ -4,9 +4,10 @@ Created on Tue Apr 25 11:22:01 2023
 
 @author: Santosh Bag
 """
-
+import base64
 import sys,os
 import time
+from io import StringIO
 
 import numpy as np
 
@@ -28,6 +29,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import strategies.market_instruments as mo
+import research.analytics as ra
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
@@ -477,11 +479,12 @@ def display_dataframe():
 
 def level_screen(scrip):
     lscreen =  tdb.tradingDB()
-    levels = lscreen.level_analysis([scrip])
-    oi_tree = levels[0]
-    pcr = levels[1]
-    max_pain = levels[2]
-    # print(set(oi_tree['expiry']))
+    levels = ra.level_analysis([scrip])
+    fig = levels['level_chart']
+    oi_tree = levels['oi_tree']
+    pcr = levels['pcr']
+    max_pain = levels['max_pain']
+    print(set(oi_tree['expiry']))
     oi_tree.sort_values(by=['expiry', 'strike'], ascending=[True, True], inplace=True)
     num_charts = 4 if scrip in ['NIFTY','BANKNIFTY'] else 3
     fig, ax = plt.subplots(1, num_charts, figsize=(20, 10), squeeze=False)
@@ -490,7 +493,8 @@ def level_screen(scrip):
     i = 0
     last_price = kite_object.getQuoteLive(scrip)['last_price']
     bar_height = min(10,0.003*last_price) if last_price < 30000 else min(20,0.003*last_price)
-    for exp in sorted(set(list(oi_tree['expiry']))):
+    print_expiries = sorted(set(list(oi_tree['expiry'])))
+    for exp in print_expiries[0:min(4, len(print_expiries))]:
         print(exp)
         ax1 = ax[0, i]
         ax1.set_title(exp)
@@ -499,17 +503,23 @@ def level_screen(scrip):
         x_data = oi_tree[oi_tree['expiry'] == exp]['strike']
         y1_data = oi_tree[oi_tree['expiry'] == exp]['oi_ce' + str(exp)]
         y2_data = oi_tree[oi_tree['expiry'] == exp]['oi_pe' + str(exp)]
-        ax1.set_xlabel('OI',fontsize=10)
-        ax1.set_ylabel('STRIKE',fontsize=7)
-        ax1.tick_params(axis='y', labelsize=7)
+        if i == 0:
+            ax1.set_ylabel('STRIKE', fontsize=16)
+        else:
+            ax1.set_ylabel('', fontsize=16)
+        ax1.set_xlabel('OPEN INTEREST', fontsize=16)
+        ax1.tick_params(axis='y', labelsize=12)
 
         ax1.barh(x_data, y1_data, color='b', height=bar_height)
+        ax1.autoscale()
 
         # ax2.set_ylabel('STRIKE')
 
         # ax2.tick_params(axis='y', labelsize=10)
-        ax2.barh(x_data, y2_data, color='g',height=bar_height)
+        ax2.barh(x_data, y2_data, color='g', height=bar_height)
         ax2.get_yaxis().set_visible(False)
+        ax2.autoscale()
+
         i += 1
 
     win = tk.Tk()
@@ -525,6 +535,12 @@ def level_screen(scrip):
     blanklabel.pack(side=tk.LEFT)
 
     canvas = FigureCanvasTkAgg(fig,master=win)
+    # print(levels)
+    # level_chart = base64.b64decode(fig)#.decode('utf-8').replace('\n', '')
+    # f= open(level_chart ,'rb')
+    # level_chart = ImageTk.PhotoImage(Image.open(f))
+    # canvas = FigureCanvasTkAgg(fig,master=win)
+
     canvas.draw()
 
     # placing the canvas on the Tkinter window

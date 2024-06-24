@@ -4,6 +4,7 @@ import sys, os
 from matplotlib import pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import datetime  # import date, timedelta
 import pandas as pd  # import DataFrame
 # from sqlalchemy import create_engine
@@ -48,32 +49,36 @@ def level_analysis(scrip):
     today = datetime.date.today()
     expiry_list = [m_expiry1, m_expiry2, m_expiry3]
 
-    if ('NIFTY' in scrip):
-        days = (3 - today.weekday() + 7) % 7
-        expiry1 = today + datetime.timedelta(days=days)
-        expiry2 = expiry1 + datetime.timedelta(days=7)
-        expiry3 = expiry2 + datetime.timedelta(days=7)
-        expiry4 = expiry3 + datetime.timedelta(days=7)
-        expiry_list = [expiry1, expiry2, expiry3 ,expiry4]
-
-    if ('BANKNIFTY' in scrip):
-        expiry_list = []
-        days = (2 - today.weekday() + 7) % 7
-        expiry1 = today + datetime.timedelta(days=days)
-        # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry1).days == 1) else expiry_list.append(expiry1)
-        expiry2 = expiry1 + datetime.timedelta(days=7)
-        # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry2).days == 1) else expiry_list.append(expiry2)
-        expiry3 = expiry2 + datetime.timedelta(days=7)
-        # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry3).days == 1) else expiry_list.append(expiry3)
-        # m_expiry = m_expiry1 if ((m_expiry1 - expiry3) == 1) else expiry3
-        expiry4 = expiry3 + datetime.timedelta(days=7)
-        # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry4).days == 1) else expiry_list.append(expiry4)
-        # m_expiry = m_expiry1 if ((m_expiry1 - expiry4) == 1) else expiry4
-        expiry_list = [expiry1, expiry2, expiry3,expiry4]
+    expiry_list = mu.getExpiry(scriplist=scrip)
+    # print(expiry_list[expiry_list['expiry'] >= today])
+    expiry_list = sorted(set(expiry_list[expiry_list['expiry'] >= today]['expiry']))
+    # if ('NIFTY' in scrip):
+    #     days = (3 - today.weekday() + 7) % 7
+    #     expiry1 = today + datetime.timedelta(days=days)
+    #     expiry2 = expiry1 + datetime.timedelta(days=7)
+    #     expiry3 = expiry2 + datetime.timedelta(days=7)
+    #     expiry4 = expiry3 + datetime.timedelta(days=7)
+    #     expiry_list = [expiry1, expiry2, expiry3 ,expiry4]
+    #
+    # if ('BANKNIFTY' in scrip):
+    #     expiry_list = []
+    #     days = (2 - today.weekday() + 7) % 7
+    #     expiry1 = today + datetime.timedelta(days=days)
+    #     # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry1).days == 1) else expiry_list.append(expiry1)
+    #     expiry2 = expiry1 + datetime.timedelta(days=7)
+    #     # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry2).days == 1) else expiry_list.append(expiry2)
+    #     expiry3 = expiry2 + datetime.timedelta(days=7)
+    #     # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry3).days == 1) else expiry_list.append(expiry3)
+    #     # m_expiry = m_expiry1 if ((m_expiry1 - expiry3) == 1) else expiry3
+    #     expiry4 = expiry3 + datetime.timedelta(days=7)
+    #     # expiry_list.append(m_expiry1) if ((m_expiry1 - expiry4).days == 1) else expiry_list.append(expiry4)
+    #     # m_expiry = m_expiry1 if ((m_expiry1 - expiry4) == 1) else expiry4
+    #     expiry_list = [expiry1, expiry2, expiry3,expiry4]
 
     # CORRECT FOR HOLIDAYS
     holidays = ms.NSE_HOLIDAYS.keys()
     expiry_list_tmp = expiry_list
+    # print(expiry_list_tmp)
     expiry_list = []
     for expiry in expiry_list_tmp:
         if expiry.strftime('%d-%b-%Y') in holidays:
@@ -84,7 +89,7 @@ def level_analysis(scrip):
     print(scrip,' EXPIRIES', expiry_list)
 
     # scrip = ['TATAPOWER', 'BANKNIFTY']
-    oc = mu.kite_OC(scrip, expiry_list)
+    oc = mu.kite_OC_new(scrip, expiry_list)
     print(scrip,'  OPTION CHAIN ',oc)
     if oc is not None:
         # print(set(oc['expiry']))
@@ -94,7 +99,7 @@ def level_analysis(scrip):
         pcr_str = ""
         # for expiry in sorted(set(list(oc['expiry'])), reverse=True):
         for expiry in expiry_list:
-            print( expiry_list[0])
+            print( expiry)
             ce_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'CE') & (oc['expiry'] == expiry)][
                 'oi'].sum()
             pe_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'PE') & (oc['expiry'] == expiry)][
@@ -103,6 +108,7 @@ def level_analysis(scrip):
                     oc['expiry'] == expiry), 'oi'] / ce_oi_sum if ce_oi_sum else 0
             oi_tree['oi_pe' + str(expiry)] = -oc.loc[(oc['tradingsymbol'].str[-2:] == 'PE') & (
                     oc['expiry'] == expiry), 'oi'] / pe_oi_sum if pe_oi_sum else 0
+            print('oi_tree\n',oi_tree)
             try:
                 pcr = pe_oi_sum /ce_oi_sum if (expiry == expiry_list[0]) else pcr
                 pcr_str = '            ' + 'PCR : ' + '{0:.2f}'.format(pcr)
@@ -111,6 +117,8 @@ def level_analysis(scrip):
         oi_tree.fillna(0, inplace=True)
 
         max_pain_oc = oc[oc['expiry'] == expiry_list[0]]
+        print('oc', oc.columns)
+        print('max_pain_oc',max_pain_oc.columns)
         if scrip[0] in ['NIFTY','BANKNIFTY']:
             yahooscrip = yahoomap[scrip[0]]
         else:
@@ -137,7 +145,8 @@ def level_analysis(scrip):
         i = 0
         last_price = yf.download(yahooscrip,period='1d')['Close'].values[0]
         bar_height = min(10,0.003*last_price) if last_price < 30000 else min(20,0.003*last_price)
-        for exp in sorted(set(list(oi_tree['expiry']))):
+        print_expiries = sorted(set(list(oi_tree['expiry'])))
+        for exp in print_expiries[0:min(4,len(print_expiries))]:
             print(exp)
             ax1 = ax[0, i]
             ax1.set_title(exp)
@@ -154,12 +163,15 @@ def level_analysis(scrip):
             ax1.tick_params(axis='y', labelsize=12)
 
             ax1.barh(x_data, y1_data, color='b', height=bar_height)
+            ax1.autoscale()
 
             # ax2.set_ylabel('STRIKE')
 
             # ax2.tick_params(axis='y', labelsize=10)
             ax2.barh(x_data, y2_data, color='g',height=bar_height)
             ax2.get_yaxis().set_visible(False)
+            ax2.autoscale()
+
             i += 1
 
         buffer = io.BytesIO()
@@ -193,7 +205,7 @@ def display_tech_analysis(stocks='NIFTY 100'):
 
     if type(stocks) is str:
         sList = mu.getIndexMembers(stocks)
-        slist = str(stocks).replace('[', '(').replace(']', ')')
+        slist = str(sList).replace('[', '(').replace(']', ')')
     if type(stocks) is list:
         slist = str(stocks).replace('[', '(').replace(']', ')')
     # if stocks == 'NIFTY 100':
@@ -259,7 +271,7 @@ def spot_fut_analysis(scrip):
     spot_fut_new['far_sprd'] = spot_fut_new['far'] - spot_fut_new['mid']
     return (spot_fut_new)
 
-def scenario_analysis(portfolio,scenario=['SPOT']):
+def scenario_analysis(portfolio,scenario=['SPOT'],scale=0.05):
     '''
     portfolio is in form of a list of (symbol,object) tuple
     '''
@@ -400,12 +412,14 @@ def scenario_analysis(portfolio,scenario=['SPOT']):
                     # print('Futures',val_date,res)
 
                     # print(res)
-                simulated_result.append((val_date.strftime('%d-%b-%y'),res['NPV']))
+                # simulated_result.append((val_date.strftime('%d-%b-%y'),res['NPV']))
+                simulated_result.append((val_date.strftime('%d-%b-%y'),res))
+
                 # result.append([sym,val_date,res['NPV']])
                 val_date = val_date + datetime.timedelta(days=step)
 
         if 'SPOT' in scenario:
-            scale = 0.05
+            # scale = 0.05
             first = int(underlying_spot*(1-scale))
             last = int(underlying_spot*(1+scale))
             step = max(1,int((last-first)/100))
@@ -438,7 +452,10 @@ def scenario_analysis(portfolio,scenario=['SPOT']):
                     # print(res)
                 # result.append([sym,spotprice,res['NPV']])
                 # simulated_result.append((spotprice,res['NPV']))
-                simulated_result.append(("{:.4f}".format(round(spotprice/underlying_spot,4)), res['NPV']))
+                # simulated_result.append(("{:.4f}".format(round(spotprice/underlying_spot,4)), res['NPV']))
+                # simulated_result.append(("{:.4f}".format(round(spotprice/underlying_spot,4)), res))
+                simulated_result.append(("{:.4%}".format(round((spotprice/underlying_spot-1),4)), res))
+
         result.append([sym,simulated_result])
         # print(result)
     result = pd.DataFrame(result,columns=['symbol','SCENARIO_'+scenario[0]])
@@ -448,10 +465,12 @@ def scenario_analysis(portfolio,scenario=['SPOT']):
 
 if __name__ == '__main__':
     # level_analysis(['NIFTY'])
-    expiry = datetime.date(2024,5,30)
-    op_obj = mi.MarketOptions('NIFTY',22500,expiry,'CE')
-    fut_obj = mi.MarketFutures('NIFTY',22866,expiry)
-    scen = scenario_analysis([('NIFTY24MAY22500CE',op_obj),('NIFTY24MAYFUT',fut_obj)])
+    expiry = datetime.date(2024,6,27)
+    op_obj1 = mi.MarketOptions('NIFTY',23200,expiry,'CE')
+    op_obj2 = mi.MarketOptions('NIFTY',23400,expiry,'CE')
+
+    fut_obj = mi.MarketFutures('NIFTY',23400,expiry)
+    scen = scenario_analysis([('NIFTY24JUN23200CE',op_obj1),('NIFTY24JUN23400CE',op_obj2),('NIFTY24MAYFUT',fut_obj)])
     pd.set_option('display.max_rows', None)
     # print(scen.pivot(values=['price'],columns=['spot'],index=['symbol']))
     print(scen)

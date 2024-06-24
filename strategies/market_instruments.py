@@ -251,7 +251,7 @@ class MarketOptions():
         self.analytics['Underlying'] =  self.underlying_spot
         return self.analytics
     
-    def scenario_analysis(self,scenario=['SPOT']):
+    def scenario_analysis(self,scenario=['SPOT'],scale=0.05):
         # if not scenario:
         #     if self.analytics:
         #         return self.analytics
@@ -284,10 +284,12 @@ class MarketOptions():
 
         if 'SPOT' in scenario:
             result = []
-            scale = 0.05
+            # scale = 0.05
+            interval = int(scale/0.01)
             first = int(self.underlying*(1-scale))
             last = int(self.underlying*(1+scale))
-            step = max(1,int((last-first)/100))
+            # step = max(1,int((last-first)/(100*interval)))
+            step = int((last - first) / (100 * interval))
 
             for spotprice in range(first,last,step):
                 # print(spotprice)

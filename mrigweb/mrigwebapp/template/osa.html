@@ -125,14 +125,17 @@ body {
 </a>
 
   <a href="/">Home</a>
-  <a href="/stock/">Markets</a>
   <a href="/news/">News</a>
+  <a href="/market/">Markets</a>
+  <a href="/stock/">Stocks</a>
+  <a href="/mf/">Mutual Funds</a>
   <a class="active" href="/ia/">Investment Advisory</a>
   <a href="/folio/">Portfolio</a>
   <a href="/ra/">Risk Analytics</a>
   <a href="/softs/">Software Services</a>
-  <a href="/ds/">Data Services</a>  
+  <a href="/ds/">Data Services</a>
   <a href="/about/">About Us</a>
+
     {% if user.is_authenticated %}
 
     <a href="/logout/">   {{user.username}}  Logout</a>
@@ -172,15 +175,15 @@ body {
           
         </div>
 
-        <div class="container scroll" id="strategy_specs">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          Strategy Specifications </h5>
-          <table class="table" cellspacing="0" border="1">
-          <thead> 
-          {{strategy_specs|safe}}
-          </table>
-        </div>
-        <br>
+<!--        <div class="container scroll" id="strategy_specs">-->
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          Strategy Specifications </h5>-->
+<!--          <table class="table" cellspacing="0" border="1">-->
+<!--          <thead> -->
+<!--          {{strategy_specs|safe}}-->
+<!--          </table>-->
+<!--        </div>-->
+<!--        <br>-->
         <div class="container scroll" id="strategy_risk">
         <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
           Strategy Risk Profile </h5>
@@ -190,6 +193,16 @@ body {
           </table>
         </div>
         <br>
+
+          <div class="item-image" align=center>
+<!--        <img src="data:image/png;base64,{{nifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+<!--        <img src="data:image/png;base64,{{bnifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+          {% autoescape off %}
+          {{ NPV_graph }}
+            <br>
+          {% endautoescape %}
+        </div>
+
         <div class="container scroll" id="strategy_greeks">
         <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
           Strategy Greeks </h5>
@@ -200,16 +213,22 @@ body {
         </div>
         <br>
 
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{NPV_graph|safe}}" alt="NPV" width=500 height=auto />
-        <img src="data:image/png;base64,{{delta_graph|safe}}" alt="Delta" width=500 height=auto />
+
+
+        {% for graph in graphs %}
+              <div class="item-image" align=center>
+<!--        <img src="data:image/png;base64,{{nifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+<!--        <img src="data:image/png;base64,{{bnifty_graph|safe}}" alt="Nifty 50" width=400 height=auto />-->
+          {% autoescape off %}
+          {{ graph }}
+            <br>
+          {% endautoescape %}
         </div>
+        {% endfor %}
+
 
         <br>
-        <div class="item-image" align=center>
-        <img src="data:image/png;base64,{{gamma_graph|safe}}" alt="Gamma" width=500 height=auto />
-        <img src="data:image/png;base64,{{theta_graph|safe}}" alt="Theta" width=500 height=auto />
-        </div>
+
 
         <div class="container table-info-container">
           

@@ -88,11 +88,15 @@ def candlestick_plot(ticker,data_ohlc, studies=False):
     return img_buf
 
 
-def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True,include_volume=True):
+def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True,include_volume=True,**kwargs):
     if 'date' in data_ohlcv.columns:
         data_ohlcv['timestamp'] = data_ohlcv['date']
     if 'Date' in data_ohlcv.columns:
         data_ohlcv['timestamp'] = data_ohlcv['Date']
+    data_date= ''
+    if 'data_date' in kwargs.keys():
+        data_date = kwargs['data_date']
+        print('max -date',data_date)
     data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
                      inplace=True)
     data_ohlcv['colors_vol'] = data_ohlcv.Close - data_ohlcv.Close.shift(1)
@@ -162,17 +166,76 @@ def plotly_candlestick(ticker, data_ohlcv,smas=[10],levelFlag=True,include_volum
 
     # Update Price Figure layout
     if include_volume:
-        fig.update_layout(title= ticker,
+        fig.update_layout(title= ticker+'\n('+data_date+')',
         yaxis1_title = 'Price',
         yaxis2_title = 'Volume',
         # xaxis2_title = ‘Time’,
         xaxis1_rangeslider_visible = False,
         xaxis2_rangeslider_visible = False)
     else:
-        fig.update_layout(title= ticker,
+        fig.update_layout(title= ticker+'\n('+data_date+')',
         yaxis1_title = 'Price',
         # xaxis2_title = ‘Time’,
         xaxis1_rangeslider_visible = False)
+
+    # plt_div = plot(fig, output_type='div')
+    return fig
+
+def plotly_line_graph(x, y_list, **kwargs):
+    '''
+
+    :param x: Series for X values . Typically a panda column
+    :param y_list: List of Series for Y(s) values. Panda Column slice
+    :param kwargs: fig_title,y_title,x_title,y_names as a key=value pair
+    :return: plotly line graph
+    '''
+    # for indicator in indicators:
+    #     data_ohlcv['MA_' + str(sma)] = data_ohlcv['Close'].rolling(window=sma).mean()
+
+    sma_colors = ['purple', 'blue', 'darkcyan', 'teal']
+
+    # Make Subplot of 2 rows to plot 2 graphs sharing the x axis
+
+    sma_colors = ['purple', 'blue','darkcyan','teal']
+
+    fig_title,y_title,x_title = '','',''
+    y_names = []
+    if 'fig_title' in kwargs.keys():
+        fig_title = kwargs['fig_title']
+    if 'y_title' in kwargs.keys():
+        y_title = kwargs['y_title']
+    if 'x_title' in kwargs.keys():
+        x_title = kwargs['x_title']
+    if 'y_names' in kwargs.keys():
+        y_names = kwargs['y_names']
+
+    fig = subplt.make_subplots(rows=1,
+                           cols=1,
+                           shared_xaxes=True,
+                           vertical_spacing=0.02)
+
+    for y,y_name,lcolor in list(zip(y_list,y_names,sma_colors[0:len(y_names)])):
+        fig.add_trace(go.Scatter(x=x,
+                                 y=y,
+                              line=dict(color=lcolor,
+                                           width=1,
+                                           shape='spline'), # smooth the line
+                                 name=y_name), row=1,col=1)
+
+
+    # Add Volume Chart to Row 2 of subplot
+    # fig.add_trace(go.Bar(x=data_ohlcv['Date'],
+    #                      y=data_ohlcv['Volume'],
+    #                      marker_color=list(data_ohlcv['colors_vol'].values)
+    #                      ,name='Volume'), row = 2, col = 1)
+
+    # Update Price Figure layout
+    fig.update_xaxes({'zerolinecolor': 'darkslateblue'})
+    fig.update_yaxes({'zerolinecolor': 'darkslateblue'})
+    fig.update_layout(title= fig_title,
+    yaxis1_title = y_title,
+    # xaxis2_title = ‘Time’,
+    xaxis1_rangeslider_visible = False)
 
     # plt_div = plot(fig, output_type='div')
     return fig
@@ -230,9 +293,6 @@ def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD']):
 
     # plt_div = plot(fig, output_type='div')
     return fig
-
-
-
 
 # if __name__ == '__main__':
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))

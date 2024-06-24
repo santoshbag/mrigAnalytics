@@ -30,8 +30,9 @@ import requests
 from io import StringIO
 import pandas as pd
 import correlations as corr
-
-
+import research.analytics as ra
+import json
+import strategies.market_option_strategy as mos
 
 today = datetime.date.today()
 
@@ -75,11 +76,12 @@ def mf_codes():
 #         mc.populate_ratios_table()
 
 def returns():
+    starttime = time.monotonic()
     # calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
     engine = mu.sql_engine()
     date = engine.execute('select max(date) from daily_returns').fetchall()[0][0]
     print(str(date).replace('-',''))
-    print("Populating Returns")
+    print("Populating Returns Started")
     sql = '''insert into daily_returns (symbol, date, price, daily_arithmetic_returns,daily_log_returns)
             (
             (SELECT stock_history.symbol as symbol,
@@ -95,8 +97,12 @@ def returns():
             on conflict (symbol,date) do nothing;
             '''
     engine.execute(sql,(str(date).replace('-','')))
+    print("Populating Returns Ended")
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for Populating Returns  %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 def stock_strategies():
+    starttime = time.monotonic()
 
     print("Populating Stock Strategies Started----\n")
     bigm = ss.big_money_zack()
@@ -146,9 +152,12 @@ def stock_strategies():
     sql = (sql %(timestamp,today.strftime('%Y-%m-%d'),oc))
     engine.execute(sql)
     print("Populating Stock Strategies Finished----\n")    
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for stock_strategies %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 
 def update_index_constituents():
+    starttime = time.monotonic()
     urls = {'NIFTY 100': 'https://nsearchives.nseindia.com/content/indices/ind_nifty100list.csv',
             'NIFTY 50': 'https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv',
             'NIFTY 500' : 'https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv',
@@ -179,16 +188,20 @@ def update_index_constituents():
     # enable_sql = "alter table stock_history enable trigger return_trigger"
     engine.execute(disable_sql)
     print(str(date).replace('-', ''))
-    print("Populating Index Constituent")
+    print("Populating Index Constituent Started")
     for key in result.keys():
         sql = ''' update stock_history 
         set index_members=%s 
         where symbol=%s and date=%s
         '''
         engine.execute(sql,(result[key],key,(str(date).replace('-',''))))
-
+    print("Populating Index Constituent Ended")
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for update_index_constituents %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 def populate_market_instruments():
+    starttime = time.monotonic()
+    print("Populating Market Instruments Started")
     session = mu.getKiteSession()
     ins = session.instruments()
     ins = pd.DataFrame(ins)
@@ -200,8 +213,25 @@ def populate_market_instruments():
     ins['tick_size'] = ins['tick_size'].apply(lambda x: None if x == '' else x)
     ins['instrument_date'] = datetime.date.today()
     engine.execute("delete from market_instruments where instrument_date < (CURRENT_DATE - interval '10 days')")
+    # print(ins)
     ins.to_sql('market_instruments', engine, index=False, if_exists='append')
+    print("Populating Market Instruments Ended")
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for populate_market_instruments %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
+def populate_technicals(stocks='NIFTY 100'):
+    starttime = time.monotonic()
+    print("Populating Technical Indicators Started")
+    engine = mu.sql_engine()
+
+    df = ra.display_tech_analysis(stocks)
+    df = df[df['date'] == max(df['date'])]
+    df['ta'] = df[df.columns[5:]].apply(pd.Series.to_dict, axis=1)
+    df['ta'] = df['ta'].apply(lambda x: json.dumps(x))
+    df[['date', 'symbol', 'ta']].to_sql('technicals', engine, if_exists='append', index=False)
+    print("Populating Technical Indicators Ended")
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for populate_technicals %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 scheduler = sched.scheduler(timefunc=time.time)
 morninghour = 6
@@ -211,52 +241,62 @@ eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 #eveningtime = morningtime
 
 def daily_datarun():
-    try:
-        sh.data_download()
-        sh.data_insert()
-    except:
-        pass
-    try:
-        # nav.navall_download()
-        mf.download_nav()
-    except:
-        pass
-    try:
-        news.get_MCNews()
-    except:
-        pass
-    try:
-        yc.yield_download()
-    except:
-        pass
-    try:
-        returns()
-    except:
-        pass
-    try:
-        gp.gold_download()
-    except:
-        pass
-    try:
-        cp.crude_download()
-    except:
-        pass
-    try:
-        fx.exchange_rates_download(startdate, enddate)
-    except:
-        pass
-    returns()
-    update_index_constituents()
+    # try:
+    #     sh.data_download()
+    #     sh.data_insert()
+    # except:
+    #     pass
+    # try:
+    #     # nav.navall_download()
+    #     mf.download_nav()
+    # except:
+    #     pass
+    # try:
+    #     news.get_MCNews()
+    # except:
+    #     pass
+    # try:
+    #     yc.yield_download()
+    # except:
+    #     pass
+    # try:
+    #     returns()
+    # except:
+    #     pass
+    # try:
+    #     gp.gold_download()
+    # except:
+    #     pass
+    # try:
+    #     cp.crude_download()
+    # except:
+    #     pass
+    # try:
+    #     fx.exchange_rates_download(startdate, enddate)
+    # except:
+    #     pass
+    # returns()
+    # update_index_constituents()
     populate_market_instruments()
-    corr.nifty_corr_data()
+
 
     wl.market_db_load()
     wl.mrigweb_stock_load()
-    #wl.strategies_stock_load()
+    wl.strategies_stock_load()
+    populate_technicals()
+    mos.load_option_strategies()
+    corr.nifty_corr_data()
 
 if __name__ == '__main__':
-    # daily_datarun()
-    update_index_constituents()
+    daily_datarun()
+    # returns()
+    # update_index_constituents()
+    # populate_market_instruments()
+    # corr.nifty_corr_data()
+    # populate_technicals()
+    # wl.market_db_load()
+    # wl.mrigweb_stock_load()
+
 #
 # if (alldata==1) or (time.localtime().tm_hour >= morningtime.hour and
 #     time.localtime().tm_hour <= eveningtime.hour - 2):

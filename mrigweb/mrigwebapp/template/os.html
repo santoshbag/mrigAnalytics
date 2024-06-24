@@ -124,9 +124,10 @@ input[type=button], input[type=submit], input[type=reset] {
 <h>{{slist|safe}} </h>
 <input type="submit">    
 </form>
-{% if strategy %}
-  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#strategyscreen">Strategy Screen</a>
-{% endif %}
+
+{% for stratname, stratlist in strategylist.items %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#{{stratname}}screen">{{stratname}}</a>
+{%endfor%}
 </div>
 
 
@@ -140,14 +141,17 @@ input[type=button], input[type=submit], input[type=reset] {
 </a>
 
   <a href="/">Home</a>
-  <a href="/stock/">Markets</a>
   <a href="/news/">News</a>
+  <a href="/market/">Markets</a>
+  <a href="/stock/">Stocks</a>
+  <a href="/mf/">Mutual Funds</a>
   <a class="active" href="/ia/">Investment Advisory</a>
   <a href="/folio/">Portfolio</a>
   <a href="/ra/">Risk Analytics</a>
   <a href="/softs/">Software Services</a>
-  <a href="/ds/">Data Services</a>  
+  <a href="/ds/">Data Services</a>
   <a href="/about/">About Us</a>
+
     {% if user.is_authenticated %}
 
     <a href="/logout/">   {{user.username}}  Logout</a>
@@ -166,23 +170,34 @@ input[type=button], input[type=submit], input[type=reset] {
   </div>
   <div class="container container-table " style="margin-left:150px";>
     <br>
-    {% if strategy %}
-    <h3 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-     {{strategy_desc}} </h3>    
+   {% if strategy %}
 
-      <div class="table-wrapper">
+    {% for stratname, stratlist in strategylist.items %}
+    <br>
+
+
+      <div class="table-wrapper" id="{{stratname}}screen">
         <div class="container">
-          
+    <h3 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
+     {{stratname}} </h3>
         </div>
 
         <div class="container scroll" id="strategyscreen">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
-          Strategy Screen </h5>
-          <table class="table" cellspacing="0" border="1" id="myTable">
+<!--        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">-->
+<!--          Strategy Screen </h5>-->
+          <table class="table" cellspacing="0" border="1" >
           <thead> 
-          {{oc|safe}}
+          {{strategylist_head|safe}}
+            {% for strat in stratlist %}
+<!--          <table class="table" cellspacing="0" border="1">-->
+
+            {{strat|safe}}
+<!--          </table>-->
+              {% endfor %}
           </table>
         </div>
+    {% endfor %}
+
     {% else %}
     <h3 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9">
      Option Strategies provide unique way of generating returns using leverage (albiet with risks). Choose 

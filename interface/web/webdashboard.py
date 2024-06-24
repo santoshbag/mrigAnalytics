@@ -1291,7 +1291,8 @@ def mrigweb_stock(symbol,tenor='1Y'):
                 if period <= 1:
                     period = 1
                 # print(ret_df['daily_log_returns'].sum())
-                return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                # return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                return_period = ("{:.2%}".format(float(ret_df['daily_log_returns'].sum() / period)))
                 cum_returns.append(return_period)
                 return_labels_1.append(return_labels[i])
                 # print(cum_returns)
@@ -1478,8 +1479,14 @@ def mrigweb_stock(symbol,tenor='1Y'):
         risklabels,risknumbers = [],[]
         for key in risk.keys():
             risklabels.append(key)
-            risknumbers.append(risk[key])
-
+            # risknumbers.append(risk[key])
+            r = risk[key]
+            try:
+                r = '{:.2%}'.format(r)
+                # print('Risk in Percentage---->',r)
+            except:
+                pass
+            risknumbers.append(r)
         risk_list = [risklabels,risknumbers]
         risk_list_json = json.dumps(risk_list)
         im.update_items({symbol+'|risk_list': risk_list_json})
@@ -1815,6 +1822,20 @@ def mrigweb_bull_put_spread(live=False):
         oc['Max_Risk'] = (oc['Higher_Strike']-oc['Strike_Price'])*oc['Lot'] - oc['Net_Credit']
         oc['Max_Yield'] = abs(oc['Net_Credit']/oc['Max_Risk'])
         
+    return oc
+
+
+def mrigweb_option_strategy(live=False):
+    oc = ss.bull_put_spread(live=live)
+    oc = oc[0]
+    #    oc_analytic = pd.DataFrame()
+
+    if not oc.empty:
+        oc['Initial_Yield'] = (oc['Higher_Strike_LTP'] - oc['PUT_LTP']) / (oc['Higher_Strike'] - oc['Strike_Price'])
+        oc['Net_Credit'] = (oc['Higher_Strike_LTP'] - oc['PUT_LTP']) * oc['Lot']
+        oc['Max_Risk'] = (oc['Higher_Strike'] - oc['Strike_Price']) * oc['Lot'] - oc['Net_Credit']
+        oc['Max_Yield'] = abs(oc['Net_Credit'] / oc['Max_Risk'])
+
     return oc
 
 def mrigweb_bear_call_spread(live=False):

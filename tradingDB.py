@@ -493,10 +493,12 @@ class tradingDB():
             # print(data)
             # hist_data.append(data[data.columns[:-1]])
             hist_data.append(data)
+            data_max_date = max(data['Date']).strftime('%d-%b-%y')
+            print('data_max_date  ', data_max_date)
             # ticker = kitecodemap[kitecodemap['instrument_token'] == token]['tradingsymbol'].values[0]
             # graph_obj.append(['empty'])
             graph_obj.append(mg.candlestick_plot(ticker,data[data.columns[:-1]]))
-            graph_obj1.append(mg.plotly_candlestick(ticker,data[data.columns],include_volume=False))
+            graph_obj1.append(mg.plotly_candlestick(ticker,data[data.columns],include_volume=False,data_date=data_max_date))
 
         ticker = 'INDIA VIX'
         print(ticker)
@@ -504,8 +506,10 @@ class tradingDB():
         data.reset_index(inplace=True)
         data = data[['date', 'open', 'high', 'low', 'close', 'volume']]
         hist_data.append(data)
+        data_max_date = max(data['date']).strftime('%d-%b-%y')
+        print('data_max_date  ',data_max_date)
         graph_obj.append(mg.candlestick_plot(ticker, data[data.columns[:-1]]))
-        graph_obj1.append(mg.plotly_candlestick(ticker, data[data.columns],include_volume=False))
+        graph_obj1.append(mg.plotly_candlestick(ticker, data[data.columns],include_volume=False,data_date=data_max_date))
 
         current_month = datetime.date.strftime(datetime.date.today(), '%b')
         next_month = datetime.date.strftime(datetime.date.today() + datetime.timedelta(days=31), '%b')
