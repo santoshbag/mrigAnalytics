@@ -25,6 +25,7 @@ from jugaad_data.nse import bhavcopy_save,bhavcopy_index_save,bhavcopy_fo_save
 import pandas as pd
 from jugaad_data.holidays import holidays
 import sys,os
+import math
 
 
 
@@ -114,18 +115,32 @@ def data_insert(startdate=None,enddate=None):
     #             print(f'{dates}: File not Found')
 
 
-    csv_header_map = {'SYMBOL':'symbol',
-                  'SERIES' : 'series',	
-                  'OPEN':'open',	
-                  'HIGH':'high',	
-                  'LOW':'low',	
-                  'CLOSE': 'close',	
-                  'LAST':'last',	
-                  'PREVCLOSE':'prev_close',	
-                  'TOTTRDQTY': 'volume',	
-                  'TOTTRDVAL': 'turnover',	
-                  'TIMESTAMP': 'date',	
-                  'TOTALTRADES' : 'trades'}
+    csv_header_map = {'TckrSymb':'symbol',
+                  'SctySrs' : 'series',
+                  'OpnPric':'open',
+                  'HghPric':'high',
+                  'LwPric':'low',
+                  'ClsPric': 'close',
+                  'LastPric':'last',
+                  'PrvsClsgPric':'prev_close',
+                  'TtlTradgVol': 'volume',
+                  'TtlTrfVal': 'turnover',
+                  'BizDt': 'date',
+                  'TtlNbOfTxsExctd' : 'trades'}
+
+    # csv_header_map = {'SYMBOL':'symbol',
+    #               'SERIES' : 'series',
+    #               'OPEN':'open',
+    #               'HIGH':'high',
+    #               'LOW':'low',
+    #               'CLOSE': 'close',
+    #               'LAST':'last',
+    #               'PREVCLOSE':'prev_close',
+    #               'TOTTRDQTY': 'volume',
+    #               'TOTTRDVAL': 'turnover',
+    #               'TIMESTAMP': 'date',
+    #               'TOTALTRADES' : 'trades'}
+
     nifty_csv_header_map = {'Index Name':'symbol',	
                   'High Index Value':'high',
                   'Open Index Value':'open',	
@@ -138,19 +153,32 @@ def data_insert(startdate=None,enddate=None):
                   'P/B':'pb',
                   'Div Yield': 'div_yield'}
     
-    fo_csv_header_map = {'SYMBOL':'symbol',	
-                  'EXPIRY_DT' : 'expiry',
-                  'STRIKE_PR' : 'strike',
-                  'OPTION_TYP' : 'option_type',
-                  'OPEN':'open',	
-                  'HIGH':'high',	
-                  'LOW':'low',	
-                  'CLOSE': 'close',	
-                  'SETTLE_PR':'settle_price',	
-                  'CONTRACTS':'contracts',	
-                  'OPEN_INT': 'oi',	
-                  'CHG_IN_OI': 'oi_change',	
-                  'TIMESTAMP': 'date'}
+    # fo_csv_header_map = {'SYMBOL':'symbol',
+    #               'EXPIRY_DT' : 'expiry',
+    #               'STRIKE_PR' : 'strike',
+    #               'OPTION_TYP' : 'option_type',
+    #               'OPEN':'open',
+    #               'HIGH':'high',
+    #               'LOW':'low',
+    #               'CLOSE': 'close',
+    #               'SETTLE_PR':'settle_price',
+    #               'CONTRACTS':'contracts',
+    #               'OPEN_INT': 'oi',
+    #               'CHG_IN_OI': 'oi_change',
+    #               'TIMESTAMP': 'date'}
+    fo_csv_header_map = {'TckrSymb':'symbol',
+                  'FininstrmActlXpryDt' : 'expiry',
+                  'StrkPric' : 'strike',
+                  'OptnTp' : 'option_type',
+                  'OpnPric':'open',
+                  'HghPric':'high',
+                  'LwPric':'low',
+                  'ClsPric': 'close',
+                  'SttlmPric':'settle_price',
+                  'TtlTradgVol':'contracts',
+                  'OpnIntrst': 'oi',
+                  'ChngInOpnIntrst': 'oi_change',
+                  'BizDt': 'date'}
 
 #                date	instrument	instrument_type	series	long_short	oi
 
@@ -253,7 +281,7 @@ def data_insert(startdate=None,enddate=None):
             stocksdata = stocksdata.replace({'-': None})
 
             stocksdata = stocksdata[csv_header]
-            stocksdata = stocksdata[stocksdata['SERIES'] == 'EQ']
+            stocksdata = stocksdata[stocksdata['SctySrs'] == 'EQ']
             stocksdata = stocksdata.rename(columns=csv_header_map)
             #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
             #                try:
@@ -283,17 +311,20 @@ def data_insert(startdate=None,enddate=None):
                 csvfiles = zf.infolist()
                 for csvfile in csvfiles:
                     print("Processing FO File "+str(csvfile))
-                    fodata = pd.read_csv(zf.open(csvfile))
+                    fodata = pd.read_csv(zf.open(csvfile), keep_default_na=False)
                     fodata = fodata.replace({'-':None})                  
                     
                     fodata = fodata[fo_csv_header]
                     fodata = fodata.rename(columns=fo_csv_header_map)
     #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
     #                try:
+                    fodata['option_type'] = fodata['option_type'].apply(lambda x: 'XX' if len(x) < 2 else x)
+                    fodata['strike'] = fodata['strike'].apply(lambda x: 0 if len(str(x)) == 0 else x)
                     fodata.apply(pd.to_numeric, errors='ignore')
     #                stocksdata["date"] = stocksdata["date"].apply(dtm)
                     fodata['date'] = pd.to_datetime(fodata['date'])
                     fodata['add_mod_date'] = today
+
                     fodata.set_index('date',inplace=True)
     #                print(stocksdata.index)
     #                print(stocksdata.tail(10))
@@ -309,20 +340,26 @@ def data_insert(startdate=None,enddate=None):
     #
         for csvfile in fobhavcsvlist:
             print("Processing FO File " + str(csvfile))
-            fodata = pd.read_csv(csvfile)
+            fodata = pd.read_csv(csvfile, keep_default_na=False)
             fodata = fodata.replace({'-': None})
 
             fodata = fodata[fo_csv_header]
             fodata = fodata.rename(columns=fo_csv_header_map)
             #                stocksdata.drop(['ISIN'],axis=1,inplace=True)
             #                try:
+            fodata['option_type'] = fodata['option_type'].apply(lambda x: 'XX' if len(x) < 2 else x)
+            fodata['strike'] = fodata['strike'].apply(lambda x: 0 if len(str(x)) == 0 else x)
+
             fodata.apply(pd.to_numeric, errors='ignore')
             #                stocksdata["date"] = stocksdata["date"].apply(dtm)
             fodata['date'] = pd.to_datetime(fodata['date'])
             fodata['add_mod_date'] = today
+            # print(fodata[fodata['symbol'] == 'MUTHOOTFIN'].head(10))
             fodata.set_index('date', inplace=True)
             #                print(stocksdata.index)
             #                print(stocksdata.tail(10))
+            print(fodata[fodata['symbol'] == 'MUTHOOTFIN'].head(10))
+
             if write_flag:
                 fodata.to_sql('futures_options_history', engine, if_exists='append', index=True)
                 print("FO Written to Database")
@@ -435,5 +472,5 @@ def data_insert(startdate=None,enddate=None):
 
 #    
 if __name__ == '__main__':
-    data_download()
+    # data_download()
     data_insert()

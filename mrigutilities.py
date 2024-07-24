@@ -24,7 +24,8 @@ from bs4 import BeautifulSoup
 from random import choice
 import string
 import json
-from pandas.io.json import json_normalize
+from pandas import json_normalize
+
 import math
 import yfinance
 # from mpl_finance import candlestick_ohlc
@@ -1280,6 +1281,7 @@ def evaluate_expression(expression, variable_values):
 
 
 if __name__ == '__main__':
+    print(pd.__version__)
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))
     # expiries_i = [datetime.date(2021,9,30),datetime.date(2021,6,10)]
     # expiries_e = [datetime.date(2021,6,24),datetime.date(2021,7,29)]
@@ -1306,6 +1308,6 @@ if __name__ == '__main__':
 #     oc.reset_index(inplace=True)
 #     print(oc[oc['name'] == scrip[0]])
 #     print(oc[oc['name'] == scrip[1]])
-    print(getExpiry(scrip = 'CIPLA'))
+#     print(getExpiry(scrip = 'CIPLA'))
     # print(getStockQuote('TATAPOWER'))
     # print(getIndexMembers('NIFTY BANK'))

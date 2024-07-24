@@ -42,7 +42,13 @@ def load_option_strategies(strategy=['bps','']):
     strategy_map = pd.DataFrame.from_dict(f['strategy_map'])
     stratlist = strategy_map[(strategy_map['implementation'] == 'True')].index.to_list()
 
-    df = pd.read_sql("select * from technicals where date = (select max(date) from technicals)", engine)
+    index = 'NIFTY 50'
+    stocklist = engine.execute("select index_members from stock_history where symbol=%s and \
+    index_members is not NULL order by date desc limit 1",(index)).fetchall()[0][0]
+    stocklist = stocklist.replace('[','(').replace(']',')')
+    # stocklist = [x[1:-1] for x in stocklist]
+
+    df = pd.read_sql("select * from technicals where symbol in "+stocklist+" and date = (select max(date) from technicals)", engine)
     # df.set_index('symbol',inplace=True)
     df['ta'] = df['ta'].apply(lambda x: json.loads(x))
     df1 = pd.json_normalize(df['ta'])

@@ -1,6 +1,6 @@
 mpl_finance==0.10.1
 requests~=2.31.0
-pandas~=1.5.2
+pandas~=2.2.2
 beautifulsoup4~=4.12.3
 nsepy~=0.8
 SQLAlchemy~=1.4.39
@@ -26,3 +26,6 @@ PyQt5~=5.15.10
 py2exe~=0.13.0.0
 setuptools~=68.2.2
 tkcalendar~=1.6.1
+kiteconnect~=5.0.1
+sympy~=1.12.1
+pandas~=1.5.2

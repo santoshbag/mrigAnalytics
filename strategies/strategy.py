@@ -30,9 +30,9 @@ class st_macd(Strategy):
     def getSignals(self):
         stocksdf = pd.DataFrame()
         TA = ra.display_tech_analysis()
-        # print('TA --------',TA)
+        print('TA --------',TA)
         for stock in sorted(set(TA['symbol'])):
-            # print(stock)
+            print(stock)
             df = TA[TA['symbol'] == stock].tail(5)
             df['opinion'] = 'NAL'
             # try:

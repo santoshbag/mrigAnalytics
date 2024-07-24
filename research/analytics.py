@@ -86,11 +86,11 @@ def level_analysis(scrip):
         else:
             expiry_list.append(expiry)
 
-    print(scrip,' EXPIRIES', expiry_list)
+    # print(scrip,' EXPIRIES', expiry_list)
 
     # scrip = ['TATAPOWER', 'BANKNIFTY']
     oc = mu.kite_OC_new(scrip, expiry_list)
-    print(scrip,'  OPTION CHAIN ',oc)
+    # print(scrip,'  OPTION CHAIN ',oc)
     if oc is not None:
         # print(set(oc['expiry']))
         oc.reset_index(inplace=True)
@@ -99,7 +99,7 @@ def level_analysis(scrip):
         pcr_str = ""
         # for expiry in sorted(set(list(oc['expiry'])), reverse=True):
         for expiry in expiry_list:
-            print( expiry)
+            # print( expiry)
             ce_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'CE') & (oc['expiry'] == expiry)][
                 'oi'].sum()
             pe_oi_sum = oc[(oc['tradingsymbol'].str[-2:] == 'PE') & (oc['expiry'] == expiry)][
@@ -108,7 +108,7 @@ def level_analysis(scrip):
                     oc['expiry'] == expiry), 'oi'] / ce_oi_sum if ce_oi_sum else 0
             oi_tree['oi_pe' + str(expiry)] = -oc.loc[(oc['tradingsymbol'].str[-2:] == 'PE') & (
                     oc['expiry'] == expiry), 'oi'] / pe_oi_sum if pe_oi_sum else 0
-            print('oi_tree\n',oi_tree)
+            # print('oi_tree\n',oi_tree)
             try:
                 pcr = pe_oi_sum /ce_oi_sum if (expiry == expiry_list[0]) else pcr
                 pcr_str = '            ' + 'PCR : ' + '{0:.2f}'.format(pcr)
@@ -117,8 +117,8 @@ def level_analysis(scrip):
         oi_tree.fillna(0, inplace=True)
 
         max_pain_oc = oc[oc['expiry'] == expiry_list[0]]
-        print('oc', oc.columns)
-        print('max_pain_oc',max_pain_oc.columns)
+        # print('oc', oc.columns)
+        # print('max_pain_oc',max_pain_oc.columns)
         if scrip[0] in ['NIFTY','BANKNIFTY']:
             yahooscrip = yahoomap[scrip[0]]
         else:
@@ -128,7 +128,7 @@ def level_analysis(scrip):
         max_pain = None
         max_pain_str = ""
         if ((max_pain_oc is not None) & (len(max_pain_oc) > 0)) :
-            print("max_pain_oc",max_pain_oc)
+            # print("max_pain_oc",max_pain_oc)
             max_pain_oc['itm x oi'] = max_pain_oc[['strike', 'tradingsymbol', 'oi']].apply(
                 lambda x: max(last_price - x['strike'], 0) * x['oi'] if (x['tradingsymbol'][-2:] == 'CE') else max(
                     x['strike'] - last_price, 0) * x['oi'], axis=1)
@@ -140,14 +140,14 @@ def level_analysis(scrip):
         num_charts = 4 if scrip[0] in ['NIFTY','BANKNIFTY'] else 3
         fig, ax = plt.subplots(1, num_charts, figsize=(20, 10), squeeze=False)
         fig.suptitle(scrip[0] + last_price_str+pcr_str+max_pain_str, fontsize=15)
-        print(scrip[0]+' Number of Charts for '+str(num_charts))
+        # print(scrip[0]+' Number of Charts for '+str(num_charts))
         # oi_tree[['oi_ce','oi_pe']].plot(kind='barh')
         i = 0
         last_price = yf.download(yahooscrip,period='1d')['Close'].values[0]
         bar_height = min(10,0.003*last_price) if last_price < 30000 else min(20,0.003*last_price)
         print_expiries = sorted(set(list(oi_tree['expiry'])))
         for exp in print_expiries[0:min(4,len(print_expiries))]:
-            print(exp)
+            # print(exp)
             ax1 = ax[0, i]
             ax1.set_title(exp)
             ax1.grid()
@@ -221,7 +221,11 @@ def display_tech_analysis(stocks='NIFTY 100'):
     order by symbol, date asc".format(slist, period_date.strftime('%Y%m%d'))
     # print(sql)
     data = pd.read_sql(sql, engine)
+    #DATA CLEANUP
+
+    data = data[data['symbol'] != 'UNITDSPR']
     # print(data)
+    # data.to_csv('test.csv')
     CustomStrategy = ta.Strategy(
         name="Momo and Volatility",
         description=" MACD and SuperTrend",
@@ -231,8 +235,18 @@ def display_tech_analysis(stocks='NIFTY 100'):
         ]
     )
 
-    # data = data[data['symbol'] == 'SBIN']
-    newdf = data.groupby(['symbol']).apply(apply_strat,CustomStrategy=CustomStrategy)
+    # data1 = data[data['symbol'] == sym]
+    newdf = data.groupby(['symbol']).apply(apply_strat, CustomStrategy=CustomStrategy)
+    # print(newdf)
+
+    ## BELOW CODE FOR DEBUGGING
+    # for sym in set(list(data['symbol'])):
+    #     print(sym)
+    #     data1 = data[data['symbol'] == sym]
+    #     newdf = data1.groupby(['symbol']).apply(apply_strat,CustomStrategy=CustomStrategy)
+    #     print(newdf)
+    ## ABOVE CODE FOR DEBUGGING
+
     # newdf = pd.DataFrame()
     # print('NEWDF----',newdf)
     return newdf
@@ -465,12 +479,13 @@ def scenario_analysis(portfolio,scenario=['SPOT'],scale=0.05):
 
 if __name__ == '__main__':
     # level_analysis(['NIFTY'])
-    expiry = datetime.date(2024,6,27)
-    op_obj1 = mi.MarketOptions('NIFTY',23200,expiry,'CE')
-    op_obj2 = mi.MarketOptions('NIFTY',23400,expiry,'CE')
-
-    fut_obj = mi.MarketFutures('NIFTY',23400,expiry)
-    scen = scenario_analysis([('NIFTY24JUN23200CE',op_obj1),('NIFTY24JUN23400CE',op_obj2),('NIFTY24MAYFUT',fut_obj)])
-    pd.set_option('display.max_rows', None)
+    # expiry = datetime.date(2024,6,27)
+    # op_obj1 = mi.MarketOptions('NIFTY',23200,expiry,'CE')
+    # op_obj2 = mi.MarketOptions('NIFTY',23400,expiry,'CE')
+    #
+    # fut_obj = mi.MarketFutures('NIFTY',23400,expiry)
+    # scen = scenario_analysis([('NIFTY24JUN23200CE',op_obj1),('NIFTY24JUN23400CE',op_obj2),('NIFTY24MAYFUT',fut_obj)])
+    # pd.set_option('display.max_rows', None)
     # print(scen.pivot(values=['price'],columns=['spot'],index=['symbol']))
-    print(scen)
+    display_tech_analysis()
+    # print(scen)

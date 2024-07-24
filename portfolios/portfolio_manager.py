@@ -33,7 +33,7 @@ def add_portfolio(portfolio_df):
                                      + portfolio_df['strike'].astype(str) + '|' \
                                      + portfolio_df['option_type'].astype(str) + '|' \
                                      + portfolio_df['expiry_date'].astype(str)
-            print('SEC_ID  ', portfolio_df['sec_id'] )
+            # print('SEC_ID  ', portfolio_df['sec_id'] )
             sec_df = portfolio_df[['symbol','sec_id','isin', 'underlying','security_type','strike','option_type','expiry_date']]
             sec_df.set_index('symbol',inplace=True)
             mrig_engine = mu.sql_engine(dbname=mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
@@ -85,7 +85,7 @@ def show_portfolio(name,user,portfolio=None):
     scenario_dfs = []
     scenario_dfs_multi = []
     for scenario in scenarios:
-        df = pd.DataFrame()
+        # df = pd.DataFrame()
         df_multi = {}
         for sec, cost, qty in zip(list(port_analytics['security']), list(port_analytics['cost']), list(port_analytics['qty'])):
             # print(sec)
@@ -115,29 +115,33 @@ def show_portfolio(name,user,portfolio=None):
                 # print('scen_tmp after',scen_tmp)
                 scen_spot[sec] = scen_spot[sec].apply(lambda x: (x['NPV'] - cost) * qty)
                 # print(scen_spot)
-                if df.empty:
-                    df = scen_spot
-                else:
-                    df = df.merge(scen_spot, left_index=True, right_index=True)
+                # if df.empty:
+                #     df = scen_spot
+                # else:
+                #     df = df.merge(scen_spot, left_index=True, right_index=True)
 
-        df_multi = pd.concat(df_multi, axis=1)
+        if len(df_multi) > 0:
+            df_multi = pd.concat(df_multi, axis=1)
+            df_multi = df_multi.sum(level=1, axis=1)
+            scenario_dfs_multi.append(df_multi)
+
         # print(df_multi.loc[:,(slice(None),'NPV')])
-        df = df.transpose()
+        # df = df.transpose()
         # df_multi = df_multi.transpose()
 
-        df.loc["Total"] = df.sum()
-        df_multi = df_multi.sum(level=1,axis=1)
+        # df.loc["Total"] = df.sum()
+        # df_multi = df_multi.sum(level=1,axis=1)
         # print(type(df_multi))
         # print(df_multi.columns)
         # df_multi.loc["Total"] = df_multi.sum()
         # print('df_multi_SUM\n',df_multi)
-        df = df.loc["Total"]
+        # df = df.loc["Total"]
         # df_multi = df_multi.loc["Total"]
-        df = df.reset_index()
+        # df = df.reset_index()
         # print(df)
 
-        scenario_dfs.append(df)
-        scenario_dfs_multi.append(df_multi)
+        # scenario_dfs.append(df)
+        # scenario_dfs_multi.append(df_multi)
         # print(scenario_dfs_multi[0])
     # print(df)
 
@@ -160,7 +164,7 @@ def show_portfolio(name,user,portfolio=None):
     #                                        width=1,
     #                                        shape='spline'), showlegend=False,name=scenario), row=i, col=1)
     npv = scenario_dfs_multi[scenarios.index('SCENARIO_SPOT')]
-    print('SCENARIO_DF_MULTI \n\n',npv)
+    # print('SCENARIO_DF_MULTI \n\n',npv)
     NPV_graph = mg.plotly_line_graph(x=npv.index,
                           y_list=[npv['NPV']],
                           y_names=["NPV"],
@@ -247,7 +251,7 @@ def run_portfolio_analytics(portfolio=None,spot_scenario_scale=0.05):
 
         symbols = mrig_engine.execute("select distinct split_part(sec_id,'|',1) as symbol from portfolio").fetchall()
         symbols = str([s[0] for s in symbols]).replace('[', '(').replace(']', ')')
-        print(symbols)
+        # print(symbols)
         sec_m = pd.read_sql(
             " select symbol,security_type,underlying,strike,option_type,expiry_date from security_master where symbol in " + symbols,
             rb_engine)

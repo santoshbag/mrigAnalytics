@@ -5,7 +5,26 @@ Created on Thu Sep  6 12:16:12 2018
 @author: Santosh Bag
 
 This module downloads data by using various modules
+
+USAGE: python datarun.py (optional arguments ex. 1 3 5)
+
+ARGUMENTS (optional)
+
+STOCKHISTORY 1
+MUTUALFUND   2
+NEWS         3
+YIELDS       4
+RETURNS      5
+INDEXMEMBERS 6
+MARKET INSTR 7
+MARKET DB    8
+STOCK LOAD   9
+STOCK STRAT  10
+TECHNICALS   11
+OPTION STRAT 12
+CORRELATION  13
 """
+
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import datetime,time,sched
@@ -241,51 +260,99 @@ eveningtime = datetime.datetime(year=today.year,month=today.month,day=today.day,
 #eveningtime = morningtime
 
 def daily_datarun():
-    # try:
-    #     sh.data_download()
-    #     sh.data_insert()
-    # except:
-    #     pass
-    # try:
-    #     # nav.navall_download()
-    #     mf.download_nav()
-    # except:
-    #     pass
-    # try:
-    #     news.get_MCNews()
-    # except:
-    #     pass
-    # try:
-    #     yc.yield_download()
-    # except:
-    #     pass
-    # try:
-    #     returns()
-    # except:
-    #     pass
-    # try:
-    #     gp.gold_download()
-    # except:
-    #     pass
-    # try:
-    #     cp.crude_download()
-    # except:
-    #     pass
-    # try:
-    #     fx.exchange_rates_download(startdate, enddate)
-    # except:
-    #     pass
-    # returns()
-    # update_index_constituents()
-    populate_market_instruments()
+    if len(sys.argv) <= 1:
+        try:
+            sh.data_download()
+            sh.data_insert()
+        except:
+            pass
+        try:
+            # nav.navall_download()
+            mf.download_nav()
+        except:
+            pass
+        try:
+            news.get_MCNews()
+        except:
+            pass
+        try:
+            yc.yield_download()
+        except:
+            pass
+        try:
+            returns()
+        except:
+            pass
+        # try:
+        #     gp.gold_download()
+        # except:
+        #     pass
+        # try:
+        #     cp.crude_download()
+        # except:
+        #     pass
+        # try:
+        #     fx.exchange_rates_download(startdate, enddate)
+        # except:
+        #     pass
+        # returns()
+        update_index_constituents()
+        populate_market_instruments()
 
 
-    wl.market_db_load()
-    wl.mrigweb_stock_load()
-    wl.strategies_stock_load()
-    populate_technicals()
-    mos.load_option_strategies()
-    corr.nifty_corr_data()
+        wl.market_db_load()
+        wl.mrigweb_stock_load()
+        wl.strategies_stock_load()
+        populate_technicals()
+        mos.load_option_strategies()
+        corr.nifty_corr_data()
+    else:
+        for arg in sys.argv[1:]:
+            if arg == '1':
+                try:
+                    sh.data_download()
+                    sh.data_insert()
+                except:
+                    pass
+            elif arg == '2':
+                try:
+                    # nav.navall_download()
+                    mf.download_nav()
+                except:
+                    pass
+            elif arg == '3':
+                try:
+                    news.get_MCNews()
+                except:
+                    pass
+            elif arg == '4':
+                try:
+                    yc.yield_download()
+                except:
+                    pass
+            elif arg == '5':
+                try:
+                    returns()
+                except:
+                    pass
+            elif arg == '6':
+                update_index_constituents()
+            elif arg == '7':
+                populate_market_instruments()
+            elif arg == '8':
+                wl.market_db_load()
+            elif arg == '9':
+                wl.mrigweb_stock_load()
+            elif arg == '10':
+                wl.strategies_stock_load()
+            elif arg == '11':
+                populate_technicals()
+            elif arg == '12':
+                mos.load_option_strategies()
+            elif arg == '13':
+                corr.nifty_corr_data()
+            else:
+                pass
 
 if __name__ == '__main__':
     daily_datarun()
