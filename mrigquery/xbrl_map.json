@@ -1,0 +1,289 @@
+{
+  "income_statement": {
+    "1": {
+      "total_revenue": [
+        "Income",
+        "Revenue",
+        "Income"
+      ]
+    },
+    "1.1": {
+      "revenue": [
+        "RevenueFromOperations",
+        "RevenueFromOperations",
+        "InterestEarned"
+      ]
+    },
+    "1.2": {
+      "other_income": [
+        "OtherIncome",
+        "OtherIncome",
+        "OtherIncome"
+      ]
+    },
+    "2": {
+      "total_expenses": [
+        "Expenses",
+        "Expenses",
+        "ExpenditureExcludingProvisionsAndContingencies"
+      ]
+    },
+    "2.1": {
+      "materials_cost": [
+        "CostOfMaterialsConsumed",
+        "CostOfMaterialsConsumed",
+        ""
+      ]
+    },
+    "2.2": {
+      "interest_expended": [
+        "",
+        "",
+        "InterestExpended"
+      ]
+    },
+    "2.3": {
+      "employee_cost": [
+        "EmployeeBenefitExpense",
+        "EmployeeBenefitExpense",
+        "EmployeesCost"
+      ]
+    },
+    "2.4": {
+      "depreciation_amortization": [
+        "DepreciationDepletionAndAmortisationExpense",
+        "DepreciationAndAmortisationExpense",
+        ""
+      ]
+    },
+    "2.5": {
+      "other_expenses": [
+        "OtherExpenses",
+        "OtherExpenses",
+        "OperatingExpenses"
+      ]
+    },
+    "3": {
+      "profit_before_tax": [
+        "ProfitBeforeTax",
+        "ProfitBeforeTax",
+        "ProfitLossFromOrdinaryActivitiesBeforeTax"
+      ]
+    },
+    "4": {
+      "tax_expense": [
+        "TaxExpense",
+        "TaxExpense",
+        "TaxExpense"
+      ]
+    },
+    "5": {
+      "profit_loss": [
+        "ProfitLossForPeriod",
+        "ProfitLossForThePeriod",
+        "ProfitLossForThePeriod"
+      ]
+    }
+  }
+,
+  "income_statement_all" : [ "StatementOfFinancialResultsIndASAbstract", "StatementOfProfitAndLossAbstract", "IncomeAbstract", "RevenueFromOperations", "OtherIncome", "Income",
+    "ExpensesAbstract", "CostOfMaterialsConsumed", "PurchasesOfStockInTrade", "ChangesInInventoriesOfFinishedGoodsWorkInProgressAndStockInTrade", "EmployeeBenefitExpense",
+    "FinanceCosts", "DepreciationDepletionAndAmortisationExpense", "OtherExpenses", "Expenses", "ProfitBeforeExceptionalItemsAndTax", "ExceptionalItemsBeforeTax", "ProfitBeforeTax",
+    "TaxExpenseAbstract", "CurrentTax", "DeferredTax", "TaxExpense", "NetMovementInRegulatoryDeferralAccountBalancesRelatedToProfitOrLossAndTheRelatedDeferredTaxMovement",
+    "ProfitLossForPeriodFromContinuingOperations", "ProfitLossFromDiscontinuedOperationsBeforeTax", "TaxExpenseOfDiscontinuedOperations", "ProfitLossFromDiscontinuedOperationsAfterTax",
+    "ShareOfProfitLossOfAssociatesAndJointVenturesAccountedForUsingEquityMethod", "ProfitLossForPeriod", "OtherComprehensiveIncomeNetOfTaxes", "ComprehensiveIncomeForThePeriod",
+    "TotalProfitOrLossAttributableToAbstract", "ProfitOrLossAttributableToOwnersOfParent", "ProfitOrLossAttributableToNonControllingInterests",
+    "TotalComprehensiveIncomeForThePeriodAttributableToAbstract", "ComprehensiveIncomeForThePeriodAttributableToOwnersOfParent", "ComprehensiveIncomeForThePeriodAttributableToOwnersOfParentNonControllingInterests",
+    "DetailsOfPaidupEquityShareCapitalAbstract", "PaidUpValueOfEquityShareCapital", "FaceValueOfEquityShareCapital", "ReserveExcludingRevaluationReserves", "EarningsPerShareAbstract",
+    "EarningsPerShareForContinuingOperationsAbstract", "BasicEarningsLossPerShareFromContinuingOperations", "DilutedEarningsLossPerShareFromContinuingOperations",
+    "EarningsPerShareForDiscontinuedOperationsAbstract", "BasicEarningsLossPerShareFromDiscontinuedOperations", "DilutedEarningsLossPerShareFromDiscontinuedOperations",
+    "EarningsPerShareForContinuingAndDiscontinuedOperationsAbstract", "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
+    "DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations", "DebtEquityRatio", "DebtServiceCoverageRatio", "InterestServiceCoverageRatio",
+    "DisclosureOfNotesOnFinancialResultsExplanatoryTextBlock", "StatementOfFinancialResultsMainAbstract", "RevenueAbstract", "Revenue",
+    "DepreciationAndAmortisationExpense", "ProfitBeforeExceptionalAndExtraordinaryItemsAndTax", "ExceptionalItems", "ProfitBeforeExtraordinaryItemsAndTax",
+    "ExtraordinaryItems", "ProfitLossForThePeriodFromContinuingOperations", "ProfitLossFromDiscontinuingOperationsBeforeTax", "TaxExpenseOfDiscontinuingOperations",
+    "ProfitLossFromDiscontinuingOperationAfterTax", "ProfitLossForPeriodBeforeMinorityInterest", "ShareOfProfitLossOfAssociates", "ProfitLossOfMinorityInterest",
+    "ProfitLossForThePeriod", "StatementOfFinancialResultsByBanksAbstract", "DisclosureOfOperationalResultAbstract", "DisclosureOfRevenueFromOperationsAbstract",
+    "InterestEarnedAbstract", "InterestOrDiscountOnAdvancesOrBills", "RevenueOnInvestments", "InterestOnBalancesWithReserveBankOfIndiaAndOtherInterBankFunds", "OtherInterest",
+    "InterestEarned", "InterestExpended", "OperatingExpensesAbstract", "EmployeesCost", "OtherOperatingExpenses", "OperatingExpenses", "ExpenditureExcludingProvisionsAndContingencies",
+    "OperatingProfitBeforeProvisionAndContingencies", "ProvisionsOtherThanTaxAndContingencies", "ProfitLossFromOrdinaryActivitiesBeforeTax", "ProfitLossFromOrdinaryActivitiesAfterTax",
+    "ProfitLossAfterTaxesMinorityInterestAndShareOfProfitLossOfAssociates", "AnalyticalRatiosAbstract", "PercentageOfShareHeldByGovernmentOfIndia", "CapitalAdequacyRatioAbstract",
+    "CET1Ratio", "AdditionalTier1Ratio", "EarningsPerShareBeforeExtraordinaryItemsAbstract", "BasicEarningsPerShareBeforeExtraordinaryItems", "DilutedEarningsPerShareBeforeExtraordinaryItems",
+    "EarningsPerShareAfterExtraordinaryItemsAbstract", "BasicEarningsPerShareAfterExtraordinaryItems", "DilutedEarningsPerShareAfterExtraordinaryItems", "NpaRatiosAbstract",
+    "GrossNonPerformingAssets", "PercentageOfGrossNpa", "NonPerformingAssets", "PercentageOfNpa", "ReturnOnAssets"]
+
+,
+  "bs_assets" : {
+  "1": {
+    "assets": [
+      "Assets",
+      "Assets",
+      "Assets"
+    ]
+  },
+  "2": {
+    "non_current_assets": [
+      "NoncurrentAssets",
+      "NoncurrentAssets",
+      ""
+    ]
+  },
+  "2.1": {
+    "fixed_assets": [
+      "PropertyPlantAndEquipment",
+      "FixedAssets",
+      "FixedAssets"
+    ]
+  },
+  "2.11": {
+    "investments": [
+      "",
+      "",
+      "Investments"
+    ]
+  },
+  "2.12": {
+    "advances": [
+      "",
+      "",
+      "Advances"
+    ]
+  },
+  "2.2": {
+    "wip": [
+      "CapitalWorkInProgress",
+      "",
+      ""
+    ]
+  },
+  "2.3": {
+    "goodwill": [
+      "Goodwill",
+      "",
+      ""
+    ]
+  },
+  "2.4": {
+    "non_current_investments": [
+      "NoncurrentInvestments",
+      "NoncurrentInvestments",
+      ""
+    ]
+  },
+  "2.5": {
+    "trade_receivables_non_current": [
+      "TradeReceivablesNoncurrent",
+      "",
+      ""
+    ]
+  },
+  "2.6": {
+    "loans_non_current": [
+      "LoansNoncurrent",
+      "LongTermLoansAndAdvances",
+      ""
+    ]
+  },
+  "2.7": {
+    "deferred_tax": [
+      "DeferredTaxAssetsNet",
+      "DeferredTaxAssetsNet",
+      ""
+    ]
+  },
+  "3": {
+    "current_assets": [
+      "CurrentAssets",
+      "CurrentAssets",
+      ""
+    ]
+  },
+  "3.1": {
+    "inventories": [
+      "Inventories",
+      "Inventories",
+      ""
+    ]
+  },
+  "3.2": {
+    "current_investments": [
+      "CurrentInvestments",
+      "CurrentInvestments",
+      ""
+    ]
+  },
+  "3.3": {
+    "trade_receivables_current": [
+      "TradeReceivablesCurrent",
+      "TradeReceivables",
+      ""
+    ]
+  },
+  "3.4": {
+    "cash-and_cash_equivalents": [
+      "CashAndCashEquivalents",
+      "CashAndCashEquivalents",
+      ""
+    ]
+  },
+  "3.41": {
+    "cash_rbi": [
+      "",
+      "",
+      "Cash and balances with Reserve Bank of India"
+    ]
+  },
+  "3.42": {
+    "deposit_otherbank": [
+      "",
+      "",
+      "Balances with banks and money at call and short notice"
+    ]
+  },
+  "3.5": {
+    "loans_current": [
+      "LoansCurrent",
+      "ShortTermLoansAndAdvances",
+      ""
+    ]
+  },
+  "3.6": {
+    "current_financial_assets": [
+      "CurrentFinancialAssets",
+      "CurrentFinancialAssets",
+      ""
+    ]
+  },
+  "3.7": {
+    "current_tax_assets": [
+      "CurrentTaxAssets",
+      "",
+      ""
+    ]
+  }
+}
+,
+  "bs_liabilities" : {
+    "1" : {
+      "equity_and_liabilities" : [
+        "EquityAndLiabilities" ,
+        "EquityAndLiabilities",
+        "CapitalAndLiabilities"]}, "2" : { "liabilities" : [ "Liabilities" , "Liabilities", ""]}, "3" : { "non_current_liabilities" : [ "NoncurrentLiabilities" , "NoncurrentLiabilities", ""]}, "3.1" : { "borrowings_non_current" : [ "BorrowingsNoncurrent" , "LongTermBorrowings", "Borrowings"]}, "3.2" : { "deposits" : [ "" , "", "Deposits"]}, "3.3" : { "trade_payables_non_current" : [ "TradePayablesNoncurrent" , "", ""]}, "3.4" : { "non_current_financial_liabilities" : [ "NoncurrentFinancialLiabilities" , "", ""]}, "3.5" : { "provisions_non_current" : [ "ProvisionsNoncurrent" , "LongTermProvisions", "OtherLiabilitiesAndProvisions"]}, "3.6" : { "deferred_tax_liabilities_net" : [ "DeferredTaxLiabilitiesNet" , "DeferredTaxLiabilitiesNet", ""]}, "4" : { "current_liabilities" : [ "CurrentLiabilities" , "CurrentLiabilities", ""]}, "4.1" : { "borrowings_current" : [ "BorrowingsCurrent" , "ShortTermBorrowings", ""]}, "4.2" : { "trade_payables_current" : [ "TradePayablesCurrent" , "OutstandingDuesOfMicroEnterprisesAndSmallEnterprises", ""]}, "4.3" : { "current_financial_liabilities" : [ "CurrentFinancialLiabilities" , "", ""]}, "4.4" : { "provisions_current" : [ "ProvisionsCurrent" , "ShortTermProvisions", ""]}, "4.5" : { "current_tax_liabilities" : [ "CurrentTaxLiabilities" , "", ""]}, "5" : { "shareholders_funds" : [ "" , "ShareholdersFunds", ""]}, "5.1" : { "share_capital" : [ "" , "ShareCapital", "Capital"]}, "5.2" : { "reserves_surplus" : [ "" , "ReservesAndSurplus", "ReservesAndSurplus"]}
+  },
+"ratios": [
+  {"basic_eps": ["BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations", "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations", "BasicEarningsPerShareAfterExtraordinaryItems"]},
+  {"diluted_eps": ["DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations", "DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations", "DilutedEarningsPerShareAfterExtraordinaryItems"]},
+  {"debt_equity_ratio": ["DebtEquityRatio", "DebtEquityRatio", ""]},
+  {"debt_service_coverage_ratio": ["DebtServiceCoverageRatio", "DebtServiceCoverageRatio", ""]},
+  {"interest_service_coverage_ratio": ["InterestServiceCoverageRatio", "InterestServiceCoverageRatio", ""]},
+  {"CET1Ratio": ["", "", "CET1Ratio"]},
+  {"additional_tier1_ratio": ["", "", "AdditionalTier1Ratio"]},
+  {"gross_npa": ["", "", "GrossNonPerformingAssets"]},
+  {"per_gross_npa": ["", "", "PercentageOfGrossNpa"]},
+  {"npa": ["", "", "NonPerformingAssets"]},
+  {"per_npa": ["", "", "PercentageOfNpa"]},
+  {"return_on_assets": ["", "", "ReturnOnAssets"]}
+]
+}
+
+

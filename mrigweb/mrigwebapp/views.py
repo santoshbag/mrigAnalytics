@@ -20,6 +20,14 @@ from django.http import HttpResponse, Http404
 import strategies.stocks as stocks
 import strategies.option_strategies as op_s
 # Create your views here.
+import data.settings_load as config
+from gnews  import GNews
+import pytz
+
+setting = config.get_settings()
+
+IST = pytz.timezone('Asia/Kolkata')
+GMT = pytz.timezone('UTC')
 
 def home(request):
     GOOGLE_ADS = 0
@@ -28,6 +36,9 @@ def home(request):
     return render(request, "index.html", {'GOOGLE_ADS': GOOGLE_ADS})
 
 def stock(request,symbol='HDFCBANK'):
+    indices = setting['indices_for_mrig'].keys()
+    googlenews = GNews(language='en', country='IN', period='1d', start_date=None, end_date=None, max_results=10)
+
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
@@ -46,6 +57,10 @@ def stock(request,symbol='HDFCBANK'):
     engine = mu.sql_engine()
     stocklist = engine.execute("select distinct sm.symbol, sm.stock_name from security_master sm inner join stock_history sh on sm.symbol=sh.symbol where sh.series='EQ'").fetchall()
     slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
+
+    for stk in indices:
+        slist = slist + "<option value=\"" + str(stk) + " : " + str(stk) + "\">"
+
     for stk in stocklist:
         if stk[0] != 'symbol':
             if stk[1] != None:
@@ -68,7 +83,7 @@ def stock(request,symbol='HDFCBANK'):
     if (symbol and symbol != ""): 
         sql = "select * from stock_page where symbol='"+symbol+"'"
         stock_page = pd.read_sql(sql,engine)
-        
+
         if not stock_page.empty:
             price_list = stock_page['price_list'][0]
             return_list = stock_page['return_list'][0]
@@ -90,8 +105,9 @@ def stock(request,symbol='HDFCBANK'):
             stock_desc = stock_page['stock_description'][0]
             news = stock_page['news'][0]
             news = json.loads(news)
+            print(news)
         else:
-            if symbol == 'NIFTY 50':
+            if symbol == 'NIFTY 501':
                 stkanalytics = wdb.mrigweb_index(symbol)
             else:
                 stkanalytics = wdb.mrigweb_stock(symbol)
@@ -102,19 +118,56 @@ def stock(request,symbol='HDFCBANK'):
             level_chart = stkanalytics[11]
             pcr = stkanalytics[12]
             max_pain = stkanalytics[13]
+            ratio_list = stkanalytics[14]
+            income_statement = stkanalytics[15]
+            balance_sheet = stkanalytics[16]
+
             #         fd,oc = fd.to_html(), oc.to_html()
              
             return_list = myhtml.list_to_html(return_list)
             risk_list = myhtml.list_to_html(risk_list)
               
-            if not ratios.empty:
-                ratios = ratios.reset_index()
-                ratios_head = list(ratios)
-                ratios_head.remove("index")
-                ratios_head.insert(0,"")
-                ratios = [ratios_head] + ratios.values.tolist()
+            if not ratio_list.empty:
+                # ratios = ratios.reset_index()
+                ratio_list['ratios'] = ratio_list['ratios'].str.upper()
+                ratio_list.rename(columns={'ratios' : 'Ratios'},inplace=True)
+                ratios_head = list(ratio_list)
+                # ratios_head.remove("index")
+                # ratios_head.insert(0,"")
+                ratios = [ratios_head] + ratio_list.values.tolist()
                 ratios = myhtml.list_to_html(ratios)
-            
+
+            if not income_statement.empty:
+                # ratios = ratios.reset_index()
+                income_statement['income_statement'] = income_statement['income_statement'].str.upper()
+                income_statement.rename(columns={'income_statement': 'Income Statement (Cr)'}, inplace=True)
+                for col in income_statement.columns[1:]:
+                    print(col)
+                    income_statement[col] = income_statement[col].apply(lambda x : '{:,.0f}'.format(float(x)/10000000))
+                income_statement_head = list(income_statement)
+                # ratios_head.remove("index")
+                # ratios_head.insert(0,"")
+                income_statement = [income_statement_head] + income_statement.values.tolist()
+                income_statement = myhtml.list_to_html(income_statement)
+
+            if not balance_sheet.empty:
+                # ratios = ratios.reset_index()
+                balance_sheet['balance_sheet'] = balance_sheet['balance_sheet'].str.upper()
+                color_row_list= [1]
+                for i in balance_sheet.index:
+                    if balance_sheet.loc[i,'balance_sheet'] == 'EQUITY_AND_LIABILITIES':
+                        color_row_list.append(i)
+                balance_sheet.rename(columns={'balance_sheet': 'Balance Sheet (Cr)'}, inplace=True)
+                for col in balance_sheet.columns[1:]:
+                    print(col)
+                    # balance_sheet[col] = balance_sheet[col].apply(lambda x :'{:,.0f}'.format(float(x)/1000))
+                    balance_sheet[col] = balance_sheet[col].apply(lambda x : mu.mrig_format(x,'{:,.0f}'))
+                balance_sheet_head = list(balance_sheet)
+                # ratios_head.remove("index")
+                # ratios_head.insert(0,"")
+                balance_sheet = [balance_sheet_head] + balance_sheet.values.tolist()
+                balance_sheet = myhtml.list_to_html(balance_sheet,color_row_list=color_row_list)
+
             if not oc.empty:
                 oc = oc.reset_index()
                 oc['PUT_Expiry'] = "<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"/option/"+symbol+":"+oc['Expiry'].apply(lambda x:x.strftime('%d%m%Y')) +":"+ oc['Strike_Price'].apply(lambda x:str(x))+":"+ oc['PUT_LTP'].apply(lambda x:str(x))+":PE\">"+oc['Expiry'].apply(lambda x:x.strftime('%d-%b-%Y'))+"</a>"
@@ -150,13 +203,33 @@ def stock(request,symbol='HDFCBANK'):
 # #        quotes = []
 #     price_list = [price_labels,quotes]
     price_list = myhtml.list_to_html(price_list)
-            
+    news = []
+    stknews = googlenews.get_news(stock_desc.split('|')[0]) #+ googlenews.get_news(symbol)
+
+    for n in stknews:
+        # if 'Tata Power' in n['title']:
+        dtime = n['published date']
+        try:
+            dtime = datetime.datetime.strptime(n['published date'], '%a, %d %b %Y %I:%M:%S %Z')
+            dtime = GMT.localize(dtime)
+        except:
+            pass
+        # print(dtime.astimezone(IST).strftime('%a, %d %b %Y %I:%M:%S'), '\n')
+        # print(n['title'], '\n\n')
+
+        # news.append([dtime,"<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"" + n['url'] + ">" +n['title']+ "</a>"])
+        print("<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"" + n['url'] + "\">" +n['title']+ "</a>")
+        news.append([dtime,"<a style=\"color:#f7ed4a;text-decoration:underline;\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"" + n['url'] + "\">" +n['title']+ "</a>"])
+
+    # print(news)
     return render(request, "stock.html", {"slist":slist,"symbol":symbol,
                                           "stock_desc" : stock_desc,
                                           "price_list":price_list,
                                           "return_list":return_list,
                                           "risk_list":risk_list,
                                           "ratios":ratios,
+                                          "income_statement" : income_statement,
+                                          "balance_sheet" : balance_sheet,
                                           "oc":oc,
                                           "price_graph":price_graph,
                                           "return_graph":return_graph,
@@ -237,6 +310,8 @@ def folio(request, template=''):
 
 
 def market(request, symbol='NIFTY 50'):
+    indices = setting['indices_for_mrig'].keys()
+
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
@@ -277,6 +352,9 @@ def market(request, symbol='NIFTY 50'):
     stocklist = engine.execute(
         "select distinct sm.symbol, sm.stock_name from security_master sm inner join stock_history sh on sm.symbol=sh.symbol where sh.series='EQ'").fetchall()
     slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
+    for stk in indices:
+        slist = slist + "<option value=\"" + str(stk) + " : " + str(stk) + "\">"
+    # slist = slist + "</datalist>"
     # print(stocklist)
     for stk in stocklist:
         if stk[0] != 'symbol':
@@ -285,6 +363,13 @@ def market(request, symbol='NIFTY 50'):
             else:
                 slist = slist + "<option value=\"" + str(stk[0]) + " : " + str(stk[0]) + "\">"
     slist = slist + "</datalist>"
+
+    # indices_list = "<input style=\"width: 130px; height: 25px;\" list=\"indices\" name=\"indices\"><datalist id=\"indices\">"
+    # # print(stocklist)
+    # for stk in indices:
+    #     indices_list = indices_list + "<option value=\"" + str(stk) + "\">"
+    # indices_list = indices_list + "</datalist>"
+    # print(indices_list)
     #
     # if request.method == "POST":
     #     # Get the posted form

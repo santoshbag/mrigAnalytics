@@ -189,16 +189,18 @@ body {
         <br>
         {% for n in value %}
 <!--        {{n.0}}-->
-        <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>
-        <p class="body-item mbr-fonts-style display-7 " style="padding: 5px;"><a href="/news/{{n.3}}" style="color:aliceblue;">{{n.1}}</a></p>
-        {% if n.2 != "NULL" %}                                                                             
-        <p class="body-item mbr-fonts-style display-7" style="text-align: justify"><font size="2">{{n.2}}</p>
-        {% endif %}                                                                             
-        <br>
-        {% if n.4 != "NULL" %}
-        <p class="body-item mbr-fonts-style display-7" style="text-align: justify; color:white;"><font size="2">{{n.4}}</p>
-        {% endif %}
-        <br>
+<!--        <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>-->
+<!--        <p class="body-item mbr-fonts-style display-7 " style="padding: 5px;"><a href="/news/{{n.4}}" style="color:aliceblue;">{{n.1}}</a></p>-->
+        <p class="body-item mbr-fonts-style display-7 " style="padding: 5px;"><a href="{{n.4}}" style="color:aliceblue; onclick="window.open(this.href,'_blank');return false;">{{n.1}}</a></p>
+
+<!--        {% if n.2 != "NULL" %}                                                                             -->
+<!--        <p class="body-item mbr-fonts-style display-7" style="text-align: justify"><font size="2">{{n.2}}</p>-->
+<!--        {% endif %}                                                                             -->
+<!--        <br>-->
+<!--        {% if n.4 != "NULL" %}-->
+<!--        <p class="body-item mbr-fonts-style display-7" style="text-align: justify; color:white;"><font size="2">{{n.4}}</p>-->
+<!--        {% endif %}-->
+<!--        <br>-->
         {% endfor %}
         <br>
         <br>

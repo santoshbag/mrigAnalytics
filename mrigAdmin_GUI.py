@@ -27,6 +27,8 @@ from data import webserver_load as wload
 from data import stockHistoryNew as sh
 from kite import mrigkite as mk
 from data import mutual_funds as mf
+from data import financial_results as fr
+
 import mrigstatics as ms
 import zipfile,re
 import yfinance as yf
@@ -157,6 +159,9 @@ def webserver_load():
     wload.market_db_load()
     wload.mrigweb_stock_load()
 
+def results_load():
+    fr.results_download_all()
+
 def adHoc_stock():
     # sdate = datetime.datetime.strptime(startcal.get_date(),'%Y/%m/%d')
     # edate = datetime.datetime.strptime(endcal.get_date(), '%Y/%m/%d')
@@ -227,6 +232,11 @@ webload_button = tk.Button(lFrame0, text="Web Server Load",
                            font=('Poppins bold', 12), padx=10,pady=5,
                            command=webserver_load)
 webload_button.pack(side = tk.LEFT)
+
+resload_button = tk.Button(lFrame0, text="Results Load",
+                           font=('Poppins bold', 12), padx=10,pady=5,
+                           command=results_load)
+resload_button.pack(side = tk.LEFT)
 
 stock_button = tk.Button(lFrame0, text="AdHoc Stock Load",
                         font=('Poppins bold', 12), padx=10,pady=5,

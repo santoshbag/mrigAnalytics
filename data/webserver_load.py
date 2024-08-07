@@ -14,6 +14,7 @@ from mrigweb.mrigwebapp.myhtml import myhtml
 import pandas as pd
 import json
 import time
+import data.settings_load as config
 
 import sys,os
 import urllib.parse
@@ -68,6 +69,8 @@ colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 engine = mu.sql_engine()
 engine_mrigweb = mu.sql_engine(dbname=mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
 today = datetime.date.today()
+setting = config.get_settings()
+
 # def stock_page_load():
 #     starttime = time.monotonic()
 #     engine = mu.sql_engine()
@@ -388,12 +391,14 @@ def market_db_load():
     n50_ta_screen_json = n50_ta_screen.to_json(orient='split')
     im.set_items({'n50_ta_screen' : n50_ta_screen_json})
 
-    indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
-               "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
-               "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
-               "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
-               "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
-               ]
+    indices = list(setting['indices_for_mrig'].keys())
+
+    # indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
+    #            "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
+    #            "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
+    #            "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
+    #            "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
+    #            ]
 
     print('Sector_Graph : Creating from Scratch')
     engine = mu.sql_engine()
@@ -460,7 +465,8 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
     nifty_100 = [x[1:-1] for x in nifty_100]
 
     # symbollist = sorted(mrigstatics.NIFTY_100) if symbollist[0] == 'NIFTY_100' else symbollist
-    symbollist = sorted(nifty_100) if symbollist[0] == 'NIFTY_100' else symbollist
+    indices = list(setting['indices_for_mrig'].keys())
+    symbollist = sorted(indices + nifty_100) if symbollist[0] == 'NIFTY_100' else symbollist
 
     symbols_loaded = []
     for symbol in symbollist:
@@ -607,6 +613,24 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
             im.set_items({symbol+'|risk_list' : risk_list_json})
             print(symbol+'  Risk List Populated')
 
+            stk.get_ratios()
+            ratio_list = stk.ratio_data
+            ratio_list_json = ratio_list.to_json(orient='split')
+            im.set_items({symbol + '|ratio_list': ratio_list_json})
+            print(symbol+'  Ratio List Populated')
+
+
+            stk.get_income_statement()
+            income_statement = stk.income_statement
+            income_statement_json = income_statement.to_json(orient='split')
+            im.set_items({symbol + '|income_statement': income_statement_json})
+            print(symbol+'  Income Statement Populated')
+
+            stk.get_balance_sheet()
+            balance_sheet = stk.balance_sheet
+            balance_sheet_json = balance_sheet.to_json(orient='split')
+            im.set_items({symbol + '|balance_sheet': balance_sheet_json})
+            print(symbol+'  Balance Sheet Populated')
             #
             # rd = pd.DataFrame()
             #
@@ -664,5 +688,26 @@ def strategies_stock_load():
 
 if __name__ == '__main__':
      # market_db_load()
-     # mrigweb_stock_load(symbollist=['HDFCBANK'],force=1)
-     strategies_stock_load()
+     lst =  ['NIFTY 50',
+ 'NIFTY BANK',
+ 'INDIA VIX',
+ 'NIFTY SMALLCAP 100',
+ 'NIFTY MIDCAP 100',
+ 'NIFTY PRIVATE BANK',
+ 'NIFTY PSU BANK',
+ 'NIFTY IT',
+ 'NIFTY AUTO',
+ 'NIFTY PHARMA',
+ 'NIFTY FMCG',
+ 'NIFTY FINANCIAL SERVICES',
+ 'NIFTY REALTY',
+ 'NIFTY HEALTHCARE INDEX',
+ 'NIFTY INDIA CONSUMPTION',
+ 'NIFTY INFRASTRUCTURE',
+ 'NIFTY COMMODITIES',
+ 'NIFTY ENERGY',
+ 'NIFTY 100',
+ 'NIFTY METAL']
+
+     mrigweb_stock_load(lst,force=1)
+     # strategies_stock_load()

@@ -18,6 +18,8 @@ import json
 import xml.etree.ElementTree as ET
 import requests
 import zipfile,re
+import logging
+
 
 
 # date_range = pd.bdate_range(start='02/23/2024', end = '02/24/2024',
@@ -27,7 +29,16 @@ import zipfile,re
 datadir = os.path.dirname(__file__)
 engine = mu.sql_engine()
 
-eq_dir_qtr = os.path.join('..','resources','equity_research')
+eq_dir_qtr = os.path.join('..','resources','equity_research','input')
+eq_dir_done = os.path.join('..','resources','equity_research','Done')
+
+eq_dir_error_fie = os.path.join('..','resources','equity_research','errors','errors.log')
+
+# Create and configure logger
+logging.basicConfig(filename=eq_dir_error_fie,
+                    format='%(asctime)s %(message)s',
+                    filemode='a+')
+
 timestamp = datetime.datetime.now()
 
 headers = {
@@ -95,13 +106,31 @@ def results_download():
                     data['results'] = data['xbrl_url'].apply(lambda x: parse_xbrl(x))
                     data['timestamp'] = timestamp
                     data.drop('xbrl_url', axis=1, inplace=True)
-                    data.to_sql('financial_results',engine,if_exists='append',index=False)
+                    sql = '''
+                        insert into financial_results (symbol,period_ended, related_qtr, results, period,consolidated,timestamp ) 
+                        values (%s,%s,%s,%s,%s,%s,%s) on conflict (symbol,period_ended,period) 
+                        do update set
+                        related_qtr = excluded.related_qtr,
+                        results = excluded.results,
+                        consolidated = excluded.consolidated,
+                        timestamp = excluded.timestamp
+                        '''
+                    for i in data.index:
+                        engine.execute(sql, (data.loc[i,'symbol'], data.loc[i,'period_ended'],
+                                             data.loc[i,'related_qtr'],data.loc[i,'results'],
+                                             data.loc[i,'period'],data.loc[i,'consolidated'],
+                                             data.loc[i,'timestamp']))
+
+                    # data.to_sql('financial_results',engine,if_exists='append',index=False)
                     print(data)#[['consolidated','xbrl_url','results']])
                 except:
                     pass
 
 
 def results_download_all():
+    logger = logging.getLogger()
+    logger.setLevel(logging.ERROR)
+
     for r, d, f in os.walk(eq_dir_qtr):
         for file in f:
             if re.search("^FINANCIAL_RESULTS.*csv", file):
@@ -111,26 +140,53 @@ def results_download_all():
                 # stockbhavlist.append(os.path.join(r,file))
                 file = os.path.join(r, file)
                 print(file)
+                sql = '''
+                    insert into financial_results (symbol,period_ended, related_qtr, results, period,consolidated,timestamp )
+                    values (%s,%s,%s,%s,%s,%s,%s) on conflict (symbol,period_ended,period) 
+                    do update set
+                    related_qtr = excluded.related_qtr,
+                    results = excluded.results,
+                    consolidated = excluded.consolidated,
+                    timestamp = excluded.timestamp
+                    '''
                 data = pd.read_csv(file)
                 cols = {'COMPANY NAME': 'symbol', 'CONSOLIDATED / NON-CONSOLIDATED': 'consolidated', 'PERIOD': 'period',
                         'PERIOD ENDED': 'period_ended', 'RELATING TO': 'related_qtr', '** XBRL': 'xbrl_url'}
                 data = data[cols.keys()]
                 data.rename(columns=cols, inplace=True)
                 data['period_ended'] = pd.to_datetime(data['period_ended']).dt.date
-                data = data[data['period_ended'] > datetime.date(2020, 1, 1)]
+                # data = data[data['period_ended'] > datetime.date(2020, 1, 1)]
                 data = data[data['consolidated'] == 'Consolidated']
-                try:
-                    data['results'] = data['xbrl_url'].apply(lambda x: parse_xbrl(x))
-                    data['timestamp'] = timestamp
-                    data.drop('xbrl_url', axis=1, inplace=True)
-                    data['symbol'] = data['symbol'].apply(lambda x: getSymbol(x))
-                    data.to_sql('financial_results',engine,if_exists='append',index=False)
+                data['timestamp'] = timestamp
+
+                for i in data.index:
+                    print(data.loc[i,'symbol'])
+
+                    try:
+                        # data['results'] = data['xbrl_url'].apply(lambda x: parse_xbrl(x))
+                        results = parse_xbrl(data.loc[i,'xbrl_url'])
+                        # data.drop('xbrl_url', axis=1, inplace=True)
+                        symbol = json.loads(results)['Symbol']
+
+                    # for i in data.index:
+                        # print(data.loc[i,'symbol'])
+                        engine.execute(sql, (symbol, data.loc[i,'period_ended'],
+                                             data.loc[i,'related_qtr'],results,
+                                             data.loc[i,'period'],data.loc[i,'consolidated'],
+                                             data.loc[i,'timestamp']))
+                    # data.to_sql('financial_results',engine,if_exists='append',index=False)
                     # print(data)  # [['consolidated','xbrl_url','results']])
-                except:
-                    pass
+
+                    except Exception as error:
+                        print(data.loc[i,'symbol'],"  Error ",error)
+                        logger.error(data.loc[i,'symbol']+"  Error "+str(error))
+                        pass
+                os.replace(os.path.join(eq_dir_qtr, os.path.basename(file)),
+                           os.path.join(eq_dir_done, os.path.basename(file)))
                 print(data)#print(df_list[2])
 
-#    
+#
 if __name__ == '__main__':
+    # results_download()
     results_download_all()
 

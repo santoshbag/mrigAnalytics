@@ -129,7 +129,13 @@ input[type=button], input[type=submit], input[type=reset] {
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#risk">Risk</a>
 {% endif %}
 {% if ratios|length > 0 %}
-  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#fundamentals">Fundamentals</a>
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#fundamentals_r">Ratios</a>
+{% endif %}
+{% if income_statement|length > 0 %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#fundamentals_is">Income Statement</a>
+{% endif %}
+{% if balance_sheet|length > 0 %}
+  <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#fundamentals_bs">Balance Sheet</a>
 {% endif %}
 {% if news|length > 0 %}
   <a class="body-item mbr-fonts-style display-7" style="padding: 5px;" href="#news">News</a>  
@@ -251,11 +257,35 @@ input[type=button], input[type=submit], input[type=reset] {
 {% if ratios|length > 0 %}          
         <br>
         <div class="container scroll">
-        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9" id="fundamentals">
-          Fundamentals </h5>
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9" id="fundamentals_r">
+          Ratios </h5>
           <table class="table" cellspacing="0">
           <thead>
           {{ratios|safe}}
+          </table>
+        </div>
+        <br>
+{% endif %}
+{% if income_statement|length > 0 %}
+        <br>
+        <div class="container scroll">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9" id="fundamentals_is">
+          Income Statement </h5>
+          <table class="table" cellspacing="0">
+          <thead>
+          {{income_statement|safe}}
+          </table>
+        </div>
+        <br>
+{% endif %}
+{% if balance_sheet|length > 0 %}
+        <br>
+        <div class="container scroll">
+        <h5 class="mbr-section-title mbr-white mbr-fonts-style align-left pb-3 display-9" id="fundamentals_bs">
+          Balance Sheet </h5>
+          <table class="table" cellspacing="0">
+          <thead>
+          {{balance_sheet|safe}}
           </table>
         </div>
         <br>
@@ -267,7 +297,8 @@ input[type=button], input[type=submit], input[type=reset] {
           News </h5>
         {% for n in news %}
         <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>
-        <p class="body-item mbr-fonts-style display-7 " style="padding: 2px;">{{n.1}}</p>
+        <p class="body-item mbr-fonts-style display-7 " style="padding: 2px;">{{n.1|safe}}</p>
+
         {% if n.2 != "NULL" %}                                                                             
         <p class="body-item mbr-fonts-style display-7" style="padding: 1px;"><font size="2">{{n.2}}</p>
         {% endif %}                                                                             

@@ -17,17 +17,26 @@ class mrigkite:
     kite = None
     login_url = None
 
+
+
     def __init__(self,vendor='zerodha',username='sbag'):
         self.vendor = vendor
         self.username = username
         engine = mu.sql_engine()
+        pool = {
+            "pool_connections": 10,
+            "pool_maxsize": 10,
+            "max_retries": 5,
+            "pool_block": False
+        }
+
 
         creds = engine.execute("select api_key, api_secret,access_token from auth where vendor=%s and username=%s",(self.vendor,self.username)).fetchall()
         if len(creds) > 0:
             self.api_key = creds[0][0]
             self.__api_secret = creds[0][1]
             self.__access_token = creds[0][2]
-            self.kite = KiteConnect(api_key=self.api_key)
+            self.kite = KiteConnect(api_key=self.api_key,pool=pool)
             try:
                 self.kite.set_access_token(self.__access_token)
                 quote = self.kite.quote('NSE:NIFTY 50')

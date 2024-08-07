@@ -23,7 +23,7 @@ import requests
 import instruments.termstructure as rates
 from bs4 import BeautifulSoup
 from pandas.tseries.offsets import BDay
-
+from mrigquery import fundamentals as funda
 import json
 from pandas.io.json import json_normalize
 
@@ -152,15 +152,42 @@ class Stock():
             self.daily_logreturns.sort_index(inplace=True)
 
         
-    def get_ratios(self):    
-        sql = "select * from ratios where symbol='" + self.symbol + "' and ratio_date = "\
-               + "(select ratio_date from ( select ratio_date,download_date from ratios where symbol='" + self.symbol + "' order by ratio_date desc,download_date desc limit 1) dt)"
-        sql = "select * from (select * , rank() over (partition by ratio_date order by download_date desc) from ratios where symbol='" + self.symbol + "') rt where rank=1 order by ratio_date desc"                      
-        engine = mu.sql_engine()
-        self.ratio_data = pd.read_sql(sql,engine)
-        if not self.ratio_data.empty:
-            self.ratio_data.set_index('ratio_date',inplace=True)
-            
+    # def get_ratios(self):
+    #     sql = "select * from ratios where symbol='" + self.symbol + "' and ratio_date = "\
+    #            + "(select ratio_date from ( select ratio_date,download_date from ratios where symbol='" + self.symbol + "' order by ratio_date desc,download_date desc limit 1) dt)"
+    #     sql = "select * from (select * , rank() over (partition by ratio_date order by download_date desc) from ratios where symbol='" + self.symbol + "') rt where rank=1 order by ratio_date desc"
+    #     engine = mu.sql_engine()
+    #     self.ratio_data = pd.read_sql(sql,engine)
+    #     if not self.ratio_data.empty:
+    #         self.ratio_data.set_index('ratio_date',inplace=True)
+
+    def get_ratios(self):
+        data = funda.getResults(self.symbol,result_type='ratios')
+        data.index.name = 'ratios'
+        data.reset_index(inplace=True)
+        self.ratio_data = data
+
+    def get_income_statement(self):
+        data = funda.getResults(self.symbol,result_type='income_statement')
+        data.index.name = 'income_statement'
+        data.reset_index(inplace=True)
+        self.income_statement = data
+
+    def get_balance_sheet(self):
+        data_assets = funda.getResults(self.symbol, result_type='assets')
+        data_assets_top = pd.DataFrame([['' for c in data_assets.columns]], columns=data_assets.columns,
+                                       index=['Assets'])
+        data_liabilities = funda.getResults(self.symbol, result_type='liabilities')
+        data_liabilities_top = pd.DataFrame([['' for c in data_assets.columns]], columns=data_liabilities.columns,
+                                            index=['Liabilities'])
+        data = pd.concat([data_assets_top, data_assets, data_liabilities_top, data_liabilities])
+        data = data.fillna('')
+        for c in data.columns:
+            if data.loc['assets',c] == '':
+                data.drop(columns=[c],inplace=True)
+        data.index.name = 'balance_sheet'
+        data.reset_index(inplace=True)
+        self.balance_sheet = data
     def futures(self):
         futures_data = pd.DataFrame()        
         sql = "select * from option_history where symbol='"+ self.symbol + \
@@ -445,6 +472,17 @@ class Index():
         self.daily_logreturns = pd.read_sql(sql,engine)
         if not self.daily_logreturns.empty:
             self.daily_logreturns.set_index('date',inplace=True)
+
+    def get_levels(self):
+        res = ra.level_analysis([self.symbol])
+        if res is not None:
+            self.level_chart = res['level_chart']
+            self.pcr = res['pcr']
+            self.max_pain = res['max_pain']
+        else:
+            self.level_chart = None
+            self.pcr = None
+            self.max_pain = None
 
     def optionChain(self):
         Base_url =("https://www1.nseindia.com/live_market/dynaContent/"+

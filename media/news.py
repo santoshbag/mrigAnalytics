@@ -15,7 +15,9 @@ from bs4 import BeautifulSoup
 import mrigstatics,mrigutilities,json
 import xml.etree.ElementTree as ET
 
-
+from gnews  import GNews
+import pytz
+import nltk
 
 headers = {
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0"
@@ -111,10 +113,55 @@ def get_ETNews():
             
         print("News download finished\n")
         return recos
-    
+
+def get_GoogleNews():
+    googlenews = GNews(language='en', country='IN', period='1d', start_date=None, end_date=None, max_results=20)
+    IST = pytz.timezone('Asia/Kolkata')
+    GMT = pytz.timezone('UTC')
+
+    news_topics = {
+        'Top News' : ['Top News'],
+        'Broker Recos' : ['Stock Recommendations india'],
+        'Buzz Stocks' : ['Buzz Stocks india'],
+        'Economy' : ['Economy india','World Economy'],
+        'Business': ['Business india'],
+        'Markets' : ['Market Reports india','Stock Market india moneycontrol'],
+        'Results' : ['Financial Results india'],
+        'Technicals' : ['stock technical analysis india'],
+    }
+
+    news = {}
+    for topic in news_topics.keys():
+        news[topic] = []
+        khabar_list = []
+        for search_param in news_topics[topic]:
+            # khabar = googlenews.get_news(search_param)
+            for khabar in googlenews.get_news(search_param):
+                try:
+                    dtime = datetime.datetime.strptime(khabar['published date'], '%a, %d %b %Y %I:%M:%S %Z')
+                    dtime = GMT.localize(dtime)
+                    khabar_list.append([dtime.astimezone(IST).strftime('%a, %d %b %Y %I:%M:%S'),khabar['title'],khabar['description'],topic,khabar['url'],khabar['description']])
+                    # khabar_list.append("<a style=\"color:#f7ed4a;text-decoration:underline;\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"" + khabar['url'] + "\">" +khabar['title']+ "</a>")
+                except:
+                    pass
+        news[topic] = khabar_list
+    df = pandas.DataFrame()
+    for k in news.keys():
+        df = pandas.concat([df, pandas.DataFrame(news[k], columns=["date", "title", "description", "type", "guid", "body"])])
+    news = df
+    engine = mrigutilities.sql_engine()
+    try:
+        news.to_sql('media', engine, if_exists='append', index=False)
+    except:
+        pass
+    print(news)
+    return(news)
+
+
 if __name__ == '__main__':
-    get_MCNews()
+    # get_MCNews()
     # get_ETNews()
+    get_GoogleNews()
  
     
     

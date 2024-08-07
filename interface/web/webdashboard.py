@@ -27,6 +27,7 @@ import stockScreener as ss
 import mfScreener as ms1
 import mfScreener_new as ms
 import research.analytics as ra
+import data.settings_load as config
 
 import media.news as n
 import nsepy
@@ -56,6 +57,7 @@ import json
 
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 engine = mu.sql_engine()
+setting = config.get_settings()
 
 def mrigweb_db_fx(location,sheet='None'):
     
@@ -356,6 +358,7 @@ def mrigweb_db_rates(location,sheet='None'):
 #     return ret_lis
 
 def market_db():
+
     page_items = im.get_item(['market_graphs','n50_ta_screen','sector_graph',
                               'NIFTY 50|levels_json','BANKNIFTY|levels_json'])
     for k,v in page_items.items():
@@ -398,12 +401,13 @@ def market_db():
         n50_ta_screen_json = n50_ta_screen.to_json(orient='split')
         im.set_items({'n50_ta_screen' : n50_ta_screen_json})
 
-    indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
-               "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
-               "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
-               "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
-               "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
-               ]
+    indices = setting['indices_for_mrig'].keys()
+    # indices = ["NIFTY 50", "NIFTY BANK", "INDIA VIX", "NIFTY SMALLCAP 100",
+    #            "NIFTY MIDCAP 100", "NIFTY PRIVATE BANK", "NIFTY PSU BANK", "NIFTY IT", "NIFTY AUTO",
+    #            "NIFTY PHARMA", "NIFTY FMCG", "NIFTY FINANCIAL SERVICES", "NIFTY REALTY",
+    #            "NIFTY HEALTHCARE INDEX", "NIFTY INDIA CONSUMPTION", "NIFTY INFRASTRUCTURE", "NIFTY COMMODITIES",
+    #            "NIFTY ENERGY", "NIFTY 100", "NIFTY METAL"
+    #            ]
     if 'sector_graph' in page_items.keys():
         print('Sector_Graph : Getting from Database')
         sector_graph = page_items['sector_graph']
@@ -973,11 +977,11 @@ def mrigweb_news(newsid=None):
     #     pass
     #
     if newsid is None:
-        sql = "select distinct type, date, title, description,id from media \
+        sql = "select distinct type, date, title, description,id,guid from media \
                where date > ((select max(date) from media) - interval '2 days') \
                order by type ,date desc"
     else:
-        sql = "select distinct type, date, title, description,body,id from media \
+        sql = "select distinct type, date, title, description,body,id,guid from media \
                where id='"+newsid+"' limit 1"
     
     engine =  mu.sql_engine()
@@ -992,6 +996,7 @@ def mrigweb_news(newsid=None):
     if newsid is not None:
         newsbody = list(news.body)
     newsids = list(news.id)
+    newsurls = list(news.guid)
 
     # print(newsids)
 
@@ -1002,11 +1007,11 @@ def mrigweb_news(newsid=None):
     i = 0
     if newsid is not None:
         for t in newstype:
-            news[t].append([newsdate[i],newstitle[i],newsdesc[i],newsids[i],newsbody[i]])
+            news[t].append([newsdate[i],newstitle[i],newsdesc[i],newsids[i],newsbody[i],newsurls[i]])
             i = i + 1
     else:
         for t in newstype:
-            news[t].append([newsdate[i],newstitle[i],newsdesc[i],newsids[i]])
+            news[t].append([newsdate[i],newstitle[i],newsdesc[i],newsids[i],newsurls[i]])
             i = i + 1
 
     return news
@@ -1492,10 +1497,37 @@ def mrigweb_stock(symbol,tenor='1Y'):
         im.update_items({symbol+'|risk_list': risk_list_json})
 #    sht.range('D14').value = [risklabels,risknumbers]
              
-             
-    # stk.get_ratios()
-#    ratios = [list(stk.ratio_data.columns),stk.ratio_data.values.tolist()[0]]
-    
+    if symbol+'|ratio_list' in page_items.keys():
+        print('Ratio List : Getting from Database')
+        ratio_list = pd.read_json(page_items[symbol+'|ratio_list'], orient='split')
+    else:
+        print('Ratio List : Creating Table')
+        stk.get_ratios()
+        ratio_list = stk.ratio_data
+        ratio_list_json = ratio_list.to_json(orient='split')
+        im.set_items({symbol+'|ratio_list': ratio_list_json})
+
+    if symbol+'|income_statement' in page_items.keys():
+        print('Income Statement : Getting from Database')
+        income_statement = pd.read_json(page_items[symbol+'|income_statement'], orient='split')
+    else:
+        print('Income Statement : Creating Table')
+        stk.get_income_statement()
+        income_statement = stk.income_statement
+        income_statement_json = income_statement.to_json(orient='split')
+        im.set_items({symbol+'|income_statement': income_statement_json})
+
+    if symbol+'|balance_sheet' in page_items.keys():
+        print('Balance Sheet : Getting from Database')
+        balance_sheet = pd.read_json(page_items[symbol+'|balance_sheet'], orient='split')
+    else:
+        print('Balance Sheet : Creating Table')
+        stk.get_balance_sheet()
+        balance_sheet = stk.balance_sheet
+        balance_sheet_json = balance_sheet.to_json(orient='split')
+        im.set_items({symbol+'|balance_sheet': balance_sheet_json})
+
+
 #    sht.range('D18:J500').clear_contents()
     rd = pd.DataFrame()
 #     if not stk.ratio_data.empty:
@@ -1551,7 +1583,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
 
 #    sht.range('W3:AR500').clear_contents()
 #    sht.range('W3').value = optionchain
-    return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news,level_chart,pcr,max_pain]
+    return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news,level_chart,pcr,max_pain,ratio_list,income_statement,balance_sheet]
 
 def mrigweb_funds(symbol,tenor='1Y'):
     

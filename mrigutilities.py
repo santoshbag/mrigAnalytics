@@ -137,6 +137,13 @@ def sql_engine(dbname=mrigstatics.RB_WAREHOUSE[mrigstatics.ENVIRONMENT], dbhost=
 
     return ENGINE
 
+def get_settings():
+    sql = "select settings from settings where setting_type='main' limit 1"
+    settings = sql_engine().execute(sql).fetchone()[0]
+    settings = json.loads(settings)
+    return settings
+
+setting = get_settings()
 
 def last_thursday_of_month(date):
     date = date + relativedelta.relativedelta(day=31, weekday=relativedelta.TH(-1))
@@ -354,12 +361,15 @@ def getStockQuote(symbol):
         # stockQuote = nsepy.get_quote(symbol)
         # if ('data' in stockQuote.keys()):
         #     stockQuote = stockQuote['data'][0]
-        price = yf.download(symbol+'.NS',period='1d',interval='1m')
+        indices = setting['indices_for_mrig']
+        yahoo_sym = indices[symbol] if symbol in indices.keys() else symbol+'.NS'
+        price = yf.download(yahoo_sym,period='1d',interval='1m')
+        # print(price)
         stockQuote['lastPrice'] = price.tail(1)['Close'].values[0]
         stockQuote['high'] = max(price['High'].values)
         stockQuote['low'] = min(price['Low'].values)
-        stockQuote['open'] = price.head(1)['Close'].values[0]
-        stockQuote['time'] = str(price.head(1).index[0]).split('+')[0]
+        stockQuote['open'] = price.head(1)['Open'].values[0]
+        stockQuote['time'] = str(price.tail(1).index[0]).split('+')[0]
     except:
         pass
 #    print(stockQuote)
@@ -946,12 +956,13 @@ def getLevels(name,startdate=(datetime.date.today() - datetime.timedelta(days=36
                 'NIFTY 50': '^NSEI',
                 'BANKNIFTY': '^NSEBANK',
                 'NIFTY BANK': '^NSEBANK',}
-
+    indices = setting['indices_for_mrig']
+    yahoo_sym = indices[name] if name in indices.keys() else name + '.NS'
     if name in ['NIFTY', 'BANKNIFTY','NIFTY 50','NIFTY BANK']:
         yahooscrip = yahoomap[name]
     else:
         yahooscrip = name + '.NS'
-    ticker = yf.Ticker(yahooscrip)
+    ticker = yf.Ticker(yahoo_sym)
     start, end = startdate.strftime('%Y-%m-%d') , enddate.strftime('%Y-%m-%d')
     df = ticker.history(interval="1d",start=start, end=end)
     df['Date'] = pd.to_datetime(df.index)
@@ -1279,6 +1290,12 @@ def evaluate_expression(expression, variable_values):
     except sp.SympifyError as e:
         raise ValueError(f"Error evaluating expression: {e}")
 
+def mrig_format(x,fmt):
+    try:
+        x = fmt.format(float(x)/10000000)
+    except:
+        pass
+    return x
 
 if __name__ == '__main__':
     print(pd.__version__)
@@ -1311,3 +1328,4 @@ if __name__ == '__main__':
 #     print(getExpiry(scrip = 'CIPLA'))
     # print(getStockQuote('TATAPOWER'))
     # print(getIndexMembers('NIFTY BANK'))
+    print(getStockQuote('NIFTY PSU BANK'))
