@@ -184,9 +184,11 @@ body {
     </script>
 
     {% for key, value in news.items %}
-    <p class=" mbr-white mbr-fonts-style  display-5" style="padding: 5px;" id="{{key}}">{{key}}</p>
+      <div class="media-container">
+          <div class="col-md-12">
+    <p class=" mbr-white mbr-fonts-style  display-5" style="padding: 5px; " id="{{key}}">{{key}}</p>
         <br>
-        <br>
+<!--        <br>-->
         {% for n in value %}
 <!--        {{n.0}}-->
 <!--        <p class="body-item mbr-fonts-style display-7" style="padding: 2px;"><font size="1">{{n.0}}</p>-->
@@ -204,6 +206,8 @@ body {
         {% endfor %}
         <br>
         <br>
+          </div>
+      </div>
     {% endfor %}
 
 </section>

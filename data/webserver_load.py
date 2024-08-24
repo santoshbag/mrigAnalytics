@@ -557,7 +557,7 @@ def mrigweb_stock_load(symbollist=['NIFTY_100'],tenor='1Y',force=0):
             print(symbol+'  Boll Graph Populated')
 
 
-            macd_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['MACD', 'MACDS'])
+            macd_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['MACD', 'MACDS'],subplots=2)
 
             macd_graph.update_layout(width=500, height=300,
                                      yaxis_domain=[0.2, 1.0])

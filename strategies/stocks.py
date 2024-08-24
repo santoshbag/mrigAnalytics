@@ -660,7 +660,129 @@ class Index():
             
         return self.risk
 
-        
+
+class MutualFunds():
+    benchmark_index1 = 'NIFTY 50'
+    benchmark_index2 = None
+
+    def __init__(self, name):
+        self.symbol = name
+        nav = mu.getMFNAV([name])
+        if len(nav) > 0:
+            nav = "{:.2f}".format(nav.head(1)['nav'].values[0])
+        else:
+            nav = ''
+        self.quote = nav
+        # print(self.quote['lastPrice'])
+        metadata = mu.getMFSecMasterData(name)
+        if 'amc' in metadata.keys():
+            self.amc = metadata['amc']
+        if 'scheme_subscrip_type' in metadata.keys():
+            self.subscription_type = metadata['scheme_subscrip_type']
+        if 'isin' in metadata.keys():
+            self.isin = metadata['isin']
+        if 'launch_date' in metadata.keys():
+            self.launch_date = metadata['launch_date']
+        if 'scheme_asset_type_1' in metadata.keys():
+            self.asset_type_1 = metadata['scheme_asset_type_1']
+        if 'scheme_asset_type_2' in metadata.keys():
+            self.asset_type_2 = metadata['scheme_asset_type_2']
+        if 'scheme_plan_type_1' in metadata.keys():
+            self.plan_type_1 = metadata['scheme_plan_type_1']
+        if 'scheme_plan_type_2' in metadata.keys():
+            self.plan_type_2 = metadata['scheme_plan_type_2']
+        if 'min_inv_amt' in metadata.keys():
+            self.min_inv_amt = metadata['min_inv_amt']
+        if 'aum' in metadata.keys():
+            self.aum = metadata['aum']
+        if 'benchmark' in metadata.keys():
+            self.set_benchmark_index2(metadata['benchmark'])
+
+        self.beta = None
+        self.risk = {}
+
+    def get_benchmark_index1(self):
+        return self.benchmark_index1
+
+    def set_benchmark_index1(self, index):
+        self.benchmark_index1 = index
+
+    def get_benchmark_index2(self):
+        return self.benchmark_index2
+
+    def set_benchmark_index2(self, index):
+        self.benchmark_index2 = index
+
+    def get_price_vol(self, period='1Y'):
+        today = datetime.date.today()
+        years = 0
+        months = 0
+        weeks = 0
+        days = 0
+
+        if period[-1] == 'Y':
+            years = int(period[:-1])
+        if period[-1] == 'M':
+            months = int(period[:-1])
+        if period[-1] == 'W':
+            weeks = int(period[:-1])
+        if period[-1] == 'D':
+            days = int(period[:-1])
+
+        startdate = today - dateutil.relativedelta.relativedelta(years=years,
+                                                                 months=months,
+                                                                 weeks=weeks,
+                                                                 days=days)
+        #        print(startdate)
+        self.pricevol_data = mu.getMFNAV([self.symbol],
+                                             startdate)
+        self.pricevol_data['daily_logreturns'] = np.log(
+            self.pricevol_data['nav'] / self.pricevol_data['nav'].shift(1))
+
+    def get_returns(self, period='1Y'):
+        today = datetime.date.today()
+        years = 0
+        months = 0
+        weeks = 0
+        days = 0
+
+        if period[-1] == 'Y':
+            years = int(period[:-1])
+        if period[-1] == 'M':
+            months = int(period[:-1])
+        if period[-1] == 'W':
+            weeks = int(period[:-1])
+        if period[-1] == 'D':
+            days = int(period[:-1])
+
+        startdate = today - dateutil.relativedelta.relativedelta(years=years,
+                                                                 months=months,
+                                                                 weeks=weeks,
+                                                                 days=days)
+
+        # sql = "select date, daily_log_returns from daily_returns where symbol='" + self.symbol + "' and date >='"+startdate.strftime('%Y-%m-%d')+"'"
+        sql = """
+        select nav_date, scheme_name as symbol, daily_log_return as daily_log_returns from mf_returns where scheme_name in ('{}') and nav_date >='{}'
+        """
+
+        engine = mu.sql_engine()
+        self.daily_logreturns = pd.read_sql(
+            sql.format(self.symbol, startdate.strftime('%Y-%m-%d')),
+            engine)
+        if not self.daily_logreturns.empty:
+            self.daily_logreturns.set_index('nav_date', inplace=True)
+            self.daily_logreturns.sort_index(inplace=True)
+
+    # def get_ratios(self):
+    #     sql = "select * from ratios where symbol='" + self.symbol + "' and ratio_date = "\
+    #            + "(select ratio_date from ( select ratio_date,download_date from ratios where symbol='" + self.symbol + "' order by ratio_date desc,download_date desc limit 1) dt)"
+    #     sql = "select * from (select * , rank() over (partition by ratio_date order by download_date desc) from ratios where symbol='" + self.symbol + "') rt where rank=1 order by ratio_date desc"
+    #     engine = mu.sql_engine()
+    #     self.ratio_data = pd.read_sql(sql,engine)
+    #     if not self.ratio_data.empty:
+    #         self.ratio_data.set_index('ratio_date',inplace=True)
+
+
 def stock_adjust():
     
     #List of Stocks to adjust

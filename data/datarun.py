@@ -14,15 +14,18 @@ STOCKHISTORY 1
 MUTUALFUND   2
 NEWS         3
 YIELDS       4
-RETURNS      5
-INDEXMEMBERS 6
-MARKET INSTR 7
-MARKET DB    8
-STOCK LOAD   9
-STOCK STRAT  10
-TECHNICALS   11
-OPTION STRAT 12
-CORRELATION  13
+STK RETURNS  5
+MF RETURNS   6
+INDEXMEMBERS 7
+MARKET INSTR 8
+FIN RESULTS  9
+MARKET DB    10
+STOCK LOAD   11
+STOCK STRAT  12
+TECHNICALS   13
+CORRELATION  14
+OPTION STRAT 15
+
 """
 
 import sys,os
@@ -52,6 +55,7 @@ import correlations as corr
 import research.analytics as ra
 import json
 import strategies.market_option_strategy as mos
+import financial_results as fr
 
 today = datetime.date.today()
 
@@ -119,6 +123,37 @@ def returns():
     print("Populating Returns Ended")
     elapsed = time.monotonic() - starttime
     print("--------Time Taken for Populating Returns  %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
+
+def mf_returns():
+    starttime = time.monotonic()
+    # calculate_returns_sql = "update stock_history set symbol='PVP' where symbol='PVP'"
+    engine = mu.sql_engine()
+    date = engine.execute('select max(nav_date) from mf_returns').fetchall()[0][0]
+    print(str(date).replace('-',''))
+    print("Populating MF Returns Started")
+    sql = '''
+            insert into mf_returns (scheme_name,isin,nav_date,nav,daily_arithmetic_return,daily_log_return)
+            (
+        (SELECT mf_history.scheme_name as scheme_name,
+            mf_history.isin as isin,
+            mf_history.nav_date as nav_date,
+            mf_history.nav as nav,
+            mf_history.nav / lag(mf_history.nav, 1) 
+            OVER (PARTITION BY mf_history.scheme_name,mf_history.isin
+            ORDER BY mf_history.nav_date) - 1::numeric AS daily_arith_return,
+            ln(mf_history.nav / lag(mf_history.nav, 1)
+            OVER (PARTITION BY mf_history.scheme_name,mf_history.isin
+             ORDER BY mf_history.nav_date)) AS daily_log_return
+           FROM mf_history
+          WHERE nav > 0 and isin is not NULL and nav_date >= %s
+          ORDER BY mf_history.scheme_name, mf_history.isin,mf_history.nav_date desc)
+          )
+                    on conflict (scheme_name,nav_date) do nothing;
+            '''
+    engine.execute(sql,(str(date).replace('-','')))
+    print("Populating MF Returns Ended")
+    elapsed = time.monotonic() - starttime
+    print("--------Time Taken for Populating MF Returns  %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
 def stock_strategies():
     starttime = time.monotonic()
@@ -272,7 +307,7 @@ def daily_datarun():
         except:
             pass
         try:
-            news.get_MCNews()
+            news.get_GoogleNews()
         except:
             pass
         try:
@@ -281,6 +316,10 @@ def daily_datarun():
             pass
         try:
             returns()
+        except:
+            pass
+        try:
+            mf_returns()
         except:
             pass
         # try:
@@ -298,14 +337,14 @@ def daily_datarun():
         # returns()
         update_index_constituents()
         populate_market_instruments()
-
+        fr.results_download_all()
 
         wl.market_db_load()
         wl.mrigweb_stock_load()
         wl.strategies_stock_load()
         populate_technicals()
-        mos.load_option_strategies()
         corr.nifty_corr_data()
+        mos.load_option_strategies()
     else:
         for arg in sys.argv[1:]:
             if arg == '1':
@@ -322,7 +361,7 @@ def daily_datarun():
                     pass
             elif arg == '3':
                 try:
-                    news.get_MCNews()
+                    news.get_GoogleNews()
                 except:
                     pass
             elif arg == '4':
@@ -336,21 +375,28 @@ def daily_datarun():
                 except:
                     pass
             elif arg == '6':
-                update_index_constituents()
+                try:
+                    mf_returns()
+                except:
+                    pass
             elif arg == '7':
-                populate_market_instruments()
+                update_index_constituents()
             elif arg == '8':
-                wl.market_db_load()
+                populate_market_instruments()
             elif arg == '9':
-                wl.mrigweb_stock_load()
+                fr.results_download_all()
             elif arg == '10':
-                wl.strategies_stock_load()
+                wl.market_db_load()
             elif arg == '11':
-                populate_technicals()
+                wl.mrigweb_stock_load()
             elif arg == '12':
-                mos.load_option_strategies()
+                wl.strategies_stock_load()
             elif arg == '13':
+                populate_technicals()
+            elif arg == '14':
                 corr.nifty_corr_data()
+            elif arg == '15':
+                mos.load_option_strategies()
             else:
                 pass
 

@@ -72,3 +72,71 @@
 2024-08-03 15:09:20,059 Bombay Dyeing & Mfg Company Limited  Error [WinError 2] The system cannot find the file specified: '..\\resources\\equity_research\\input\\FINANCIAL_RESULTS_QTRLY_20240802_20240803.csv' -> '..\\resources\\equity_research\\Done\\FINANCIAL_RESULTS_QTRLY_20240802_20240803.csv'
 2024-08-03 15:09:20,945 Akzo Nobel India Limited  Error [WinError 2] The system cannot find the file specified: '..\\resources\\equity_research\\input\\FINANCIAL_RESULTS_QTRLY_20240802_20240803.csv' -> '..\\resources\\equity_research\\Done\\FINANCIAL_RESULTS_QTRLY_20240802_20240803.csv'
 2024-08-03 15:14:31,085 Sun Pharmaceutical Industries Limited  Error mismatched tag: line 99, column 2
+2024-08-13 13:38:51,189 Maitreya Medicare Limited   Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:38:52,476 Maitreya Medicare Limited   Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:38:53,313 Maitreya Medicare Limited   Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:38:53,749 Maitreya Medicare Limited   Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:41:24,429 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:41:25,058 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:41:25,461 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 13:41:26,121 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 14:50:57,053 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 14:50:57,746 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 14:50:58,425 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 14:50:59,007 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 16:07:52,265 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 16:07:52,708 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 16:07:53,146 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 16:07:53,600 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 23:34:04,431 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 23:34:05,081 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 23:34:05,700 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-13 23:34:06,360 Maitreya Medicare Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:18,849 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:19,353 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:19,946 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:20,417 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:20,834 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:21,275 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:21,654 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 16:58:22,143 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:31,431 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:32,387 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:32,806 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:33,376 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:33,807 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:34,192 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:34,577 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:13:35,263 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:47,189 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:47,609 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:48,021 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:48,441 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:48,824 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:49,211 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:49,625 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:28:50,048 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:43:58,247 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:43:58,948 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:43:59,531 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:43:59,947 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:44:00,340 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:44:00,773 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:44:01,189 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:44:02,378 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:11,477 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:12,017 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:12,975 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:14,186 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:14,818 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:15,391 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:15,853 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 17:59:16,610 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:26,377 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:26,822 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:27,243 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:27,662 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:28,042 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:28,454 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:28,840 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22
+2024-08-16 18:14:29,252 All E Technologies Limited  Error not well-formed (invalid token): line 58, column 22

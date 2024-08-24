@@ -385,6 +385,19 @@ def scheme_aum():
     for file in os.listdir(aum_dir):
         filename = os.fsdecode(file)
         print(filename)
+        dt = filename.split('.')[0].split('_')[1:]
+        if len(dt[0].strip()) < 4:
+            sd = datetime.datetime.strptime('01' + dt[0].strip() + dt[2].strip(), '%d%b%Y').date()
+            ed = datetime.datetime.strptime('01' + dt[1].strip() + dt[2].strip(), '%d%b%Y').date() + datetime.timedelta(
+                days=32)
+            ed = datetime.date(ed.year, ed.month, 1)
+        else:
+            sd = datetime.datetime.strptime('01' + dt[0].strip() + dt[2].strip(), '%d%B%Y').date()
+            ed = datetime.datetime.strptime('01' + dt[1].strip() + dt[2].strip(), '%d%B%Y').date() + datetime.timedelta(
+                days=32)
+            ed = datetime.date(ed.year, ed.month, 1)
+
+        print(sd, ed)
         data = pd.read_csv(os.path.join(aum_dir, filename), names=['code', 'scheme_name', 'aum', 'aum1'], header=None)
         data['aum'] = data['aum'] + data['aum1']
         data.drop(data[data['scheme_name'].isna()].index, inplace=True)
@@ -392,26 +405,27 @@ def scheme_aum():
 
         data.drop(columns=['code', 'aum1'], inplace=True)
 
-    print(data)
-    sql = """
-    DROP TABLE IF EXISTS temp_scheme_aum;
+        print(data)
+        sql = """
+        DROP TABLE IF EXISTS temp_scheme_aum;
+    
+        CREATE TABLE IF NOT EXISTS temp_scheme_aum (
+            scheme_name text,
+            aum text
+        )
+        """
 
-    CREATE TABLE IF NOT EXISTS temp_scheme_aum (
-        scheme_name text,
-        aum text
-    )
-    """
+        engine.execute(sql)
+        data.to_sql('temp_scheme_aum', engine, if_exists='replace', index=False)
 
-    engine.execute(sql)
-    data.to_sql('temp_scheme_aum', engine, if_exists='replace', index=False)
-
-    sql = """
-        UPDATE mf_scheme_master 
-        SET aum = t.aum
-        FROM temp_scheme_aum as t
-        WHERE mf_scheme_master.scheme_name = t.scheme_name
-    """
-    engine.execute(sql)
+        sql = """
+            UPDATE mf_history
+            SET aum = t.aum
+            FROM temp_scheme_aum as t
+            WHERE mf_history.scheme_name = t.scheme_name
+            and nav_date >= '{}' and nav_date < '{}'
+        """
+        engine.execute(sql.format(sd.strftime('%Y%m%d'),ed.strftime('%Y%m%d')))
     
 
 if __name__ == '__main__':

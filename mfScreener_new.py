@@ -44,7 +44,7 @@ def top_aum_mfs():
     aum_data = data[data['scheme_asset_type_1'].isin(['Debt Scheme', 'Equity Scheme', 'Hybrid Scheme', 'Other Scheme'])]
     aum_data = aum_data[aum_data['aum'] > 1000000].pivot_table(index=['scheme_asset_type_1', 'scheme'],
                                                                values=['aum'], aggfunc='mean')
-    aum_data.style.format('{:.0f}')
+    # aum_data.style.format('{:.0f}')
     aum_data['aum'] = aum_data['aum'] / 100
     aum_data = aum_data.sort_values(by=['scheme_asset_type_1', 'aum'], ascending=[True, False]).reset_index()
     # print(aum_data.sort_values(by=['scheme_asset_type_1', 'aum'], ascending=[True, False]))
@@ -80,7 +80,7 @@ def top_performing_mfs():
     monthly = data[data['nav_date'] > month_dt].pivot_table(index=['scheme_asset_type_1', 'scheme_asset_type_2', 'scheme'],
                                                             values=['daily_log_return'], aggfunc='sum')
     # monthly = monthly.pivot_table(index=['scheme'],values=['daily_log_return'], aggfunc='mean')
-    monthly.style.format({'daily_log_return': '{:.2%}'})
+    # monthly.style.format({'daily_log_return': '{:.2%}'})
 
     monthly = monthly.sort_values(by=['scheme_asset_type_1', 'scheme_asset_type_2', 'daily_log_return', 'scheme'], axis=0,
                         ascending=[True, True, False, True]).reset_index()
@@ -280,4 +280,4 @@ if __name__ == '__main__':
 #      top_mf_holdings()
 #    covered_call()
 #   bull_put_spread()
-   top_mfs()
+   print(top_performing_mfs())

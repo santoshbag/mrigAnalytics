@@ -692,19 +692,50 @@ def getSecMasterData(symbol):
     else:
         return {}
 
+def getMFSecMasterData(symbol):
+    sql = "select distinct * from mf_scheme_master where scheme_name = '" + symbol + "'"
+    engine = sql_engine()
+    metadata = pd.read_sql(sql, engine)
 
-def getMFNAV(reference_date, isinlist=None,db='localhost'):
-    sql = "select * from mf_nav_history where \"Date\">='" + reference_date.strftime(
-        '%Y-%m-%d') + "' and \"ISIN Div Payout/ ISIN Growth\" in ("
+    if not metadata.empty:
+        metadata = metadata.to_dict()
+        for key in metadata.keys():
+            if metadata[key][0]:
+                #                print(key)
+                #                print(metadata[key][0])
+                metadata[key] = metadata[key][0]
+            else:
+                #                print("setting blank for "+key)
+                metadata[key] = ""
+        return metadata
+    else:
+        return {}
+# def getMFNAV(reference_date, isinlist=None,db='localhost'):
+#     sql = "select * from mf_nav_history where \"Date\">='" + reference_date.strftime(
+#         '%Y-%m-%d') + "' and \"ISIN Div Payout/ ISIN Growth\" in ("
+#     engine = sql_engine(dbhost=db)
+#     for isin in isinlist:
+#         if isin != None:
+#             sql = sql + "'" + isin + "',"
+#     sql = sql[:-1] + ")"
+#     nav_df = pd.read_sql(sql, engine)
+#     nav_df.set_index('Date', inplace=True)
+#     return nav_df
+
+def getMFNAV(schemelist=None,reference_date=None, db='localhost'):
+    if reference_date is None:
+        reference_date = datetime.date.today() - datetime.timedelta(days=5)
+
+    sql = "select * from mf_history where nav_date>='" + reference_date.strftime(
+        '%Y-%m-%d') + "' and scheme_name in ("
     engine = sql_engine(dbhost=db)
-    for isin in isinlist:
+    for isin in schemelist:
         if isin != None:
             sql = sql + "'" + isin + "',"
-    sql = sql[:-1] + ")"
+    sql = sql[:-1] + ") order by scheme_name asc, nav_date desc"
     nav_df = pd.read_sql(sql, engine)
-    nav_df.set_index('Date', inplace=True)
+    nav_df.set_index('nav_date', inplace=True)
     return nav_df
-
 
 def getTransactionCosts():
     cost = mrigstatics.TR_CHARGES['BROK'] \
@@ -1328,4 +1359,6 @@ if __name__ == '__main__':
 #     print(getExpiry(scrip = 'CIPLA'))
     # print(getStockQuote('TATAPOWER'))
     # print(getIndexMembers('NIFTY BANK'))
-    print(getStockQuote('NIFTY PSU BANK'))
+    # print(getStockQuote('NIFTY PSU BANK'))
+    # print(getMFSecMasterData('360 ONE Focused Equity Fund - Direct Plan - Dividend'))
+    print(getMFNAV(['360 ONE Focused Equity Fund - Direct Plan - Dividend']).head(1)['nav'].values[0])

@@ -978,7 +978,7 @@ def mrigweb_news(newsid=None):
     #
     if newsid is None:
         sql = "select distinct type, date, title, description,id,guid from media \
-               where date > ((select max(date) from media) - interval '2 days') \
+               where date > ((select max(date) from media) - interval '1 day') \
                order by type ,date desc"
     else:
         sql = "select distinct type, date, title, description,body,id,guid from media \
@@ -1413,7 +1413,7 @@ def mrigweb_stock(symbol,tenor='1Y'):
         macd_graph = page_items[symbol+'|macd_graph']
     else:
         print('MACD Graph : Starting from scratch')
-        macd_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['MACD', 'MACDS'])
+        macd_graph = mg.plotly_tech_indicators(stk.symbol, ohlcv, ['MACD', 'MACDS'],subplots=2)
 
         macd_graph.update_layout(width=500, height=300,
                                  yaxis_domain=[0.2, 1.0])
@@ -1585,6 +1585,115 @@ def mrigweb_stock(symbol,tenor='1Y'):
 #    sht.range('W3').value = optionchain
     return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news,level_chart,pcr,max_pain,ratio_list,income_statement,balance_sheet]
 
+
+def mrigweb_mf(symbol, tenor='1Y'):
+    page_items = im.get_item([symbol + '|return_list', symbol + '|risk_list',
+                              symbol + '|price_graph', symbol + '|return_graph',
+                              symbol + '|macd_graph', symbol + '|boll_graph',
+                              symbol + '|levels_json'])
+    for k, v in page_items.items():
+        page_items = v
+
+    stk = stocks.MutualFunds(symbol)
+    stock_desc = stk.symbol + " | " + stk.asset_type_1 + " | ISIN: " + stk.isin
+    nifty = stocks.Index('NIFTY 50')
+    price_labels = ['Last NAV']
+    quotes = []
+    quotes.append(stk.quote)
+    price_list = [price_labels, quotes]
+    print(price_list)
+
+    cum_returns = []
+    ohlcv = pd.DataFrame()
+    return_labels = ['1W', '4W', '12W', '24W', '1Y', '3Y']
+    if symbol + '|return_list' in page_items.keys():
+        print('Return List : Getting from Database')
+        return_list = json.loads(page_items[symbol + '|return_list'])
+    else:
+        print('Return List : Starting from Scratch')
+        return_labels_1 = []
+        for i in range(0, len(return_labels)):
+            stk.get_returns(return_labels[i])
+            ret_df = stk.daily_logreturns
+            ret_df = ret_df[ret_df['symbol'] == symbol]
+            # cum_returns.append('NA')
+            # try:
+            if not ret_df.empty:
+                period = (ret_df.index[-1] - ret_df.index[0]).days / 360
+                if period <= 1:
+                    period = 1
+                # print(ret_df['daily_log_returns'].sum())
+                # return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                return_period = ("{:.2%}".format(float(ret_df['daily_log_returns'].sum() / period)))
+                cum_returns.append(return_period)
+                return_labels_1.append(return_labels[i])
+                # print(cum_returns)
+                # except:
+            #     pass
+        return_list = [return_labels_1, cum_returns]
+        return_list_json = json.dumps(return_list)
+        im.update_items({symbol + '|return_list': return_list_json})
+
+    if symbol + '|price_graph' in page_items.keys():
+        print('Price Graph : Getting from Database')
+        price_graph = page_items[symbol + '|price_graph']
+    else:
+        print('Price Graph : Starting from Scratch')
+        stk.get_price_vol(tenor)
+        dates = list(stk.pricevol_data.index)
+
+        ohlcv = stk.pricevol_data.reset_index()
+        price_graph = mg.plotly_line_graph(list(ohlcv['nav_date']),[list(ohlcv['nav'])],fig_title=symbol,y_names=['NAV'])
+
+        price_graph.update_layout(width=1000, height=500,
+                                  yaxis_domain=[1.0, 1.0])
+        price_graph.update_xaxes(showline=True,
+                                 linewidth=2,
+                                 linecolor='ivory',
+                                 mirror=True)
+
+        price_graph.update_layout(
+            margin=dict(l=0, r=0, b=10, t=50, pad=1),
+            paper_bgcolor="ivory"
+        )
+        price_graph = pplot(price_graph, output_type='div')
+        im.update_items({symbol + '|price_graph': price_graph})
+
+    if symbol + '|return_graph' in page_items.keys():
+        print('Return Graph : Getting from Database')
+        return_graph = page_items[symbol + '|return_graph']
+    else:
+        stk_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.symbol]
+        stk_ret['cum_ret'] = stk_ret['daily_log_returns'].cumsum()
+
+        benchmark1_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.get_benchmark_index1()]
+        benchmark1_ret['cum_ret'] = benchmark1_ret['daily_log_returns'].cumsum()
+        benchmark2_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == stk.get_benchmark_index2()]
+        benchmark2_ret['cum_ret'] = benchmark2_ret['daily_log_returns'].cumsum()
+
+        return_graph = go.Figure(data=[go.Scatter(x=stk_ret.index,
+                                                  y=stk_ret['cum_ret'], name=stk.symbol),
+                                       go.Scatter(x=benchmark1_ret.index,
+                                                  y=benchmark1_ret['cum_ret'], name=stk.get_benchmark_index1()),
+                                       go.Scatter(x=benchmark2_ret.index,
+                                                  y=benchmark2_ret['cum_ret'], name=stk.get_benchmark_index2())])
+
+        return_graph.update_layout(width=1000, height=500, title='Returns')
+        return_graph = pplot(return_graph, output_type='div')
+        im.update_items({symbol + '|return_graph': return_graph})
+
+    # sql = "select distinct date, title, description from media \
+    #        where date > ((select max(date) from media) - interval '2 days') \
+    #        order by date desc"
+    #
+    # engine = mu.sql_engine()
+    #
+    # news = engine.execute(sql).fetchall()
+    #
+    # news = [(item[0].strftime('%d-%b-%Y'), item[1], item[2]) for item in news if
+    #         fuzz.token_set_ratio(symbol, item[1]) > 97]
+
+    return [price_list, return_list, price_graph, return_graph,stock_desc]
 def mrigweb_funds(symbol,tenor='1Y'):
     
 #    sheet='Stock'

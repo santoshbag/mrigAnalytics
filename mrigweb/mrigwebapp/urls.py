@@ -27,6 +27,7 @@ urlpatterns = [
     path('market/',vw.market, name='market'),
     path('stock/',vw.stock, name='stock'),
     path('mf/',vw.mf, name='mf'),
+    path('mf/<str:symbol>', vw.mf, name='mf'),
     path('stock/<str:symbol>',vw.stock, name='stock'),
     path('folio/',vw.folio, name='folio'),
     # path('folio/folioid/<str:folioid>', vw.folio, name='folio'),

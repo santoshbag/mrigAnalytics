@@ -17,6 +17,14 @@ class StockForm(forms.Form):
 
     symbol = forms.CharField()#ChoiceField(widget = forms.Select(),choices=slist)
 
+class MFForm(forms.Form):
+    # stocklist = nsepy.constants.symbol_list
+#    slist = [] #"<select name=\"stock\"><option value="">""</option>"
+#    for stk in stocklist:
+#        slist = slist.append((str(stk),str(stk)))#+"</option>"
+
+    symbol = forms.CharField()#ChoiceField(widget = forms.Select(),choices=slist)
+
 class PortfolioForm(forms.Form):
     # stocklist = nsepy.constants.symbol_list
 #    slist = [] #"<select name=\"stock\"><option value="">""</option>"

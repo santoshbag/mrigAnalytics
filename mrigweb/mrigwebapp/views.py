@@ -1736,33 +1736,169 @@ def portfolio(request):
         GOOGLE_ADS = 1
     return render(request, "ra_portfolio.html")
 
-def mf(request):
+
+def mf(request, symbol=''):
+    googlenews = GNews(language='en', country='IN', period='1d', start_date=None, end_date=None, max_results=10)
+
     GOOGLE_ADS = 0
     if mrigstatics.ENVIRONMENT == 'production':
         GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    sql = "select * from stock_page where symbol='" + symbol + "'"
+    stock_page = pd.read_sql(sql, engine)
+    #    stocklist = list(stocklist)
+    price_list, return_list, risk_list, ratios, oc = None, "", "", "", ""
+    price_graph, return_graph, macd_graph, boll_graph = "", "", "", ""
+    stock_desc = ""
+    news = ""
+    level_chart = ""
+    pcr = ""
+    max_pain = ""
 
+    engine = mu.sql_engine()
+    stocklist = engine.execute(
+        "select distinct sm.scheme_name, sm.amc from mf_scheme_master sm inner join mf_history sh on sm.scheme_name=sh.scheme_name where sh.nav > 0").fetchall()
+    slist = "<input style=\"width: 130px; height: 25px;\" list=\"stocks\" name=\"symbol\"><datalist id=\"stocks\">"
+
+    for stk in stocklist:
+        if stk[0] != 'symbol':
+            if stk[1] != None:
+                slist = slist + "<option value=\"" + str(stk[0]) + " : " + str(stk[1]) + "\">"
+            else:
+                slist = slist + "<option value=\"" + str(stk[0]) + " : " + str(stk[0]) + "\">"
+    slist = slist + "</datalist>"
+
+    if request.method == "POST":
+        mfform = fm.MFForm(request.POST)
+        # Get the posted form
+        if mfform.is_valid():
+            symbol = mfform.cleaned_data['symbol']
+            symbol = symbol.split(":")[0].strip()
+            print(symbol)
+
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
     topmfslist_aum = []
-    topmfs = wdb.mrigweb_top_mfs()[0]
-    for x in topmfs:
-        mf = x.reset_index()
-        mf_table = [list(mf)] + mf.values.tolist()
-        mf_table = myhtml.list_to_html(mf_table)
-        topmfslist_aum.append(mf_table)
-
     topmfslist_ret = []
-    topmfs = wdb.mrigweb_top_mfs()[1]
-    for x in topmfs:
-        mf = x.reset_index()
-        mf_table = [list(mf)] + mf.values.tolist()
-        mf_table = myhtml.list_to_html(mf_table)
-        topmfslist_ret.append(mf_table)
 
-    testdf = topmfs[3].to_json(orient='records')
-    # topmfslist_ret = []
-    # topmfslist_aum = []
+    if (symbol and symbol != ""):
+        sql = "select * from stock_page where symbol='" + symbol + "'"
+        stock_page = pd.read_sql(sql, engine)
 
-    return render(request, "mf.html",{'topmfslist_aum' : topmfslist_aum,
-                                      'topmfslist_ret' : topmfslist_ret,'testdf':testdf,'GOOGLE_ADS': GOOGLE_ADS})
+        if not stock_page.empty:
+            price_list = stock_page['price_list'][0]
+            return_list = stock_page['return_list'][0]
+            risk_list = stock_page['risk_list'][0]
+            ratios = stock_page['ratios'][0]
+            oc = stock_page['oc'][0]
+            price_graph = stock_page['price_graph'][0]
+            price_graph = bytes(price_graph)
+            price_graph = price_graph.decode('utf-8')
+            return_graph = stock_page['return_graph'][0]
+            return_graph = bytes(return_graph)
+            return_graph = return_graph.decode('utf-8')
+            macd_graph = stock_page['macd_graph'][0]
+            macd_graph = bytes(macd_graph)
+            macd_graph = macd_graph.decode('utf-8')
+            boll_graph = stock_page['boll_graph'][0]
+            boll_graph = bytes(boll_graph)
+            boll_graph = boll_graph.decode('utf-8')
+            stock_desc = stock_page['stock_description'][0]
+            news = stock_page['news'][0]
+            news = json.loads(news)
+            print(news)
+        else:
+            stkanalytics = wdb.mrigweb_mf(symbol)
+            price_list, return_list = stkanalytics[0], stkanalytics[1]
+            price_graph, return_graph = stkanalytics[2], stkanalytics[3]
+            stock_desc = stkanalytics[4]
+            # news = stkanalytics[10]
+
+            #         fd,oc = fd.to_html(), oc.to_html()
+
+            return_list = myhtml.list_to_html(return_list)
+            # risk_list = myhtml.list_to_html(risk_list)
+    else:
+        topmfs = wdb.mrigweb_top_mfs()[0]
+        for x in topmfs:
+            mf = x.reset_index()
+            mf_table = [list(mf)] + mf.values.tolist()
+            mf_table = myhtml.list_to_html(mf_table)
+            topmfslist_aum.append(mf_table)
+
+        topmfs = wdb.mrigweb_top_mfs()[1]
+        for x in topmfs:
+            mf = x.reset_index()
+            mf_table = [list(mf)] + mf.values.tolist()
+            mf_table = myhtml.list_to_html(mf_table)
+            topmfslist_ret.append(mf_table)
+
+        testdf = topmfs[3].to_json(orient='records')
+        # topmfslist_ret = []
+        # topmfslist_aum = []
+
+    price_list = myhtml.list_to_html(price_list)
+    news = []
+    stknews = googlenews.get_news(stock_desc.split('|')[0])  # + googlenews.get_news(symbol)
+    if stknews is None:
+        stknews = []
+
+    for n in stknews:
+        # if 'Tata Power' in n['title']:
+        dtime = n['published date']
+        try:
+            dtime = datetime.datetime.strptime(n['published date'], '%a, %d %b %Y %I:%M:%S %Z')
+            dtime = GMT.localize(dtime)
+        except:
+            pass
+        # print(dtime.astimezone(IST).strftime('%a, %d %b %Y %I:%M:%S'), '\n')
+        # print(n['title'], '\n\n')
+
+        # news.append([dtime,"<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"" + n['url'] + ">" +n['title']+ "</a>"])
+        print("<a style=\"color:#f7ed4a;text-decoration:underline;\" href=\"" + n['url'] + "\">" + n['title'] + "</a>")
+        news.append([dtime,
+                     "<a style=\"color:#f7ed4a;text-decoration:underline;\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"" +
+                     n['url'] + "\">" + n['title'] + "</a>"])
+
+    # print(news)
+    return render(request, "mf.html", {"slist": slist, "symbol": symbol,
+                                          "stock_desc": stock_desc,
+                                          "price_list": price_list,
+                                          "return_list": return_list,
+                                          "price_graph": price_graph,
+                                          "return_graph": return_graph,
+                                          "topmfslist_aum": topmfslist_aum,
+                                          "topmfslist_ret" : topmfslist_ret,
+                                          "news": news,
+                                          'GOOGLE_ADS': GOOGLE_ADS})
+
+
+# def mf(request):
+#     GOOGLE_ADS = 0
+#     if mrigstatics.ENVIRONMENT == 'production':
+#         GOOGLE_ADS = 1
+#
+#     topmfslist_aum = []
+#     topmfs = wdb.mrigweb_top_mfs()[0]
+#     for x in topmfs:
+#         mf = x.reset_index()
+#         mf_table = [list(mf)] + mf.values.tolist()
+#         mf_table = myhtml.list_to_html(mf_table)
+#         topmfslist_aum.append(mf_table)
+#
+#     topmfslist_ret = []
+#     topmfs = wdb.mrigweb_top_mfs()[1]
+#     for x in topmfs:
+#         mf = x.reset_index()
+#         mf_table = [list(mf)] + mf.values.tolist()
+#         mf_table = myhtml.list_to_html(mf_table)
+#         topmfslist_ret.append(mf_table)
+#
+#     testdf = topmfs[3].to_json(orient='records')
+#     # topmfslist_ret = []
+#     # topmfslist_aum = []
+#
+#     return render(request, "mf.html",{'topmfslist_aum' : topmfslist_aum,
+#                                       'topmfslist_ret' : topmfslist_ret,'testdf':testdf,'GOOGLE_ADS': GOOGLE_ADS})
     
 def stock1(request):
     GOOGLE_ADS = 0

@@ -240,7 +240,7 @@ def plotly_line_graph(x, y_list, **kwargs):
     # plt_div = plot(fig, output_type='div')
     return fig
 
-def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD']):
+def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD'],subplots=1):
     if 'date' in data_ohlcv.columns:
         data_ohlcv['timestamp'] = data_ohlcv['date']
     data_ohlcv.rename(columns={'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume':'Volume'},
@@ -254,9 +254,11 @@ def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD']):
     sma_colors = ['purple', 'blue', 'darkcyan', 'teal']
 
     # Make Subplot of 2 rows to plot 2 graphs sharing the x axis
+    if subplots > 2:
+        subplots = 2
 
     sma_colors = ['purple', 'blue','darkcyan','teal']
-    fig = subplt.make_subplots(rows=1,
+    fig = subplt.make_subplots(rows=subplots,
                            cols=1,
                            shared_xaxes=True,
                            vertical_spacing=0.02)
@@ -276,7 +278,7 @@ def plotly_tech_indicators(ticker, data_ohlcv,indicators=['MACD']):
                               line=dict(color=lcolor,
                                            width=1,
                                            shape='spline'), # smooth the line
-                                 name=indicator), row=1,col=1)
+                                 name=indicator), row=subplots,col=1)
 
 
     # Add Volume Chart to Row 2 of subplot
