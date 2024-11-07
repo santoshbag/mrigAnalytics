@@ -363,8 +363,9 @@ def getStockQuote(symbol):
         #     stockQuote = stockQuote['data'][0]
         indices = setting['indices_for_mrig']
         yahoo_sym = indices[symbol] if symbol in indices.keys() else symbol+'.NS'
-        price = yf.download(yahoo_sym,period='1d',interval='1m')
-        # print(price)
+        price = yf.download(yahoo_sym,period='5d',interval='1m')
+        price = price.loc[(price.index > max(price.index).date().strftime('%Y-%m-%d'))]
+        print(price)
         stockQuote['lastPrice'] = price.tail(1)['Close'].values[0]
         stockQuote['high'] = max(price['High'].values)
         stockQuote['low'] = min(price['Low'].values)
@@ -986,10 +987,14 @@ def getLevels(name,startdate=(datetime.date.today() - datetime.timedelta(days=36
     yahoomap = {'NIFTY': '^NSEI',
                 'NIFTY 50': '^NSEI',
                 'BANKNIFTY': '^NSEBANK',
-                'NIFTY BANK': '^NSEBANK',}
+                'NIFTY BANK': '^NSEBANK',
+                'USDINR': 'INR=X',
+                'CRUDE OIL': 'CL=F',
+                'GOLD' : 'GC=F'}
+
     indices = setting['indices_for_mrig']
     yahoo_sym = indices[name] if name in indices.keys() else name + '.NS'
-    if name in ['NIFTY', 'BANKNIFTY','NIFTY 50','NIFTY BANK']:
+    if name in ['NIFTY', 'BANKNIFTY','NIFTY 50','NIFTY BANK','USDINR','CRUDE OIL','GOLD']:
         yahooscrip = yahoomap[name]
     else:
         yahooscrip = name + '.NS'
@@ -1304,6 +1309,8 @@ def getIndexMembers(index):
     members = []
     try:
         members = engine.execute("select index_members from stock_history where symbol=%s order by date desc limit 1",(index)).fetchall()[0][0]
+
+        print(members)
     except:
         pass
     return members
@@ -1361,4 +1368,5 @@ if __name__ == '__main__':
     # print(getIndexMembers('NIFTY BANK'))
     # print(getStockQuote('NIFTY PSU BANK'))
     # print(getMFSecMasterData('360 ONE Focused Equity Fund - Direct Plan - Dividend'))
-    print(getMFNAV(['360 ONE Focused Equity Fund - Direct Plan - Dividend']).head(1)['nav'].values[0])
+    # print(getMFNAV(['360 ONE Focused Equity Fund - Direct Plan - Dividend']).head(1)['nav'].values[0])
+    getIndexMembers('NIFTY 100')

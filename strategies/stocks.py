@@ -70,13 +70,13 @@ class Stock():
         weeks=0
         days=0
         
-        if period[-1] == 'Y':
+        if period[-1].upper() == 'Y':
             years = int(period[:-1])
-        if period[-1] == 'M':
+        if period[-1].upper() == 'M':
             months = int(period[:-1])
-        if period[-1] == 'W':
+        if period[-1].upper() == 'W':
             weeks = int(period[:-1])
-        if period[-1] == 'D':
+        if period[-1].upper() == 'D':
             days = int(period[:-1])
 
         startdate = today - dateutil.relativedelta.relativedelta(years=years,
@@ -101,11 +101,19 @@ class Stock():
 #        dataset['H-L'] = dataset['high'] - dataset['low']
 #        dataset['O-C'] = dataset['close'] - dataset['open']
         self.pricevol_data['20_day_SMA'] = dataset.get('close_20_sma')
+        self.pricevol_data['SMA_20_day'] = self.pricevol_data['20_day_SMA']
         self.pricevol_data['30_day_SMA'] = dataset.get('close_30_sma')
+        self.pricevol_data['SMA_30_day'] = dataset.get('close_30_sma')
         self.pricevol_data['40_day_SMA'] = dataset.get('close_40_sma')
+        self.pricevol_data['SMA_40_day'] = dataset.get('close_40_sma')
         self.pricevol_data['60_day_SMA'] = dataset.get('close_60_sma')
+        self.pricevol_data['SMA_60_day'] = dataset.get('close_60_sma')
+
         self.pricevol_data['100_day_SMA'] = dataset.get('close_100_sma')
+        self.pricevol_data['SMA_100_day'] = dataset.get('close_100_sma')
+
         self.pricevol_data['200_day_SMA'] = dataset.get('close_200_sma')
+        self.pricevol_data['SMA_200_day'] = dataset.get('close_200_sma')
         self.pricevol_data['Std_dev']= dataset['close'].rolling(5).std()
         #dataset['RSI'] = talib.RSI(dataset['close'].values, timeperiod = 9)
         #dataset['Williams %R'] = talib.WILLR(dataset['High'].values, dataset['Low'].values, dataset['close'].values, 7)
@@ -668,12 +676,13 @@ class MutualFunds():
     def __init__(self, name):
         self.symbol = name
         nav = mu.getMFNAV([name])
+        # print(nav)
         if len(nav) > 0:
             nav = "{:.2f}".format(nav.head(1)['nav'].values[0])
         else:
             nav = ''
         self.quote = nav
-        # print(self.quote['lastPrice'])
+        # print(self.quote)
         metadata = mu.getMFSecMasterData(name)
         if 'amc' in metadata.keys():
             self.amc = metadata['amc']

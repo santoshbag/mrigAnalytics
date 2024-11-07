@@ -42,7 +42,16 @@ INSTALLED_APPS = [
     'mrigwebapp',
     'crispy_forms',
     'crispy_bootstrap4',
-    'user'
+    'user',
+    'rest_framework',
+    'corsheaders',  # Add this for CORS
+    'dj_rest_auth',  # Provides login, registration APIs
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',  # Add the social providers you want (e.g., Facebook, Google)
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -53,9 +62,18 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'allauth.account.middleware.AccountMiddleware'
 ]
 
 ROOT_URLCONF = 'mrigweb.urls'
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+
+
 
 TEMPLATES = [
     {
@@ -72,6 +90,27 @@ TEMPLATES = [
         },
     },
 ]
+
+# Simple JWT settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+
+# Allowing CORS requests from the React frontend
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Add your React frontend's origin
+]
+
+SITE_ID = 1  # Needed for django-allauth
+
+# Email and username for allauth
+# ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# ACCOUNT_EMAIL_REQUIRED = True
+# ACCOUNT_USERNAME_REQUIRED = False
+# ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 WSGI_APPLICATION = 'mrigweb.wsgi.application'
 
@@ -146,3 +185,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'..','..','mediafiles')
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
+CORS_ALLOW_ALL_ORIGINS = True

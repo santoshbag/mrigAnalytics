@@ -55,6 +55,12 @@ import maintenance.item_manager as im
 import mriggraphics as mg
 import json
 
+from gnews  import GNews
+import pytz
+
+IST = pytz.timezone('Asia/Kolkata')
+GMT = pytz.timezone('UTC')
+
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 engine = mu.sql_engine()
 setting = config.get_settings()
@@ -1586,6 +1592,168 @@ def mrigweb_stock(symbol,tenor='1Y'):
     return [price_list,return_list,risk_list,rd,optionchain,price_graph,return_graph,macd_graph,boll_graph,stock_desc,news,level_chart,pcr,max_pain,ratio_list,income_statement,balance_sheet]
 
 
+def mrigweb_stock_mini(symbol, tenor='1Y'):
+    page_items = im.get_item([symbol + '|return_list', symbol + '|risk_list',
+                              symbol + '|price_graph', symbol + '|return_graph',
+                              symbol + '|macd_graph', symbol + '|boll_graph',
+                              symbol + '|levels_json'])
+    for k, v in page_items.items():
+        page_items = v
+
+    stk = stocks.Stock(symbol)
+    stock_desc = stk.stock_name + " | " + stk.industry + " | ISIN: " + stk.isin
+    nifty = stocks.Index('NIFTY 50')
+    price_labels = ['Last Price', 'Open', 'Previous Close', 'Day High', 'Day Low', '52 Week High', '52 Week Low']
+    quotes = []
+    quotes.append(stk.quote['lastPrice']) if 'lastPrice' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['open']) if 'open' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['prev_close']) if 'prev_close' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['high']) if 'high' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['low']) if 'low' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['high52']) if 'high52' in stk.quote.keys() else quotes.append("")
+    quotes.append(stk.quote['low52']) if 'low52' in stk.quote.keys() else quotes.append("")
+    # print(quotes)
+    #    if len(stk.quote) > 0:
+    #        quotes = [stk.quote['lastPrice'],
+    #                  stk.quote['open'],
+    #                  stk.quote['previousclose'],
+    #                  stk.quote['dayhigh'],
+    #                  stk.quote['daylow'],
+    #                  stk.quote['high52'],
+    #                  stk.quote['low52']]
+    #    else:
+    #        quotes = []
+    price_list = pd.DataFrame({'price_labels' : price_labels,'quotes' : quotes})
+    price_list.set_index('price_labels',inplace=True)
+    price_list = price_list.transpose()
+    price_list = price_list.to_json(orient='split')
+    print(price_list)
+
+    cum_returns = []
+    ohlcv = pd.DataFrame()
+    return_labels = ['1W', '4W', '12W', '24W', '1Y', '3Y']
+    if symbol + '|return_list' in page_items.keys():
+        print('Return List : Getting from Database')
+        return_list = json.loads(page_items[symbol + '|return_list'])
+
+    else:
+        print('Return List : Starting from Scratch')
+        return_labels_1 = []
+        for i in range(0, len(return_labels)):
+            stk.get_returns(return_labels[i])
+            ret_df = stk.daily_logreturns
+            ret_df = ret_df[ret_df['symbol'] == symbol]
+            # cum_returns.append('NA')
+            # try:
+            if not ret_df.empty:
+                period = (ret_df.index[-1] - ret_df.index[0]).days / 360
+                if period <= 1:
+                    period = 1
+                # print(ret_df['daily_log_returns'].sum())
+                # return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                return_period = ("{:.2%}".format(float(ret_df['daily_log_returns'].sum() / period)))
+                cum_returns.append(return_period)
+                return_labels_1.append(return_labels[i])
+                # print(cum_returns)
+                # except:
+            #     pass
+        return_list = [return_labels_1, cum_returns]
+        return_list_json = json.dumps(return_list)
+        im.update_items({symbol + '|return_list': return_list_json})
+    print('cum_returns',cum_returns)
+    return_list = pd.DataFrame({'return_labels' : return_list[0],'cum_returns' : return_list[1]})
+    return_list.set_index('return_labels',inplace=True)
+    return_list = return_list.transpose()
+    return_list = return_list.to_json(orient='split')
+
+    if symbol + '|risk_list' in page_items.keys():
+        print('Return List : Getting from Database')
+        risk_list = json.loads(page_items[symbol + '|risk_list'])
+    else:
+        risk = stk.get_risk()
+        risklabels, risknumbers = [], []
+        for key in risk.keys():
+            risklabels.append(key)
+            # risknumbers.append(risk[key])
+            r = risk[key]
+            try:
+                r = '{:.2%}'.format(r)
+                # print('Risk in Percentage---->',r)
+            except:
+                pass
+            risknumbers.append(r)
+        risk_list = [risklabels, risknumbers]
+        risk_list_json = json.dumps(risk_list)
+        im.update_items({symbol + '|risk_list': risk_list_json})
+    #    sht.range('D14').value = [risklabels,risknumbers]
+
+    risk_list = pd.DataFrame({'risklabels' : risk_list[0],'risknumbers' : risk_list[1]})
+    risk_list.set_index('risklabels',inplace=True)
+    risk_list = risk_list.transpose()
+    risk_list = risk_list.to_json(orient='split')
+
+
+    if symbol + '|ratio_list' in page_items.keys():
+        print('Ratio List : Getting from Database')
+        ratio_list = pd.read_json(page_items[symbol + '|ratio_list'], orient='split')
+    else:
+        print('Ratio List : Creating Table')
+        stk.get_ratios()
+        ratio_list = stk.ratio_data
+        ratio_list_json = ratio_list.to_json(orient='split')
+        im.set_items({symbol + '|ratio_list': ratio_list_json})
+
+    if symbol + '|income_statement' in page_items.keys():
+        print('Income Statement : Getting from Database')
+        income_statement = pd.read_json(page_items[symbol + '|income_statement'], orient='split')
+    else:
+        print('Income Statement : Creating Table')
+        stk.get_income_statement()
+        income_statement = stk.income_statement
+        income_statement_json = income_statement.to_json(orient='split')
+        im.set_items({symbol + '|income_statement': income_statement_json})
+
+    if symbol + '|balance_sheet' in page_items.keys():
+        print('Balance Sheet : Getting from Database')
+        balance_sheet = pd.read_json(page_items[symbol + '|balance_sheet'], orient='split')
+    else:
+        print('Balance Sheet : Creating Table')
+        stk.get_balance_sheet()
+        balance_sheet = stk.balance_sheet
+        balance_sheet_json = balance_sheet.to_json(orient='split')
+        im.set_items({symbol + '|balance_sheet': balance_sheet_json})
+
+    #    sht.range('D18:J500').clear_contents()
+    rd = pd.DataFrame()
+
+    news = []
+    googlenews = GNews(language='en', country='IN', period='1d', start_date=None, end_date=None, max_results=10)
+
+    stknews = googlenews.get_news(stock_desc.split('|')[0]) #+ googlenews.get_news(symbol)
+
+    for n in stknews:
+        # if 'Tata Power' in n['title']:
+        dtime = n['published date']
+        try:
+            dtime = datetime.datetime.strptime(n['published date'], '%a, %d %b %Y %I:%M:%S %Z')
+            dtime = GMT.localize(dtime)
+        except:
+            pass
+        # news.append([dtime.strftime('%d-%b-%Y'),"<a style=\"color:#f7ed4a;text-decoration:underline;\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"" + n['url'] + "\">" +n['title']+ "</a>"])
+        # news.append([str(dtime),"<a style=\"color:#f7ed4a;text-decoration:underline;\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"" + n['url'] + "\">" +n['title']+ "</a>"])
+        news.append([str(dtime),n['url'],n['title']])
+
+    return {"symbol":symbol,
+                                          "stock_desc" : stock_desc,
+                                          "price_list":price_list,
+                                          "return_list":return_list,
+                                          "risk_list":risk_list,
+                                          "ratios":ratio_list_json,
+                                          "income_statement" : income_statement_json,
+                                          "balance_sheet" : balance_sheet_json,
+                                          "news":news}
+
+
 def mrigweb_mf(symbol, tenor='1Y'):
     page_items = im.get_item([symbol + '|return_list', symbol + '|risk_list',
                               symbol + '|price_graph', symbol + '|return_graph',
@@ -1694,6 +1862,97 @@ def mrigweb_mf(symbol, tenor='1Y'):
     #         fuzz.token_set_ratio(symbol, item[1]) > 97]
 
     return [price_list, return_list, price_graph, return_graph,stock_desc]
+
+def mrigweb_mf_mini(symbol, tenor='1Y'):
+    page_items = im.get_item([symbol + '|return_list', symbol + '|risk_list',
+                              symbol + '|price_graph', symbol + '|return_graph',
+                              symbol + '|macd_graph', symbol + '|boll_graph',
+                              symbol + '|levels_json'])
+    for k, v in page_items.items():
+        page_items = v
+
+    mfsymbol = engine.execute("select scheme_name from mf_history where isin='"+symbol+"' limit 1").fetchall()[0][0]
+    print('MF ISIN |',mfsymbol, '|' )
+    if mfsymbol is not None:
+        stk = stocks.MutualFunds(mfsymbol.strip())
+        stock_desc = ""
+        try:
+            stock_desc = stk.symbol + " | " + stk.asset_type_1 + " | ISIN: " + stk.isin
+        except:
+            pass
+        nifty = stocks.Index('NIFTY 50')
+        price_labels = ['Last NAV']
+        quotes = []
+        quotes.append(stk.quote)
+        price_list = pd.DataFrame({'price_labels' : price_labels,'quotes' : quotes})
+        price_list.set_index('price_labels',inplace=True)
+        price_list = price_list.transpose()
+        price_list = price_list.to_json(orient='split')
+
+        print(price_list)
+
+        cum_returns = []
+        ohlcv = pd.DataFrame()
+        return_labels = ['1W', '4W', '12W', '24W', '1Y', '3Y']
+        if symbol + '|return_list' in page_items.keys():
+            print('Return List : Getting from Database')
+            return_list = json.loads(page_items[symbol + '|return_list'])
+        else:
+            print('Return List : Starting from Scratch')
+            return_labels_1 = []
+            for i in range(0, len(return_labels)):
+                stk.get_returns(return_labels[i])
+                ret_df = stk.daily_logreturns
+                ret_df = ret_df[ret_df['symbol'] == mfsymbol]
+                # cum_returns.append('NA')
+                # try:
+                if not ret_df.empty:
+                    period = (ret_df.index[-1] - ret_df.index[0]).days / 360
+                    if period <= 1:
+                        period = 1
+                    # print(ret_df['daily_log_returns'].sum())
+                    # return_period = (float(ret_df['daily_log_returns'].sum() / period))
+                    return_period = ("{:.2%}".format(float(ret_df['daily_log_returns'].sum() / period)))
+                    cum_returns.append(return_period)
+                    return_labels_1.append(return_labels[i])
+                    # print(cum_returns)
+                    # except:
+                #     pass
+            return_list = [return_labels_1, cum_returns]
+            print(return_list)
+
+            return_list = pd.DataFrame({'return_labels': return_labels_1, 'cum_returns': cum_returns})
+            print(return_list)
+            return_list.set_index('return_labels', inplace=True)
+            return_list = return_list.transpose()
+            return_list = return_list.to_json(orient='split')
+
+        stk.get_price_vol(tenor)
+        ohlcv = stk.pricevol_data.reset_index()
+        ohlcv.rename(columns={'nav_date' : 'date','nav' : 'close'},inplace=True)
+        ohlcv = ohlcv.to_json(orient='records')
+
+        stk_ret = stk.daily_logreturns[stk.daily_logreturns['symbol'] == mfsymbol]
+        stk_ret = stk_ret.reset_index()
+        stk_ret.rename(columns={'nav_date' : 'date'},inplace=True)
+        stk_ret = stk_ret.to_json(orient='records')
+
+
+        # sql = "select distinct date, title, description from media \
+        #        where date > ((select max(date) from media) - interval '2 days') \
+        #        order by date desc"
+        #
+        # engine = mu.sql_engine()
+        #
+        # news = engine.execute(sql).fetchall()
+        #
+        # news = [(item[0].strftime('%d-%b-%Y'), item[1], item[2]) for item in news if
+        #         fuzz.token_set_ratio(symbol, item[1]) > 97]
+
+        return {"scheme_name" : mfsymbol.split('-')[0],"price_list":price_list, "return_list" :return_list, "stock_desc":stock_desc,"ohlcv" : ohlcv,"stk_ret" : stk_ret}
+    else:
+        return {}
+
 def mrigweb_funds(symbol,tenor='1Y'):
     
 #    sheet='Stock'
@@ -3301,7 +3560,7 @@ def mrigweb_ff_rates(reference_date=None,params=None):
     curvename = 'Flat_Forward_1'
     day_count = 'Actual-360'
     calendar = 'India'
-    flat_rate = '0.02'
+    flat_rate = '0'
     compounding = 'Compounded'
     compounding_frequency = 'Quarterly'
     shiftparameter = '0'
@@ -3312,6 +3571,7 @@ def mrigweb_ff_rates(reference_date=None,params=None):
         day_count = params['day_count']
         calendar = params['calendar']
         flat_rate = params['flat_rate']
+        # print(flat_rate)
         compounding = params['compounding']
         compounding_frequency = params['compounding_frequency']
         shiftparameter = params['shiftparameter']
@@ -3630,7 +3890,7 @@ def mrigweb_Bond(issue_name,
                 bond = bonds.FixedRateCallableBond(args)
     return bond
     
-def mrigweb_Analytics(assetobject,args):
+def mrigweb_Analytics(assetobject,args,cf_format=True):
     resultset = {'Heads' : 'Values'}
     assettype = str(type(assetobject))[8:-2].split(".")[-1]
     #resultset = assettype
@@ -3694,31 +3954,32 @@ def mrigweb_Analytics(assetobject,args):
         resultset.update(capfloor.getAnalytics())
 
 #Cashflow Formatting for Display
-    if 'cashflows' in resultset.keys():
-        offset=1
-        for tup in resultset['cashflows']:
-            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
-        resultset['-----------------'] = '-----------------'
-        resultset['Cashflow Date'] = 'Cashflow Amount'
-        resultset.update(cashflow)
-        resultset.pop('cashflows')
+    if cf_format:
+        if 'cashflows' in resultset.keys():
+            offset=1
+            for tup in resultset['cashflows']:
+                cashflow[tup[0].strftime('%d-%b-%Y')+' '*offset] = tup[1]
+            resultset['-----------------'] = '-----------------'
+            resultset['Cashflow Date'] = 'Cashflow Amount'
+            resultset.update(cashflow)
+            resultset.pop('cashflows')
 
-    if 'Fixed Leg Cashflows' in resultset.keys():
-        offset=2
-        for tup in resultset['Fixed Leg Cashflows']:
-            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
-        resultset['-----------------'] = '-----------------'
-        resultset['Fixed Leg Cashflow Date'] = 'Fixed Leg Cashflow Amount'
-        resultset.update(cashflow)
-        resultset.pop('Fixed Leg Cashflows')
-    if 'Floating Leg Cashflows' in resultset.keys():
-        offset=3
-        for tup in resultset['Floating Leg Cashflows']:
-            cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
-        resultset['-----------------'] = '-----------------'
-        resultset['Floating Leg Cashflow Date'] = 'Floating Leg Cashflow Amount'
-        resultset.update(cashflow)
-        resultset.pop('Floating Leg Cashflows')
+        if 'Fixed Leg Cashflows' in resultset.keys():
+            offset=2
+            for tup in resultset['Fixed Leg Cashflows']:
+                cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+            resultset['-----------------'] = '-----------------'
+            resultset['Fixed Leg Cashflow Date'] = 'Fixed Leg Cashflow Amount'
+            resultset.update(cashflow)
+            resultset.pop('Fixed Leg Cashflows')
+        if 'Floating Leg Cashflows' in resultset.keys():
+            offset=3
+            for tup in resultset['Floating Leg Cashflows']:
+                cashflow[tup[0].strftime('%m/%d/%Y')+' '*offset] = tup[1]
+            resultset['-----------------'] = '-----------------'
+            resultset['Floating Leg Cashflow Date'] = 'Floating Leg Cashflow Amount'
+            resultset.update(cashflow)
+            resultset.pop('Floating Leg Cashflows')
     
     
     

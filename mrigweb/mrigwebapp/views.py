@@ -1,4 +1,7 @@
 import sys,os
+
+from rest_framework.decorators import api_view
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -23,7 +26,18 @@ import strategies.option_strategies as op_s
 import data.settings_load as config
 from gnews  import GNews
 import pytz
-
+import research.analytics as ran
+from rest_framework import generics
+from api.api_stocks import StockAPI1,StockPriceSerializer
+from rest_framework.response import Response
+from django.http import JsonResponse
+from rest_framework import status
+from rest_framework.views import APIView
+import yfinance as yf
+import maintenance.item_manager as im
+import research.screener_TA as sta
+from api.api_general import top_stocks
+import api.api_general as apg
 setting = config.get_settings()
 
 IST = pytz.timezone('Asia/Kolkata')
@@ -307,6 +321,73 @@ def folio(request, template=''):
                                           'portfolio' : pfolio_tbl,
                                           'pfolio_scenario_graph' : pfolio_scenario_graph,
                                             'GOOGLE_ADS': GOOGLE_ADS})
+
+def folio_mini(request, template=''):
+    # print(kwargs)
+    # print('folioid',folioid)
+    # print('template',template)
+    resultParams = urllib.parse.parse_qs(template)
+    template_map = {'eqfo' : 'equity_options_futures.csv',
+                    '':'none'}
+    GOOGLE_ADS = 0
+    if mrigstatics.ENVIRONMENT == 'production':
+        GOOGLE_ADS = 1
+    engine = mu.sql_engine(mrigstatics.MRIGWEB[mrigstatics.ENVIRONMENT])
+    print(request.user.username)
+    if (request.method == 'POST') and ('portfolio_file' in request.FILES.keys()):
+        myfile = request.FILES['portfolio_file']
+        foliocontent = pd.read_csv(myfile)
+        foliocontent['account_id'] = request.user.username
+        foliocontent['portfolio_currency'] = 'INR'
+        foliocontent = pm.add_portfolio(foliocontent)
+        # print(foliocontent)
+        foliocontent_head = list(foliocontent)
+        # print(n50_ta_screen['Security'])
+        # n50_ta_screen_head.remove("index")
+        # n50_ta_screen_head.insert(0, "")
+        foliocontent = [foliocontent_head] + foliocontent.values.tolist()
+        foliocontent = myhtml.list_to_html(foliocontent)
+        # fs = FileSystemStorage()
+        # filename = fs.save(myfile.name, myfile)
+        # uploaded_file_url = fs.url(filename)
+        return render(request, "folio.html", {
+            'foliocontent': foliocontent
+        })
+
+    if request.method == 'GET' and template is not None:
+        if 'dl_file' in resultParams.keys():
+            file = template_map[resultParams['dl_file']]
+            print(file)
+            file_path = os.path.join(settings.MEDIA_ROOT,'downloads', file)
+            print(file_path)
+            if os.path.exists(file_path):
+                print('file exists')
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(fh.read(), content_type="text/csv")
+                    response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                    return response
+
+    port_list=[]
+    pfolio_tbl = pd.DataFrame()
+    pfolio_scenario_graph = ""
+    if request.user.is_authenticated:
+        account = request.user.username
+        port_list = pm.portfolio_list(account)
+        if 'port_name' in resultParams.keys():
+            port_name = resultParams['port_name']
+            pfolio = pm.show_portfolio(port_name[0], account)
+            pfolio_head = list(pfolio[0])
+            pfolio_tbl = [pfolio_head] + pfolio[0].values.tolist()
+            pfolio_tbl = myhtml.list_to_html(pfolio_tbl)
+            pfolio_scenario_graph = pfolio[1]
+            # print(pfolio_tbl)
+
+
+    return render(request, "folio.html", {'port_list':port_list,
+                                          'portfolio' : pfolio_tbl,
+                                          'pfolio_scenario_graph' : pfolio_scenario_graph,
+                                            'GOOGLE_ADS': GOOGLE_ADS})
+
 
 
 def market(request, symbol='NIFTY 50'):
@@ -1918,4 +1999,279 @@ def stock1(request):
     image = image.decode("utf-8")
     oc = ['a',3]
     return render(request, "stock1.html", {"oc":image,'GOOGLE_ADS': GOOGLE_ADS})
-    
+
+
+class stockapi(APIView):
+    # @api_view(['GET', 'POST'])
+
+    def get(self,request,symbol,levelFlag=False,period='3m'):
+        ymap = {'USDINR': 'INR=X',
+                'CRUDE OIL': 'CL=F',
+                'GOLD': 'GC=F'}
+        if symbol in ymap.keys():
+            data = yf.download(ymap[symbol], period='3mo', interval='1d')
+            data['scrip'] = symbol
+            data.reset_index(inplace=True)
+            data = data[data.columns[:-1]]
+            data.columns = [x.lower() for x in data.columns]
+            json_data = data.to_json(orient='records')
+            # print(symbol,'\n',json_data)
+        else:
+            df = StockAPI1(symbol,levelFlag,period).pricevol_data
+            df.reset_index(inplace=True)
+            json_data = df.to_json(orient='records')
+            # print(json_data)
+            # Return the JSON data
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class stockapi_levels(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request,symbol):
+        endDate = datetime.date.today()
+        startDate = endDate - datetime.timedelta(days=365)
+        levels = mu.getLevels(symbol, startDate, endDate)
+        levels = [x[1] for x in levels[0]]
+        # print(levels)
+        json_data = json.dumps(levels)
+        # print(json_data)
+        # Return the JSON data
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class stockapi_oitree(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request,symbol):
+        endDate = datetime.date.today()
+        startDate = endDate - datetime.timedelta(days=365)
+        # levels = mu.getLevels(symbol, startDate, endDate)
+        # levels = [x[1] for x in levels[0]]
+        la = ran.level_analysis([symbol])
+
+        oitree = la['oi_tree']
+        oitree.drop(columns=['instrument_token', 'tradingsymbol','lot_size', 'timestamp', 'last_trade_time',
+         'last_price', 'last_quantity', 'buy_quantity', 'sell_quantity','volume', 'average_price','net_change',
+        'lower_circuit_limit', 'upper_circuit_limit', 'ohlc','depth'],inplace=True)
+        oidict = {}
+        print_expiries = sorted(set(list(oitree['expiry'])))
+        for exp in print_expiries[0:min(4, len(print_expiries))]:
+            x_data = list(oitree[oitree['expiry'] == exp]['strike'])
+            y1_data = list(oitree[oitree['expiry'] == exp]['oi_ce' + str(exp)])
+            y2_data = list(oitree[oitree['expiry'] == exp]['oi_pe' + str(exp)])
+            oidict[exp.strftime('%Y-%m-%d')] = {'strikes':x_data,'oi_ce':y1_data,'oi_pe':y2_data}
+        oidict['pcr'] = la['pcr']
+        oidict['max_pain'] = la['max_pain']
+        # oitree['expiry'] = oitree['expiry'].apply(lambda x : x.strftime('%Y-%m-%d'))
+        # print(levels)
+        # json_data = oidict.to_json(orient='records')
+        json_data = json.dumps(oidict)
+        # print(json_data)
+        # Return the JSON data
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+
+class stockapi_tascreen(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request,symbol):
+        page_items = im.get_item(['market_graphs', 'n50_ta_screen', 'sector_graph',
+                                  'NIFTY 50|levels_json', 'BANKNIFTY|levels_json'])
+        for k, v in page_items.items():
+            page_items = v
+
+        if 'n50_ta_screen' in page_items.keys():
+            print('N50 : Getting from Database')
+            n50_ta_screen = pd.read_json(page_items['n50_ta_screen'], orient='split')
+            json_data = page_items['n50_ta_screen']
+        else:
+            print('N50 : Creating Table')
+            n50_ta_screen = sta.display_analytics()
+            n50_ta_screen_json = n50_ta_screen.to_json(orient='split')
+            im.set_items({'n50_ta_screen': n50_ta_screen_json})
+            json_data = n50_ta_screen_json
+        # print(json_data)
+        # Return the JSON data
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class stockapi_stockpage(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request,symbol):
+        stk_page = wdb.mrigweb_stock_mini(symbol)
+        json_data = json.dumps(stk_page)
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+
+class newsapi(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request):
+        news = wdb.mrigweb_news()
+        for k in news.keys():
+            for n in news[k]:
+                n[0] = n[0].strftime('%d-%b-%Y')
+                n.pop(3)
+
+        json_data = json.dumps(news)
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class stockstrategiesapi(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self, request,strat):
+        result = wdb.stock_strategies()
+        if strat == 'st_macd':
+            st_macd_daily = result['st_macd_daily']
+            if not st_macd_daily.empty:
+                # n50_ta_screen = n50_ta_screen.reset_index()
+                json_data = st_macd_daily.to_json(orient='split')
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+
+class mfapi_mfpage(APIView):
+    # @api_view(['GET', 'POST'])
+    def get(self,request,symbol=""):
+        topmfs = wdb.mrigweb_top_mfs()[0]
+        topmfslist_aum = pd.DataFrame()#[]#topmfs.to_json(orient='split')
+        for x in topmfs:
+            x = x.reset_index()
+            # print(x)
+            if len(topmfslist_aum) > 0:
+                topmfslist_aum = pd.concat([topmfslist_aum,x])
+            else:
+                topmfslist_aum = x
+
+        # print('MF BEFORE ',topmfslist_aum)
+        topmfslist_aum = topmfslist_aum.to_json(orient='split')
+        # print('MF AFTER ',topmfslist_aum)
+
+
+        topmfs = wdb.mrigweb_top_mfs()[1]
+        topmfslist_ret = pd.DataFrame()#[]#topmfs.to_json(orient='split')
+        for x in topmfs:
+            x = x.reset_index()
+            if len(topmfslist_ret) > 0:
+                topmfslist_ret = pd.concat([topmfslist_ret,x])
+            else:
+                topmfslist_ret = x
+        # print('MF BEFORE ', topmfslist_ret)
+        topmfslist_ret = topmfslist_ret.to_json(orient='split')
+        # print('MF AFTER ', topmfslist_ret)
+
+
+        if len(symbol) > 1:
+            stk_page = wdb.mrigweb_mf_mini(symbol)
+        else:
+            stk_page = {}
+        stk_page['topmfslist_aum'] = topmfslist_aum
+        stk_page['topmfslist_ret'] = topmfslist_ret
+
+        json_data = json.dumps(stk_page)
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class portfolio_api(APIView):
+    def get(self, request, port_name='SB'):
+        account= 'santoshbag'
+        port_list = pm.portfolio_list(account)
+
+        pfolio = pm.show_portfolio(port_name, account)
+        portfolio = pfolio[0].to_json(orient='split')
+        scenario_dfs_multi = pfolio[4]
+        scenarios = pfolio[5]
+        pfolio_head = list(pfolio[0])
+        pfolio_scenario_graph = pfolio[1]
+        # print(pfolio_tbl)
+        greeks = ['NPV', 'delta', 'gamma', 'theta_per_day', 'vega', 'rho']
+        scenario_dfs_multi = [scenario_df.to_json(orient='records') for scenario_df in scenario_dfs_multi]
+        json_data = {'port_list':port_list,'portfolio' : portfolio,
+                                          'scenario_dfs_multi' : scenario_dfs_multi}
+        json_data = json.dumps(json_data)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+
+class marketoptiopns_api(APIView):
+    def get(self, request, symbol='NIFTY 50'):
+        oc = mu.kite_OC_new([symbol])
+        expiry = [exp.strftime('%Y-%m-%d') for exp in sorted(set(oc['expiry']))]
+        strikes = sorted(set(oc['strike']))
+        if symbol == 'NIFTY':
+            symbol = 'NIFTY 50'
+        if symbol == 'BANKNIFTY':
+            symbol = 'NIFTY BANK'
+
+        spot = mu.getStockQuote(symbol)
+        print('MARKET OPTIONS API',symbol,spot)
+
+        json_data = {'expiry':expiry,'strikes' : strikes,
+                                          'spot' : spot}
+        json_data = json.dumps(json_data)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+
+class stockmovers_api(APIView):
+    def get(self, request, symbol='NIFTY 500'):
+        [winners,losers] = top_stocks(symbol)
+        winners = pd.DataFrame(winners,columns=['symbol','change (%)'])
+        winners.sort_values(by=['change (%)'],ascending=False,inplace=True)
+        winners = winners.to_json(orient='split')
+        losers = pd.DataFrame(losers,columns=['symbol','change (%)'])
+        losers.sort_values(by=['change (%)'],ascending=True,inplace=True)
+        losers = losers.to_json(orient='split')
+
+        json_data = {'winners':winners,'losers': losers}
+        json_data = json.dumps(json_data)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+# class rates_api(APIView):
+#     @api_view(['POST'])
+#     def post(self, request, currency='INR'):
+#         params = request.data
+#         print('PARAMS RECVD',params)
+#         rates = apg.rates(currency,params)
+#         json_data = json.dumps(rates)
+#
+#         return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def rates_api(request, currency='INR'):
+    params = request.data
+    print('PARAMS RECVD',params)
+    if params is not None:
+        if 'currency' in params.keys():
+            currency = params['currency']
+    rates = apg.rates(currency,params)
+    json_data = json.dumps(rates)
+
+    return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def bonds_api(request):
+    params = request.data
+    print('BONDS PARAMS RECVD',params)
+
+    [result,scenario] = apg.bonds(params)
+
+    # result = result.pop('Heads')
+    result = pd.DataFrame([result])
+    result = result.transpose().reset_index()[1:]
+    result.rename(columns={'index': 'Heads',0:'Values'},inplace=True)
+    cf_idx = result.index[result['Heads'] == 'Cashflow Date'].tolist()[0]
+    cashflow_df = result[cf_idx+1:]
+    metric_df = result[:cf_idx-2]
+    cashflow_df.rename(columns={'Heads':'Cashflow Date','Values':'Cashflow Amount'},inplace=True)
+    print('cashflow_df'.upper(),cashflow_df)
+    cashflow_df = cashflow_df.to_json(orient='split')
+    metric_df = metric_df.to_json(orient='split')
+    json_data = {"metric_df" : metric_df,"cashflow_df" : cashflow_df,'scenario' : scenario}
+    json_data = json.dumps(json_data)
+    print(json_data)
+
+    return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+# class MyDataFrameAPIView(APIView):
+# @api_view(['GET', 'POST'])
+# def stocksapi(request,symbol):
+#     df = StockAPI(symbol).pricevol_data
+#     json_data = df.to_json(orient='records')
+#     # json_data = df.to_json()
+#
+#     # Return the JSON data
+#     # return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+#     return JsonResponse(json_data, safe=False)

@@ -472,5 +472,8 @@ def data_insert(startdate=None,enddate=None):
 
 #    
 if __name__ == '__main__':
-    # data_download()
+    # sd = datetime.date.today() - datetime.timedelta(days=3)
+    # sd = datetime.date(2024,9,10)
+    # ed = sd
+    # data_download(sd,ed)
     data_insert()

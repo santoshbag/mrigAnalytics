@@ -215,7 +215,7 @@ def show_portfolio(name,user,portfolio=None):
     port_analytics = port_analytics[['portfolio_name','valuation_date_time',  'position_date', 'security', 'type', 'qty', 'cost',
        'price', 'delta', 'gamma', 'theta_per_day', 'vega', 'rho',       'analytic_value']]
 
-    return [port_analytics,scenario_graphs,NPV_graph,port_analytics_all]
+    return [port_analytics,scenario_graphs,NPV_graph,port_analytics_all,scenario_dfs_multi,scenarios]
     # return [port_analytics,scenario_graph]
 
 

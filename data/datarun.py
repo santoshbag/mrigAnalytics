@@ -36,6 +36,7 @@ import mutual_funds as mf
 import strategies.stocks as st
 import media.news as news
 import mrigutilities as mu
+import mrigstatics as ms
 import navAllFetcher as nav
 import goldprice as gp
 import crudeoilprices as cp
@@ -273,6 +274,14 @@ def populate_market_instruments():
     elapsed = time.monotonic() - starttime
     print("--------Time Taken for populate_market_instruments %s hrs %s mins %s sec------------" %("{0:5.2f}".format(elapsed//3600),"{0:3.2f}".format(elapsed%3600//60),"{0:3.2f}".format(elapsed%3600%60)))
 
+def clean_mrigweb():
+    sql = '''
+    delete from os_page where load_date < (select max(load_date) from os_page); VACUUM FULL;
+    '''
+    mrigweb_engine = mu.sql_engine(dbname=ms.MRIGWEB)
+
+    mrigweb_engine.execute(sql)
+
 def populate_technicals(stocks='NIFTY 100'):
     starttime = time.monotonic()
     print("Populating Technical Indicators Started")
@@ -322,10 +331,10 @@ def daily_datarun():
             mf_returns()
         except:
             pass
-        # try:
-        #     gp.gold_download()
-        # except:
-        #     pass
+        try:
+            clean_mrigweb()
+        except:
+            pass
         # try:
         #     cp.crude_download()
         # except:
@@ -344,7 +353,7 @@ def daily_datarun():
         wl.strategies_stock_load()
         populate_technicals()
         corr.nifty_corr_data()
-        mos.load_option_strategies()
+    #    mos.load_option_strategies()
     else:
         for arg in sys.argv[1:]:
             if arg == '1':

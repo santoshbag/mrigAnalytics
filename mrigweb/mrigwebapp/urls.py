@@ -13,7 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path
+from django.urls import path, include
 import mrigwebapp.views as vw
 
 
@@ -46,6 +46,27 @@ urlpatterns = [
     path('ra/options/',vw.options, name='options'),
     path('ra/capsfloors/',vw.capsfloors, name='capsfloors'),
     path('ra/portfolio/',vw.portfolio, name='portfolio'),
-        
-        
+    path('api/auth/', include('dj_rest_auth.urls')),  # For login, logout, etc.
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),  # For registration
+    path('api/auth/social/', include('allauth.socialaccount.urls')),  # For social login
+    path('api/stockdata/<str:symbol>/',vw.stockapi.as_view(), name='apistockdata'),
+    path('api/stockdata/<str:symbol>/<str:period>', vw.stockapi.as_view(), name='apistockdata'),
+    path('api/stockdata/pv/<str:symbol>/', vw.stockapi.as_view(), name='apistockdata'),
+    path('api/stockdata/pv/<str:symbol>/<str:period>', vw.stockapi.as_view(), name='apistockdata'),
+    path('api/stockdata/l/<str:symbol>/', vw.stockapi_levels.as_view(), name='apistockdata_levels'),
+    path('api/stockdata/oi/<str:symbol>/', vw.stockapi_oitree.as_view(), name='apistockdata_oitree'),
+    path('api/stockdata/ta/<str:symbol>/', vw.stockapi_tascreen.as_view(), name='apistockdata_tascreen'),
+    path('api/stockpage/<str:symbol>/', vw.stockapi_stockpage.as_view(), name='apistockdata_stockpage'),
+    path('api/news/', vw.newsapi.as_view(), name='apinews'),
+    path('api/ss/<str:strat>/', vw.stockstrategiesapi.as_view(), name='apistockstrategies'),
+    path('api/mf/<str:symbol>/', vw.mfapi_mfpage.as_view(), name='apimf'),
+    path('api/mf/', vw.mfapi_mfpage.as_view(), name='apimf'),
+    path('api/portfolio/', vw.portfolio_api.as_view(), name='apiportfolio'),
+    path('api/mops/<str:symbol>/', vw.marketoptiopns_api.as_view(), name='apimo'),
+    path('api/stockmovers/', vw.stockmovers_api.as_view(), name='apistockmovers'),
+    path('api/rates/', vw.rates_api, name='ratesapi'),
+    path('api/bonds/', vw.bonds_api, name='bondsapi'),
+
+    # path('api/stockdata/<str:symbol>/', vw.stocksapi, name='apistockdata'),
+
 ]

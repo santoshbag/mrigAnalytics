@@ -205,6 +205,7 @@ def display_tech_analysis(stocks='NIFTY 100'):
 
     if type(stocks) is str:
         sList = mu.getIndexMembers(stocks)
+        print(sList)
         slist = str(sList).replace('[', '(').replace(']', ')')
     if type(stocks) is list:
         slist = str(stocks).replace('[', '(').replace(']', ')')
@@ -216,10 +217,11 @@ def display_tech_analysis(stocks='NIFTY 100'):
     #     slist = str(stocks).replace('[', '(').replace(']', ')')
 
     slist = slist.replace(')', ",'NIFTY 50','NIFTY BANK')")
+    # print(slist)
     sql = "select date,symbol, high as High,low as Low,close as Close from stock_history where \
     symbol in {} and date > '{}' \
     order by symbol, date asc".format(slist, period_date.strftime('%Y%m%d'))
-    # print(sql)
+    print(sql)
     data = pd.read_sql(sql, engine)
     #DATA CLEANUP
 
