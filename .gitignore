@@ -9,3 +9,5 @@
 /research/__pycache__
 /mrigweb/mrigweb/__pycache__
 /data/errorLog.txt
+ mrigweb20241107_2.pgsql
+*.pgsql

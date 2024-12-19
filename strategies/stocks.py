@@ -25,7 +25,8 @@ from bs4 import BeautifulSoup
 from pandas.tseries.offsets import BDay
 from mrigquery import fundamentals as funda
 import json
-from pandas.io.json import json_normalize
+# from pandas.io.json import json_normalize
+from pandas import json_normalize
 
 
 

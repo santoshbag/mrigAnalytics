@@ -25,7 +25,8 @@ from bs4 import BeautifulSoup
 from random import choice
 import string
 import json
-from pandas.io.json import json_normalize
+# from pandas.io.json import json_normalize
+from pandas import json_normalize
 import math
 import yfinance
 from mpl_finance import candlestick_ohlc

@@ -14,7 +14,11 @@ settings = json.load(file)
 
 trade_display_analytics = settings['trade_display_analytics']
 
+fred_api = '2b698cadeffb4967c40cca3a3afb0509'
 
+# RAZORPAY DETAILS
+RAZORPAY_KEY_ID = 'rzp_test_eR8UOYsnBFwq49'
+RAZORPAY_KEY_SECRET = 'ttfyVQSOHoP1ZyBFsjK4ZG6a'
 
 """
 Total Return Indices List from NSE
@@ -426,6 +430,7 @@ NSE_HOLIDAYS = {
 '01-Nov-2024':	'Diwali Laxmi Pujan',
 '15-Nov-2024' : 'Gurunanak Jayanti',
 '25-Dec-2024' :	'Christmas'}
+
 
 if __name__ == '__main__':
     print(trade_display_analytics)

@@ -38,6 +38,21 @@ import maintenance.item_manager as im
 import research.screener_TA as sta
 from api.api_general import top_stocks
 import api.api_general as apg
+import strategies.sector_analysis as sa
+import strategies.stock_prediction_LSTM as spl
+import strategies.portfolio_optimization as po
+import hashlib
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+import json
+from portfolios.portfolio import UPortfolio
+from rest_framework.permissions import IsAuthenticated
+import payment.razorpay as rp
+import razorpay
+import mrigstatics as ms
 setting = config.get_settings()
 
 IST = pytz.timezone('Asia/Kolkata')
@@ -2184,7 +2199,7 @@ class portfolio_api(APIView):
         return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
 
 
-class marketoptiopns_api(APIView):
+class marketoptions_api(APIView):
     def get(self, request, symbol='NIFTY 50'):
         oc = mu.kite_OC_new([symbol])
         expiry = [exp.strftime('%Y-%m-%d') for exp in sorted(set(oc['expiry']))]
@@ -2265,6 +2280,435 @@ def bonds_api(request):
 
     return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
 
+class sector_analysis_api(APIView):
+    def get(self, request, symbol='NIFTY 50'):
+        result = sa.analysis()
+
+        json_data = json.dumps(result)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class stock_predict_api(APIView):
+    def get(self, request, symbol='NIFTY 50'):
+        result = spl.prediction(symbol)
+        for key in result.keys():
+            result[key]['x'] = [d.strftime('%d-%b-%Y') for d in result[key]['x']]
+            result[key]['y'] = [n[0] for n in result[key]['y'].tolist()]
+        json_data = json.dumps(result)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+class port_optimize_api(APIView):
+    def post(self, request):
+        # portfolio = request.data.get('portfolio')
+        portfolio = request.data
+        print('Portfolio Recieved from React',portfolio)
+        optimized_port = po.port_opt(portfolio)
+        port_metrics = optimized_port.combine_metrics().to_json(orient='split')
+        correlation = optimized_port.calculate_correlation_matrix().values.tolist()
+        print('PORT OPT CORR',correlation)
+        optimization_result = optimized_port.portfolio_optimization()
+        # optimization_result['weights'] = optimization_result['weights'].tolist()
+
+        efficient_frontier = optimized_port.efficient_frontier()
+        efficient_frontier_dict = {}
+        for col in efficient_frontier.columns:
+            efficient_frontier_dict[col] = efficient_frontier[col].tolist()
+
+        result = {
+            'port_metrics' : port_metrics,
+            'correlation' : correlation,
+            'optimization_result' : optimization_result,
+            'efficient_frontier' : efficient_frontier_dict
+        }
+        # print(result)
+        json_data = json.dumps(result)
+
+        return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
+
+# LOGIN VIEW
+
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+@ensure_csrf_cookie
+def csrf_token_view(request):
+    return JsonResponse({'message': 'CSRF cookie set'})
+
+
+
+from django.contrib.auth import authenticate, login,logout
+from rest_framework_simplejwt.tokens import RefreshToken
+
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = authenticate(username=data['username'], password=data['password'])
+        # print('USERNAME1', user.username)
+
+        if user:
+            login(request, user)
+            # Create JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            # print('USERNAME2',user.username)
+            return JsonResponse({'message': 'Login successful' ,'username': user.username,'access_token': str(access_token),'refresh_token': str(refresh),},status=status.HTTP_200_OK)
+        return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+@csrf_exempt
+def logout_view(request):
+    logout(request)
+    return JsonResponse({'message': 'Logged out successfully'})
+
+from django.contrib.auth.models import User
+
+@csrf_exempt
+def register_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            user = User.objects.create_user(
+                username=data['username'],
+                email=data['email'],
+                password=data['password'],
+                first_name=data.get('first_name', ''),
+                last_name=data.get('last_name', ''),
+            )
+            return JsonResponse({'message': data['username']+' : Registration successful'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+
+
+
+'''
+PORTFOLIO VIEWS
+'''
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.tokens import AccessToken
+
+# @method_decorator(csrf_exempt, name='dispatch')
+@csrf_exempt
+@api_view(['GET','POST','DELETE'])
+# @login_required
+@permission_classes([IsAuthenticated])
+def portfolios(request):
+    print('Portfolios endpoint accessed by:', request.user.username)  # Debug statement
+    # print("Headers:", request.headers)  # Check if Authorization header is present
+    # print("User:", request.user)        # Should show authenticated user
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        try:
+            decoded_token = AccessToken(token)
+            # print("Decoded Token:", decoded_token)
+            # print("User ID from Token:", decoded_token['user_id'])
+            user_id = decoded_token['user_id']
+            print("User ID from Token:", user_id)
+            if request.method == "GET":
+                print('GET REQUEST RECVD from ', request.user.username)
+                query = """
+                SELECT id, name
+                FROM portfolio.portfolios
+                WHERE user_id = %s
+                """
+                # portfolios = execute_query(query, [request.user.id], fetch_all=True)
+                portfolios = UPortfolio.getPortfolios(user_id)
+                portfolios = [{'id' : item[0],'name' : item[1]} for item in portfolios]
+                print('portfolios', portfolios)
+                return JsonResponse(portfolios, safe=False)
+
+            if request.method == "POST":
+                body = json.loads(request.body)
+                name = body.get("name")
+                print('NEW PORTFOLIO NAME ->',name)
+                if not name:
+                    return JsonResponse({"error": "Portfolio name is required"}, status=400)
+                query = """
+                INSERT INTO portfolio.portfolios (name, user_id) VALUES (%s, %s) RETURNING id, name
+                """
+                # portfolio = execute_query(query, [name, request.user.id], fetch_one=True)
+                portfolio = UPortfolio.create(user_id, name)
+                return JsonResponse(portfolio, safe=False)
+
+            if request.method == "DELETE":
+                body = json.loads(request.body)
+                portfolio_id = body.get("portfolio_id")
+                if not portfolio_id:
+                    return JsonResponse({"error": "Portfolio ID is required"}, status=400)
+
+                # Delete the item
+                UPortfolio.deletePortfolio(portfolio_id)
+
+                return JsonResponse({"message": "Item deleted successfully"})
+
+        except Exception as e:
+            print("Invalid token:", str(e))
+            return Response({"message": "Invalid token"}, status=401)
+    #
+    # if request.user.is_authenticated:
+    #     return Response({"message": "Authenticated", "user": request.user.username})
+    # else:
+    #     return Response({"message": "Not Authenticated"}, status=401)
+
+
+@csrf_exempt
+@api_view(['GET','POST','DELETE'])
+@permission_classes([IsAuthenticated])
+def portfolio_items(request):
+    print('Portfolio Items endpoint accessed by:', request.user.username)  # Debug statement
+    print("Headers:", request.headers)  # Check if Authorization header is present
+    # print("User:", request.user)        # Should show authenticated user
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        try:
+            decoded_token = AccessToken(token)
+            # print("Decoded Token:", decoded_token)
+            # print("User ID from Token:", decoded_token['user_id'])
+            user_id = decoded_token['user_id']
+            # print("User ID from Token:", user_id)
+            if request.method == "GET":
+                # print('FETCHING ITEMS FOR PORTFOLIO ->')
+
+                # body = json.loads(request.body)
+                # portfolio_id = body.get("portfolio_id")
+                portfolio_id = request.data.get("portfolio_id")
+
+                print('FETCHING ITEMS FOR PORTFOLIO ->',portfolio_id)
+
+                # portfolios = execute_query(query, [request.user.id], fetch_all=True)
+                items = UPortfolio.getItems(portfolio_id)
+                items = [{'id': item[0], 'item_type' : item[1],'name': item[2],'quantity': item[3],'purchase_price': item[4]} for item in items]
+                print('items', items)
+                return JsonResponse(items, safe=False)
+
+            if request.method == "POST":
+                body = json.loads(request.body)
+                action = body.get("action")
+                if action == "fetchP":
+                    portfolio_id = body.get("portfolio_id")
+                    print('FETCHING ITEMS FOR PORTFOLIO ->',portfolio_id)
+
+                    items = UPortfolio.getItems(portfolio_id)
+                    items = [{'item_type': item[0], 'name' : item[1],'quantity': item[2],'avg_price': item[3],'cmp': item[4],'investment': item[5],'pnl': item[6]} for item in items]
+                    print('items', items)
+                    return JsonResponse(items, safe=False)
+                if action == "fetchP_C":
+                    portfolio_id = body.get("portfolio_id")
+                    print('FETCHING SEGMENTS FOR PORTFOLIO ->',portfolio_id)
+
+                    items = UPortfolio.getPortfolioComp(portfolio_id)
+                    items = [{'item_type': item[0], 'name' : item[1],'quantity': item[2],'avg_price': item[3],
+                              'cmv': item[4],'investment': item[5],'pnl': item[6],'country': item[7],'industry': item[8],
+                              'sub_industry': item[9]} for item in items]
+                    print('items', items)
+                    return JsonResponse(items, safe=False)
+                if action == "fetchPerformance":
+                    portfolio_id = body.get("portfolio_id")
+                    print('FETCHING PERFORMANCE FOR PORTFOLIO ->',portfolio_id)
+                    performance = {}
+                    items = UPortfolio.getPortfolioValueSeries(portfolio_id)
+                    # items = items.reset_index()
+                    if len(items) > 0:
+                        items.rename(columns={'portfolio_value':'close'},inplace=True)
+                    performance['values'] = items.to_json(orient='records')
+                    items = UPortfolio.getPortfolioXIRRSeries(portfolio_id)
+                    if len(items) > 0:
+                        items.rename(columns={'running_xirr':'close'},inplace=True)
+                    performance['xirr'] = items.to_json(orient='records')
+                    print('items', performance)
+                    return Response(performance, content_type="application/json", status=status.HTTP_200_OK)
+                if action == "fetchT":
+                    portfolio_id = body.get("portfolio_id")
+                    from_date = body.get("from_date")
+                    to_date = body.get("to_date")
+                    search_text = body.get("search_text").lower()
+                    print('FETCHING TRANSACTIONS FOR PORTFOLIO ->',portfolio_id,from_date,to_date,search_text)
+
+                    items = UPortfolio.getTransactions(portfolio_id,from_date, to_date, search_text)
+                    items = [{'tran_id': item[0], 'name' : item[2],'tran_type' : item[3],'quantity': item[4],'price': item[5],'tran_date': item[6],'type' : item[7]} for item in items]
+                    print('items', items)
+                    return JsonResponse(items, safe=False)
+                if action == "add":
+                    print('ADDING ITEMS FOR PORTFOLIO ->')
+                    portfolio_id = body.get("portfolio_id")
+                    item_type = body.get("item_type")
+                    name = body.get("name")
+                    transaction = body.get("transaction")
+                    quantity = body.get("quantity")
+                    purchase_price = body.get("purchase_price")
+                    transaction_date = body.get("transaction_date")
+
+                    # portfolio_id = request.data.get("portfolio_id")
+                    # item_type = request.data.get("type")
+                    # name = request.data.get("name")
+                    # quantity = request.data.get("quantity")
+                    # buy_price = request.data.get("buy_price")
+
+                    if not all([portfolio_id, item_type, name,transaction, quantity, purchase_price,transaction_date]):
+                        return JsonResponse({"error": "All fields are required"}, status=400)
+
+                    # Verify portfolio ownership
+                    # id = UPortfolio.verify(request.user.username,portfolio_id)
+                    # if not id:
+                    #     return JsonResponse({"error": "Unauthorized access"}, status=403)
+
+
+                    # items = UPortfolio.addItem(portfolio_id, item_type, name, quantity, purchase_price)
+                    items = UPortfolio.addTransaction(portfolio_id, item_type, name,transaction, quantity, purchase_price,transaction_date)
+                    items = [{'id': item[0], 'item_type' : item[1],'name': item[2],'transaction': item[3],'quantity': item[4],'purchase_price': item[5],'transaction_date': str(item[6])} for item in items]
+                    print('items', json.dumps(items))
+                    return JsonResponse(json.dumps(items), safe=False)
+
+            if request.method == "DELETE":
+                body = json.loads(request.body)
+                portfolio_id = body.get("portfolio_id")
+                item_name = body.get("item_name")
+                if not item_name:
+                    return JsonResponse({"error": "Item ID is required"}, status=400)
+
+                # Delete the item
+                query = UPortfolio.deleteItem(portfolio_id,item_name)
+
+                return JsonResponse({"message": "Item deleted successfully"})
+        except Exception as e:
+            print("Invalid token:", str(e))
+            return Response({"message": "Invalid token"}, status=401)
+
+@csrf_exempt
+@api_view(['GET', 'POST','DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_portfolio(request):
+    if request.method == "DELETE":
+        body = json.loads(request.body)
+        portfolio_id = body.get("portfolio_id")
+        if not portfolio_id:
+            return JsonResponse({"error": "Portfolio ID is required"}, status=400)
+
+        # Verify ownership
+        id = UPortfolio.verify(request.user.username,portfolio_id)
+        if not id:
+            return JsonResponse({"error": "Unauthorized access"}, status=403)
+
+        # Delete the portfolio and its items
+        delete_items_query = "DELETE FROM portfolio.portfolio_items WHERE portfolio_id = %s"
+        delete_portfolio_query = "DELETE FROM portfolio.portfolios WHERE id = %s"
+        UPortfolio.deletePortfolio(portfolio_id)
+
+        return JsonResponse({"message": "Portfolio deleted successfully"})
+
+@csrf_exempt
+@api_view(['GET', 'POST','DELETE'])
+@permission_classes([IsAuthenticated])
+def make_payment(request):
+    if request.method == "POST":
+        # Initialize Razorpay client
+        # client = rp.Razorpay()
+        client = razorpay.Client(auth=(ms.RAZORPAY_KEY_ID, ms.RAZORPAY_KEY_SECRET))
+        body = json.loads(request.body)
+        order_receipt = body.get("order_receipt")
+        username = body.get("username")
+        amount = body.get("amount")
+
+        # Get payment details from the request
+        amount = int(amount) * 100  # Convert to paise
+        currency = "INR"
+        receipt = username+'_'+order_receipt
+
+        print('Payment Details recieved from Frontend -> Amount ',amount,' Receipt ',receipt)
+        # Create an order
+        payment = client.order.create({
+            "amount": amount,
+            "currency": currency,
+            "receipt": receipt
+        })
+
+        # Send the order ID to the frontend
+        return JsonResponse(payment)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+#
+#
+#
+# @csrf_exempt
+# def register_user(request):
+#     engine = mu.sql_engine()
+#
+#     if request.method == "POST":
+#         data = json.loads(request.body)
+#         email = data["email"]
+#         password = data["password"]
+#         hashed_password = hashlib.sha256(password.encode()).hexdigest()
+#         first_name = data["first_name"]
+#         last_name = data["last_name"]
+#         address = data.get("address", "")
+#         work_details = data.get("work_details", "")
+#
+#         query = """
+#             INSERT INTO portfolio.users (email, password_hash, first_name, last_name, address, work_details)
+#             VALUES (%s, %s, %s, %s, %s, %s);
+#         """
+#         try:
+#             engine.execute_query(query, (email, hashed_password, first_name, last_name, address, work_details))
+#             return JsonResponse({"message": "User registered successfully"}, status=201)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=400)
+#
+#
+# @csrf_exempt
+# def login_user(request):
+#     engine = mu.sql_engine()
+#
+#     if request.method == "POST":
+#         data = json.loads(request.body)
+#         email = data["email"]
+#         password = data["password"]
+#         hashed_password = hashlib.sha256(password.encode()).hexdigest()
+#
+#         query = "SELECT user_id FROM portfolio.users WHERE email = %s AND password_hash = %s;"
+#         result = engine.execute_query(query, (email, hashed_password))
+#
+#         if result:
+#             return JsonResponse({"user_id": result[0][0], "message": "Login successful"}, status=200)
+#         else:
+#             return JsonResponse({"error": "Invalid email or password"}, status=401)
+
+# @csrf_exempt
+# def delete_portfolio_items(request):
+#     engine = mu.sql_engine()
+#
+#     if request.method == "POST":
+#         data = json.loads(request.body)
+#         portfolio_id = data["portfolio_id"]
+#         item_ids = tuple(data["item_ids"])
+#
+#         query = f"DELETE FROM portfolio.portfolio_items WHERE portfolio_id = %s AND item_id IN {item_ids};"
+#         engine.execute_query(query, (portfolio_id,))
+#         return JsonResponse({"message": "Items deleted successfully"}, status=200)
+#
+# @csrf_exempt
+# def create_portfolio(request):
+#     engine = mu.sql_engine()
+#
+#     if request.method == "POST":
+#         data = json.loads(request.body)
+#         user_id = data.get("user_id")
+#         portfolio_name = data.get("portfolio_name")
+#         query = """
+#             INSERT INTO portfolio.portfolios (user_id, portfolio_name)
+#             VALUES (%s, %s) RETURNING portfolio_id;
+#         """
+#         result = engine.execute(query, (user_id, portfolio_name))
+#         return JsonResponse({"portfolio_id": result[0][0]}, status=201)
+#
+# def get_portfolios(request, user_id):
+#     engine = mu.sql_engine()
+#
+#     query = "SELECT portfolio_id, portfolio_name, created_at FROM portfolio.portfolios WHERE user_id = %s;"
+#     portfolios = engine.execute(query, (user_id,))
+#     return JsonResponse({"portfolios": portfolios})
+
 # class MyDataFrameAPIView(APIView):
 # @api_view(['GET', 'POST'])
 # def stocksapi(request,symbol):
@@ -2275,3 +2719,4 @@ def bonds_api(request):
 #     # Return the JSON data
 #     # return Response(json_data, content_type="application/json", status=status.HTTP_200_OK)
 #     return JsonResponse(json_data, safe=False)
+

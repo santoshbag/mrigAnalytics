@@ -46,9 +46,15 @@ urlpatterns = [
     path('ra/options/',vw.options, name='options'),
     path('ra/capsfloors/',vw.capsfloors, name='capsfloors'),
     path('ra/portfolio/',vw.portfolio, name='portfolio'),
-    path('api/auth/', include('dj_rest_auth.urls')),  # For login, logout, etc.
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),  # For registration
-    path('api/auth/social/', include('allauth.socialaccount.urls')),  # For social login
+    path('accounts/', include('allauth.urls')),  # Allauth endpoints
+    path('api/auth/login/', vw.login_view,name='logn'),
+    path('api/auth/logout/', vw.logout_view, name='logout'),
+    path('api/register_user/', vw.register_view, name='register_view'),
+
+    # path('api/auth/', include('rest_framework.urls')),  # DRF login for API testing
+    # path('api/auth/', include('dj_rest_auth.urls')),  # For login, logout, etc.
+    # path('api/auth/registration/', include('dj_rest_auth.registration.urls')),  # For registration
+    # path('api/auth/social/', include('allauth.socialaccount.urls')),  # For social login
     path('api/stockdata/<str:symbol>/',vw.stockapi.as_view(), name='apistockdata'),
     path('api/stockdata/<str:symbol>/<str:period>', vw.stockapi.as_view(), name='apistockdata'),
     path('api/stockdata/pv/<str:symbol>/', vw.stockapi.as_view(), name='apistockdata'),
@@ -62,10 +68,24 @@ urlpatterns = [
     path('api/mf/<str:symbol>/', vw.mfapi_mfpage.as_view(), name='apimf'),
     path('api/mf/', vw.mfapi_mfpage.as_view(), name='apimf'),
     path('api/portfolio/', vw.portfolio_api.as_view(), name='apiportfolio'),
-    path('api/mops/<str:symbol>/', vw.marketoptiopns_api.as_view(), name='apimo'),
+    path('api/mops/<str:symbol>/', vw.marketoptions_api.as_view(), name='apimo'),
     path('api/stockmovers/', vw.stockmovers_api.as_view(), name='apistockmovers'),
     path('api/rates/', vw.rates_api, name='ratesapi'),
     path('api/bonds/', vw.bonds_api, name='bondsapi'),
+    path('api/sec_anlys/', vw.sector_analysis_api.as_view(), name='secanlysapi'),
+    path('api/stock_pred/<str:symbol>/', vw.stock_predict_api.as_view(), name='stkpedictapi'),
+    path('api/portopt/', vw.port_optimize_api.as_view(), name='portoptimization'),
+    # Fetch and create portfolios
+    path('api/portfolios/', vw.portfolios, name='portfolios'),
+    # Manage portfolio items: fetch, add, and delete items
+    path('api/portfolios/items/', vw.portfolio_items, name='portfolio_items'),
+
+    # Delete an entire portfolio
+    path('api/delete_portfolio/', vw.delete_portfolio, name='delete_portfolio'),
+    path('api/csrf/', vw.csrf_token_view, name='csrf_token_view'),
+
+    #Payment URLs
+    path('payment/pay/', vw.make_payment, name='make_payment'),
 
     # path('api/stockdata/<str:symbol>/', vw.stocksapi, name='apistockdata'),
 

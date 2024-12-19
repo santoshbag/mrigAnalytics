@@ -1335,6 +1335,30 @@ def mrig_format(x,fmt):
         pass
     return x
 
+# import pandas as pd
+# from datetime import datetime
+# import numpy as np
+
+# XIRR Function
+def xirr(cashflows, dates, guess=0.1):
+    '''
+
+    :param cashflows: list of cashflows
+    :param dates: list of dates
+    :param guess:
+    :return: xirr
+    '''
+    def npv(rate):
+        return sum([cf / (1 + rate)**((d - dates[0]).days / 365) for cf, d in zip(cashflows, dates)])
+
+    def derivative(rate):
+        return sum([-cf * ((d - dates[0]).days / 365) / (1 + rate)**((d - dates[0]).days / 365 + 1) for cf, d in zip(cashflows, dates)])
+
+    rate = guess
+    for _ in range(100):
+        rate -= npv(rate) / derivative(rate)
+    return rate
+
 if __name__ == '__main__':
     print(pd.__version__)
 #    print(getZerodhaChgs('EQ_D',8,0,310.35))

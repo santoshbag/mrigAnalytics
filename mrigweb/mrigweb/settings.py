@@ -11,8 +11,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
-
-import django.core.mail.backends.smtp
+from datetime import timedelta
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap4',
     'user',
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',  # Add this for CORS
     'dj_rest_auth',  # Provides login, registration APIs
     'django.contrib.sites',
@@ -58,12 +58,13 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'allauth.account.middleware.AccountMiddleware'
+    'allauth.account.middleware.AccountMiddleware',
+    'mrigwebapp.disable_csrf.DisableCSRF',  # Add this line
 ]
 
 ROOT_URLCONF = 'mrigweb.urls'
@@ -72,8 +73,6 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
-
-
 
 TEMPLATES = [
     {
@@ -93,16 +92,41 @@ TEMPLATES = [
 
 # Simple JWT settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
+    ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
 }
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=50),  # Short-lived access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Long-lived refresh token
+    'ROTATE_REFRESH_TOKENS': True,                 # Generate new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,              # Blacklist old refresh tokens
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+}
+
+# LOGIN_REDIRECT_URL = "http://localhost:3000"# Or the frontend URL like '/home'
 
 # Allowing CORS requests from the React frontend
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Add your React frontend's origin
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    "http://localhost:3000",
+]
+
+CSRF_COOKIE_HTTPONLY = False  # Allow JS to read the cookie
+CSRF_COOKIE_SECURE = False  # For HTTPS only; set to True in production
+CSRF_USE_SESSIONS = False  # Store CSRF tokens in cookies, not sessions
 
 SITE_ID = 1  # Needed for django-allauth
 
@@ -155,7 +179,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 
 EMAIL_HOST_USER="mriganalytics.sb@gmail.com"
-EMAIL_HOST_PASSWORD="Xanto123!"
+EMAIL_HOST_PASSWORD=""
 
 
 # Internationalization
@@ -186,3 +210,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'..','..','mediafiles')
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True

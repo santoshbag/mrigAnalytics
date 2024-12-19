@@ -25,11 +25,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('mrigwebapp.urls')),
     path('', views.home, name='home'),
-    path("accounts/", include("django.contrib.auth.urls")),
+    # path("accounts/", include("django.contrib.auth.urls")),
     ##### user related path##########################
-    path('', include('user.urls')),
-    path('login/', user_view.Login, name='login'),
-    path('logout/', auth.LogoutView.as_view(template_name='userindex.html'), name='logout'),
-    path('register/', user_view.register, name='register'),
+    # path('', include('user.urls')),
+    # path('login/', user_view.Login, name='login'),
+    # path('logout/', auth.LogoutView.as_view(template_name='userindex.html'), name='logout'),
+    # path('register/', user_view.register, name='register'),
 
 ]
